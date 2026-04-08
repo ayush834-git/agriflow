@@ -1,0 +1,17 @@
+export const DISTRICT_POSITIONS: Record<string, { x: number; y: number; lat: number; lng: number }> = {
+  Belagavi: { x: 128, y: 164, lat: 15.8497, lng: 74.4977 },
+  Hubballi: { x: 154, y: 244, lat: 15.3647, lng: 75.1240 },
+  Mysuru: { x: 172, y: 444, lat: 12.2958, lng: 76.6394 },
+  Bengaluru: { x: 236, y: 414, lat: 12.9716, lng: 77.5946 },
+  Ballari: { x: 248, y: 290, lat: 15.1394, lng: 76.9214 },
+  Nizamabad: { x: 304, y: 92, lat: 18.6705, lng: 78.0932 },
+  Hyderabad: { x: 348, y: 186, lat: 17.385, lng: 78.4867 },
+  Karimnagar: { x: 386, y: 102, lat: 18.4386, lng: 79.1288 },
+  Kurnool: { x: 382, y: 306, lat: 15.8281, lng: 78.0373 },
+  Warangal: { x: 438, y: 146, lat: 17.9689, lng: 79.5941 },
+  Khammam: { x: 458, y: 224, lat: 17.2473, lng: 80.1514 },
+  Anantapur: { x: 394, y: 418, lat: 14.6819, lng: 77.6006 },
+  Guntur: { x: 512, y: 260, lat: 16.3067, lng: 80.4365 },
+  Chittoor: { x: 512, y: 438, lat: 13.2172, lng: 79.1003 },
+  Visakhapatnam: { x: 606, y: 126, lat: 17.6868, lng: 83.2185 },
+};

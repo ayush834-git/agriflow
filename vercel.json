@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/fetch-prices",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/compute-gaps",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/check-spoilage",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/send-daily-alerts",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

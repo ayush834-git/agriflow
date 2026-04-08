@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgriFlow
 
-## Getting Started
+AgriFlow is an agricultural intelligence platform for the Google Solution Challenge 2026. The product is built around one simple promise: help farmers and FPO operators see where crops should move next by combining live mandi prices, multilingual messaging, and district-level decision support.
 
-First, run the development server:
+This repo now covers the guide through the core farmer and FPO operating loop:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js 16 App Router with TypeScript, Tailwind v4, and shadcn/ui
+- Agmarknet-backed price fetch, gap computation, and crop APIs
+- WhatsApp and SMS webhook flows with local fallback state
+- Farmer registration, listings, match inbox, and alert views
+- FPO inventory, route recommendations, buyer directory, and deadline board
+- Cron-ready daily alerts and spoilage check endpoints
+- Supabase migration scaffold for the first 10 domain tables
+
+# AgriFlow: Google Solution Challenge 2026
+
+AgriFlow is a multilingual agricultural intelligence platform that prevents food waste and stabilizes market prices by revealing actionable price gaps across Indian districts. It connects farmers to FPOs via AI-powered SMS and WhatsApp alerts while providing live supply-demand heatmaps to coordinate logistical movement.
+
+**SDG 2** (Zero Hunger) & **SDG 12** (Responsible Consumption and Production)
+
+## 📡 Live End-to-End Architecture
+
+```mermaid
+graph TD
+    %% External Data & AI
+    Agmarknet[Agmarknet Mandi Prices] -->|Cron (30m)| NextJS[Next.js Server]
+    Gemini[Gemini 1.5/2.0] <-->|Reasoning & NLP| NextJS
+    Maps[Google Maps Dist. Matrix API] <-->|Logistics| NextJS
+
+    %% User Channels
+    WhatsApp[WhatsApp / SMS via Twilio] <-->|Webhook / Intent| NextJS
+    FarmerDash[Farmer Web Dashboard] <--> NextJS
+    FPODash[FPO Web Dashboard] <--> NextJS
+
+    %% Persistence
+    NextJS -->|PostgreSQL Schema| Supabase[(Supabase DB)]
+    NextJS -->|Upstash Redis| Cache[(Redis Cache & Session)]
+    NextJS -->|Authentication| Clerk[(Clerk Auth)]
+
+    style WhatsApp fill:#25D366,stroke:#fff,stroke-width:2px,color:#fff
+    style Supabase fill:#3ECF8E,stroke:#fff,stroke-width:2px,color:#000
+    style Gemini fill:#4285F4,stroke:#fff,stroke-width:2px,color:#fff
+    style Maps fill:#FBBC05,stroke:#fff,stroke-width:2px,color:#000
+    style NextJS fill:#000000,stroke:#fff,stroke-width:2px,color:#fff
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Key Differentiators
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Feature | Description | Target |
+|---------|-------------|---------|
+| **Multilingual Agent** | Speak to the bot via WhatsApp audio or text in Telugu, Kannada, Hindi, or English | Farmers |
+| **Agentic Matching** | AI actively matches FPOs with required inventory to active farmer listings. | Farmers & FPO |
+| **Generative Predictors**| Gemini analyzes arrival volumes, price spreads, and historical vectors to recommend optimal sell windows. | Farmers |
+| **Visual Supply Maps** | A live Google Maps dynamic overlay highlighting regional deficits and surpluses for immediate supply patching. | FPO / Buyers |
+| **Spoilage Engine** | A real-time matrix calculating degradation to flag high-risk storage queues for emergency dispatch. | FPO / Logistics |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠 Tech Stack
 
-## Learn More
+- **Framework**: Next.js 16 (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS v4, shadcn/ui, Framer Motion
+- **AI / Agentic Intelligence**: `@google/generative-ai` (Gemini 2.5 Flash API)
+- **Map / Geospatial**: `@vis.gl/react-google-maps`, Google Maps REST Distance Matrix
+- **Auth & Database**: Clerk, Supabase, Upstash Redis Serverless
+- **Communications**: Twilio API (WhatsApp + SMS)
 
-To learn more about Next.js, take a look at the following resources:
+## 💻 Running Locally
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Install dependencies**:
+```bash
+npm install
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Environment Configuration**:
+Copy `.env.example` to `.env.local` and provide standard keys:
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` & `CLERK_SECRET_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (ensure Distance Matrix is enabled)
+- `GEMINI_API_KEY`
+- `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN`
 
-## Deploy on Vercel
+3. **Start the server**:
+```bash
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. **Webhooks Setup** (For testing WhatsApp locally):
+Use `ngrok` or `localtunnel` to tunnel port 3000 mapping `/api/whatsapp/webhook` to Twilio's WhatsApp sandbox inbound message URL.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Demo APIs
+```text
+GET  /api/health                                    # Health and metrics
+GET  /api/cron/fetch-prices?mode=mock&historyDays=7 # Mock Agmarknet updates
+POST /api/matches/simulate-accept                   # Demo the farmer 'YES' WhatsApp loop
+```
