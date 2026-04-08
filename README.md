@@ -23,19 +23,19 @@ AgriFlow is a multilingual agricultural intelligence platform that prevents food
 ```mermaid
 graph TD
     %% External Data & AI
-    Agmarknet[Agmarknet Mandi Prices] -->|Cron (30m)| NextJS[Next.js Server]
-    Gemini[Gemini 1.5/2.0] <-->|Reasoning & NLP| NextJS
-    Maps[Google Maps Dist. Matrix API] <-->|Logistics| NextJS
+    Agmarknet["Agmarknet Mandi Prices"] -->|Cron 30m| NextJS["Next.js Server"]
+    Gemini["Gemini 1.5 / 2.0"] <-->|Reasoning & NLP| NextJS
+    Maps["Google Maps Matrix API"] <-->|Logistics| NextJS
 
     %% User Channels
-    WhatsApp[WhatsApp / SMS via Twilio] <-->|Webhook / Intent| NextJS
-    FarmerDash[Farmer Web Dashboard] <--> NextJS
-    FPODash[FPO Web Dashboard] <--> NextJS
+    WhatsApp["WhatsApp / SMS via Twilio"] <-->|Webhook / Intent| NextJS
+    FarmerDash["Farmer Web Dashboard"] <--> NextJS
+    FPODash["FPO Web Dashboard"] <--> NextJS
 
     %% Persistence
-    NextJS -->|PostgreSQL Schema| Supabase[(Supabase DB)]
-    NextJS -->|Upstash Redis| Cache[(Redis Cache & Session)]
-    NextJS -->|Authentication| Clerk[(Clerk Auth)]
+    NextJS -->|PostgreSQL Schema| Supabase[("Supabase DB")]
+    NextJS -->|Upstash Redis| Cache[("Redis Cache & Session")]
+    NextJS -->|Authentication| Clerk[("Clerk Auth")]
 
     style WhatsApp fill:#25D366,stroke:#fff,stroke-width:2px,color:#fff
     style Supabase fill:#3ECF8E,stroke:#fff,stroke-width:2px,color:#000
