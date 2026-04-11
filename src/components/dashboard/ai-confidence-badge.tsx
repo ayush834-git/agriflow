@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 
 type AiConfidenceBadgeProps = {
   confidence?: number | null;
@@ -24,6 +25,7 @@ export function AiConfidenceBadge({
   confidence,
   className,
 }: AiConfidenceBadgeProps) {
+  const { dict } = useI18n();
   const normalized = normalizeConfidence(confidence);
 
   if (normalized == null) {
@@ -34,7 +36,7 @@ export function AiConfidenceBadge({
           className,
         )}
       >
-        Confidence unavailable
+        {dict.common.confidenceUnavailable}
       </Badge>
     );
   }
@@ -48,14 +50,14 @@ export function AiConfidenceBadge({
         : "border-red-200 bg-red-100 text-red-900";
   const label =
     normalized >= 0.76
-      ? "High"
+      ? dict.common.highConfidence
       : normalized >= 0.56
-        ? "Medium"
-        : "Low";
+        ? dict.common.mediumConfidence
+        : dict.common.lowConfidence;
 
   return (
     <Badge className={cn("border", tone, className)}>
-      {label} confidence · {percentage}%
+      {label} · {percentage}%
     </Badge>
   );
 }

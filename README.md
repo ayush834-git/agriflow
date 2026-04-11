@@ -6,7 +6,7 @@ This repo now covers the guide through the core farmer and FPO operating loop:
 
 - Next.js 16 App Router with TypeScript, Tailwind v4, and shadcn/ui
 - Agmarknet-backed price fetch, gap computation, and crop APIs
-- WhatsApp and SMS webhook flows with local fallback state
+- WhatsApp voice/text, Twilio voice-call, and SMS webhook flows with local fallback state
 - Farmer registration, listings, match inbox, and alert views
 - FPO inventory, route recommendations, buyer directory, and deadline board
 - Cron-ready daily alerts and spoilage check endpoints
@@ -48,7 +48,7 @@ graph TD
 
 | Feature | Description | Target |
 |---------|-------------|---------|
-| **Multilingual Agent** | Speak to the bot via WhatsApp audio or text in Telugu, Kannada, Hindi, or English | Farmers |
+| **Multilingual Agent** | Speak to the bot via WhatsApp audio, phone call, or text in Telugu, Kannada, Hindi, or English | Farmers |
 | **Agentic Matching** | AI actively matches FPOs with required inventory to active farmer listings. | Farmers & FPO |
 | **Generative Predictors**| Gemini analyzes arrival volumes, price spreads, and historical vectors to recommend optimal sell windows. | Farmers |
 | **Visual Supply Maps** | A live Google Maps dynamic overlay highlighting regional deficits and surpluses for immediate supply patching. | FPO / Buyers |
@@ -61,7 +61,7 @@ graph TD
 - **AI / Agentic Intelligence**: `@google/generative-ai` (Gemini 2.5 Flash API)
 - **Map / Geospatial**: `@vis.gl/react-google-maps`, Google Maps REST Distance Matrix
 - **Auth & Database**: Clerk, Supabase, Upstash Redis Serverless
-- **Communications**: Twilio API (WhatsApp + SMS)
+- **Communications**: Twilio API (WhatsApp + Voice + SMS)
 
 ## 💻 Running Locally
 
@@ -76,6 +76,7 @@ Copy `.env.example` to `.env.local` and provide standard keys:
 - `NEXT_PUBLIC_SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (ensure Distance Matrix is enabled)
 - `GEMINI_API_KEY`
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER`, and optionally `TWILIO_VOICE_NUMBER`
 - `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN`
 
 3. **Start the server**:
@@ -83,8 +84,12 @@ Copy `.env.example` to `.env.local` and provide standard keys:
 npm run dev
 ```
 
-4. **Webhooks Setup** (For testing WhatsApp locally):
-Use `ngrok` or `localtunnel` to tunnel port 3000 mapping `/api/whatsapp/webhook` to Twilio's WhatsApp sandbox inbound message URL.
+4. **Webhooks Setup**:
+Use `ngrok` or `localtunnel` to tunnel port 3000 and point Twilio to:
+- `/api/whatsapp/webhook` for WhatsApp sandbox inbound messages and voice notes
+- `/api/voice/webhook` for inbound phone calls
+
+Twilio voice notes are transcribed with Gemini before entering the same advisory flow as typed WhatsApp messages.
 
 ### Demo APIs
 ```text

@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 
 import { hasSupabaseWriteConfig } from "@/lib/env";
+import { sendWhatsAppText } from "@/lib/twilio";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { findUserById } from "@/lib/users/store";
 import type {
   AppNotification,
   CreateNotificationPayload,
@@ -79,7 +81,33 @@ function buildNotification(payload: CreateNotificationPayload): AppNotification 
 }
 
 export async function createNotification(payload: CreateNotificationPayload) {
-  const notification = buildNotification(payload);
+  let deliveryStatus = payload.deliveryStatus ?? "SENT";
+  let sentAt: string | undefined = payload.sentAt ?? new Date().toISOString();
+
+  if (payload.channel === "WHATSAPP" && !payload.userId.startsWith("demo-")) {
+    try {
+      const user = await findUserById(payload.userId);
+
+      if (user?.phone) {
+        await sendWhatsAppText({
+          to: user.phone,
+          body: payload.message,
+        });
+      } else {
+        deliveryStatus = "PENDING";
+        sentAt = undefined;
+      }
+    } catch {
+      deliveryStatus = "FAILED";
+      sentAt = undefined;
+    }
+  }
+
+  const notification = buildNotification({
+    ...payload,
+    deliveryStatus,
+    sentAt,
+  });
 
   if (!hasSupabaseWriteConfig() || notification.userId.startsWith("demo-")) {
     getNotificationStore().set(notification.id, notification);

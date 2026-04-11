@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { Map, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
+import { Map, AdvancedMarker } from "@vis.gl/react-google-maps";
 import { cn } from "@/lib/utils";
 import type { DashboardDistrict, DashboardPricePoint, DashboardRoute } from "@/lib/dashboard";
 import { DISTRICT_POSITIONS } from "@/lib/regions-map";
@@ -18,30 +17,6 @@ type GoogleHeatmapOverlayProps = {
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
-}
-
-function HeatmapGeoJsonLoader() {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map) return;
-    
-    try {
-      // Load standard district boundaries for AP/Telangana/Karnataka as requested
-      map.data.loadGeoJson(
-        "https://raw.githubusercontent.com/geohacker/india/master/district/india_district.geojson"
-      );
-      map.data.setStyle({
-        fillColor: "rgba(44,100,67,0.02)",
-        strokeWeight: 1,
-        strokeColor: "rgba(44,100,67,0.18)",
-      });
-    } catch (e) {
-      console.warn("GeoJSON boundaries failed to load", e);
-    }
-  }, [map]);
-
-  return null;
 }
 
 export function GoogleHeatmapOverlay({
@@ -62,8 +37,6 @@ export function GoogleHeatmapOverlay({
         mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_STYLE_ID || "DEMO_MAP_ID"}
         className="absolute inset-0 size-full"
       />
-      
-      <HeatmapGeoJsonLoader />
 
       {districts.map((district) => {
         const position = DISTRICT_POSITIONS[district.district];
@@ -79,13 +52,13 @@ export function GoogleHeatmapOverlay({
         const incoming = routes
           .filter((route) => route.targetDistrict === district.district)
           .sort((left, right) => right.opportunityScore - left.opportunityScore)[0];
-          
+
         const priceIntensity = price ? price.modalPrice / maxPrice : 0.2;
         const routeIntensity = Math.max(
           outgoing?.opportunityScore ?? 0,
           incoming?.opportunityScore ?? 0,
         );
-        
+
         const heat = clamp(Math.max(priceIntensity * 0.72, routeIntensity / maxOpportunity));
         const mode =
           (outgoing?.opportunityScore ?? 0) > (incoming?.opportunityScore ?? 0) * 1.15
@@ -93,10 +66,10 @@ export function GoogleHeatmapOverlay({
             : (incoming?.opportunityScore ?? 0) > (outgoing?.opportunityScore ?? 0) * 1.15
               ? "destination"
               : "balanced";
-              
+
         const isSelected = selectedDistrict === district.district;
         const size = 24 + heat * 32;
-        
+
         const ringClass =
           mode === "source"
             ? "bg-[rgba(44,100,67,0.92)] text-white"
@@ -127,7 +100,7 @@ export function GoogleHeatmapOverlay({
                 <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.85),rgba(255,255,255,0))]" />
               )}
             </div>
-            
+
             <div
               className={cn(
                 "pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-background/80 px-2 py-1 text-[11px] font-medium tracking-wide shadow-sm backdrop-blur-sm transition-all",

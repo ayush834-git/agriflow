@@ -10,6 +10,7 @@ import type {
   DashboardRoute,
 } from "@/lib/dashboard";
 import { DISTRICT_POSITIONS } from "@/lib/regions-map";
+import { useI18n } from "@/lib/i18n/context";
 
 type DistrictHeatmapProps = {
   cropName: string;
@@ -36,6 +37,7 @@ export function DistrictHeatmap({
   source,
   onSelectDistrict,
 }: DistrictHeatmapProps) {
+  const { dict } = useI18n();
   const isMapReady = useIsMapReady();
   const maxPrice = Math.max(...prices.map((price) => price.modalPrice), 1);
   const maxOpportunity = Math.max(
@@ -59,18 +61,17 @@ export function DistrictHeatmap({
       <div className="relative flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-            District heatmap
+            {dict.farmer.heatmap.title}
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            {cropName} opportunity map
+            {cropName} {dict.farmer.heatmap.opportunityMap}
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-            A stitched district view for the demo build. High-energy routes glow
-            brighter, and tapping a district refocuses the route layer.
+            {dict.farmer.heatmap.desc}
           </p>
         </div>
         <div className="rounded-full border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
-          South corridor fallback map
+          {dict.farmer.heatmap.fallback}
         </div>
       </div>
 

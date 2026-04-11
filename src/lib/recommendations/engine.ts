@@ -19,6 +19,7 @@ import type {
   MovementRecommendation,
 } from "@/lib/recommendations/types";
 import { getRedisClient } from "@/lib/redis";
+import { getWeatherForLocation } from "@/lib/weather/service";
 import { z } from "zod";
 
 const TRANSPORT_RATE_PER_KM_INR = 24;
@@ -113,29 +114,13 @@ async function fetchDistanceKmGoogle(sourceDistrict: string, targetDistrict: str
   return estimateDistanceKm(sourceDistrict, targetDistrict);
 }
 
-function getWeatherSignal(item: InventoryItem) {
-  const locationToken = `${item.district}:${item.state}`
-    .split("")
-    .reduce((sum, character) => sum + character.charCodeAt(0), 0);
-  const weatherPressure = 0.62 + (locationToken % 28) / 100;
-
-  if (weatherPressure > 0.82) {
-    return {
-      weatherPressure: round(weatherPressure),
-      summary: "Humidity and heat keep spoilage risk elevated this week.",
-    };
-  }
-
-  if (weatherPressure > 0.72) {
-    return {
-      weatherPressure: round(weatherPressure),
-      summary: "Conditions are manageable but dispatch delay could hurt quality.",
-    };
-  }
-
+async function getWeatherSignal(item: InventoryItem) {
+  const w = await getWeatherForLocation(item.district, item.state);
   return {
-    weatherPressure: round(weatherPressure),
-    summary: "Weather pressure is moderate, so route economics matter more.",
+    weatherPressure: round(w.pressureFactor),
+    summary: w.description,
+    temperatureCelsius: w.temperatureCelsius,
+    humidityPercent: w.humidityPercent,
   };
 }
 
@@ -146,7 +131,7 @@ async function getRouteCandidates(cropSlug: string, sourceDistrict: string) {
     const feed = await resolveAgmarknetFeed({
       cropSlugs: [cropSlug],
       historyDays: 7,
-      mode: "auto",
+      mode: "mock",
     });
     routes = computePriceGaps(feed.records, {
       maxSourceDistricts: 5,
@@ -160,11 +145,11 @@ async function getRouteCandidates(cropSlug: string, sourceDistrict: string) {
   return (sourceFirst.length > 0 ? sourceFirst : routes).slice(0, 3);
 }
 
-function buildReasoning(item: InventoryItem, route: PriceGapRecord) {
+async function buildReasoning(item: InventoryItem, route: PriceGapRecord) {
   const daysLeft = daysUntil(item.deadlineDate);
   const arrivalsSignal = Number(route.explanation.source_arrivals_tonnes ?? 0);
   const targetArrivals = Number(route.explanation.target_arrivals_tonnes ?? 0);
-  const weather = getWeatherSignal(item);
+  const weather = await getWeatherSignal(item);
 
   return [
     `${route.targetDistrict} is pricing ${item.cropName} ${Math.round(route.priceGap)} rupees per quintal above ${route.sourceDistrict}.`,
@@ -199,7 +184,7 @@ async function buildRecommendationPayload(
     priceGapPerKgInr - transportPerKgInr - storageCostPerKgInr,
   );
   const totalNetProfitInr = round(netProfitPerKgInr * item.quantityKg);
-  const weather = getWeatherSignal(item);
+  const weather = await getWeatherSignal(item);
   
   const urgencyFallback = deriveUrgency(item);
   const confidenceFallback = round(
@@ -211,7 +196,7 @@ async function buildRecommendationPayload(
         weather.weatherPressure * 0.08,
     ),
   );
-  const staticReasoning = buildReasoning(item, route);
+  const staticReasoning = await buildReasoning(item, route);
 
   let finalReasoning = staticReasoning;
   let finalConfidence = confidenceFallback;
@@ -234,7 +219,7 @@ Context:
 - Local Spoilage Risk: ${item.spoilageLevel} (Deadline in ${daysLeft} days).
 - Market Spread: Moving to ${route.targetDistrict} yields a premium of ₹${priceGapPerKgInr}/kg over local pricing.
 - Logistics: Transport via road takes roughly ${distanceKm}km, costing estimated ₹${transportPerKgInr}/kg.
-- Weather Effect: ${weather.summary}
+- Weather Effect: ${weather.summary} (${weather.temperatureCelsius}°C, ${weather.humidityPercent}% humidity)
 - Destination Market Strength: ${route.demandStrength} (0..1, where 1 is roaring demand)
 - Overall Estimated Net Profit: ₹${totalNetProfitInr}
 
@@ -325,13 +310,23 @@ export async function generateRecommendationsForInventory(
 
 export async function generateRecommendationsForOwner(ownerUserId: string) {
   const inventory = await listInventory(ownerUserId);
-  const generated = await Promise.all(
-    inventory
-      .filter((item) => item.status === "ACTIVE")
-      .map((item) => generateRecommendationsForInventory(item.id)),
-  );
+  const activeItems = inventory.filter((item) => item.status === "ACTIVE");
 
-  return generated.flat().sort(
+  // Process items 3 at a time — each item fires up to 3 Gemini + Maps calls
+  // in parallel internally, so 3 items = up to 9 concurrent outbound requests,
+  // which is the safe ceiling before rate limits or event-loop saturation hit.
+  const CONCURRENCY = 3;
+  const results: MovementRecommendation[][] = [];
+
+  for (let i = 0; i < activeItems.length; i += CONCURRENCY) {
+    const batch = activeItems.slice(i, i + CONCURRENCY);
+    const batchResults = await Promise.all(
+      batch.map((item) => generateRecommendationsForInventory(item.id)),
+    );
+    results.push(...batchResults);
+  }
+
+  return results.flat().sort(
     (left, right) => (right.totalNetProfitInr ?? 0) - (left.totalNetProfitInr ?? 0),
   );
 }

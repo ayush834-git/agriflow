@@ -23,6 +23,7 @@ import type {
   SpoilageScoreResult,
 } from "@/lib/inventory/types";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 
 type InventoryManagerProps = {
   initialInventory: InventoryItem[];
@@ -84,6 +85,7 @@ export function InventoryManager({
   ownerUserId,
   onInventoryCreated,
 }: InventoryManagerProps) {
+  const { dict } = useI18n();
   const [inventory, setInventory] = useState(initialInventory);
   const [preview, setPreview] = useState<SpoilageScoreResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -180,21 +182,21 @@ export function InventoryManager({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-              Inventory board
+              {dict.fpo.inventoryBoard.title}
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-              My inventory and spoilage watch
+              {dict.fpo.inventoryBoard.subtitle}
             </h2>
           </div>
           <div className="flex gap-3 text-sm text-muted-foreground">
             <div className="rounded-[1.2rem] border border-border/70 bg-background/60 px-4 py-3">
-              {inventory.length} lots
+              {inventory.length} {dict.fpo.inventoryBoard.lots}
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-background/60 px-4 py-3">
               {formatQuantity(inventoryMetrics.totalQty)} kg
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-background/60 px-4 py-3">
-              {inventoryMetrics.urgentLots} urgent
+              {inventoryMetrics.urgentLots} {dict.fpo.inventoryBoard.urgent}
             </div>
           </div>
         </div>
@@ -203,11 +205,11 @@ export function InventoryManager({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Crop</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Deadline</TableHead>
-                <TableHead>Risk</TableHead>
+                <TableHead>{dict.fpo.inventoryBoard.headers.crop}</TableHead>
+                <TableHead>{dict.fpo.inventoryBoard.headers.quantity}</TableHead>
+                <TableHead>{dict.fpo.inventoryBoard.headers.location}</TableHead>
+                <TableHead>{dict.fpo.inventoryBoard.headers.deadline}</TableHead>
+                <TableHead>{dict.fpo.inventoryBoard.headers.risk}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -215,9 +217,12 @@ export function InventoryManager({
                 <TableRow key={item.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{item.cropName}</p>
+                      <p className="font-medium">{dict.crops?.[item.cropSlug as keyof typeof dict.crops] ?? item.cropName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {item.storageType ?? "storage"}
+                        {item.storageType === "cold storage" ? dict.fpo.inventoryBoard.coldStorageType
+                        : item.storageType === "ventilated warehouse" ? dict.fpo.inventoryBoard.ventilated
+                        : item.storageType === "ambient shed" ? dict.fpo.inventoryBoard.ambient
+                        : (item.storageType ?? "storage")}
                       </p>
                     </div>
                   </TableCell>
@@ -237,10 +242,12 @@ export function InventoryManager({
                           riskBadgeClasses(item.spoilageLevel),
                         )}
                       >
-                        {item.spoilageLevel}
+                        {item.spoilageLevel === "CRITICAL" ? "🔴 " + dict.fpo.inventoryBoard.urgent
+                          : item.spoilageLevel === "HIGH" ? "🟠 " + dict.fpo.inventoryBoard.urgent
+                          : item.spoilageLevel}
                       </Badge>
                       <p className="text-xs text-muted-foreground">
-                        score {item.spoilageScore.toFixed(0)}
+                        {dict.common.routeScore} {item.spoilageScore.toFixed(0)}
                       </p>
                     </div>
                   </TableCell>
@@ -257,9 +264,9 @@ export function InventoryManager({
             <PackagePlus className="size-5" />
           </div>
           <div>
-            <p className="text-sm font-medium">Add inventory</p>
+            <p className="text-sm font-medium">{dict.fpo.inventoryBoard.addTitle}</p>
             <p className="text-sm text-muted-foreground">
-              Estimate spoilage risk before saving the lot.
+              {dict.fpo.inventoryBoard.addDesc}
             </p>
           </div>
         </div>
@@ -267,7 +274,7 @@ export function InventoryManager({
         <div className="mt-5 space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="inventory-crop">
-              Crop
+              {dict.fpo.inventoryBoard.headers.crop}
             </label>
             <select
               id="inventory-crop"
@@ -277,7 +284,7 @@ export function InventoryManager({
             >
               {TARGET_CROPS.map((crop) => (
                 <option key={crop.slug} value={crop.slug}>
-                  {crop.name}
+                  {dict.crops?.[crop.slug as keyof typeof dict.crops] ?? crop.name}
                 </option>
               ))}
             </select>
@@ -286,7 +293,7 @@ export function InventoryManager({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="inventory-quantity">
-                Quantity (kg)
+                {dict.fpo.inventoryBoard.quantityKg}
               </label>
               <Input
                 id="inventory-quantity"
@@ -297,7 +304,7 @@ export function InventoryManager({
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="inventory-deadline">
-                Deadline
+                {dict.fpo.inventoryBoard.headers.deadline}
               </label>
               <Input
                 id="inventory-deadline"
@@ -311,7 +318,7 @@ export function InventoryManager({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="inventory-district">
-                District
+                {dict.fpo.inventoryBoard.district}
               </label>
               <select
                 id="inventory-district"
@@ -328,7 +335,7 @@ export function InventoryManager({
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="inventory-storage">
-                Storage type
+                {dict.fpo.inventoryBoard.storageType}
               </label>
               <select
                 id="inventory-storage"
@@ -336,24 +343,30 @@ export function InventoryManager({
                 value={storageType}
                 onChange={(event) => setStorageType(event.target.value)}
               >
-                {STORAGE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
+                {STORAGE_OPTIONS.map((option) => {
+                  let translatedOption = option;
+                  if (option === "cold storage") translatedOption = dict.fpo.inventoryBoard.coldStorageType;
+                  if (option === "ventilated warehouse") translatedOption = dict.fpo.inventoryBoard.ventilated;
+                  if (option === "ambient shed") translatedOption = dict.fpo.inventoryBoard.ambient;
+                  return (
+                    <option key={option} value={option}>
+                      {translatedOption}
+                    </option>
+                  )
+                })}
               </select>
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="inventory-location">
-              Storage location
+              {dict.fpo.inventoryBoard.storageLocation}
             </label>
             <Input
               id="inventory-location"
               value={storageLocationName}
               onChange={(event) => setStorageLocationName(event.target.value)}
-              placeholder="Warehouse name or yard"
+              placeholder={dict.fpo.inventoryBoard.warehouseName}
             />
           </div>
 
@@ -432,7 +445,7 @@ export function InventoryManager({
               onClick={() => startPreviewTransition(() => void previewRisk())}
             >
               <ThermometerSun className="size-4" />
-              {previewPending ? "Checking..." : "Preview risk"}
+              {previewPending ? dict.fpo.coldStorage.planning : dict.fpo.inventoryBoard.headers.risk}
             </Button>
             <Button
               type="button"
@@ -440,7 +453,7 @@ export function InventoryManager({
               onClick={() => startSaveTransition(() => void saveInventory())}
             >
               <AlertTriangle className="size-4" />
-              {savePending ? "Saving..." : "Save inventory"}
+              {savePending ? dict.fpo.coldStorage.planning : dict.fpo.inventoryBoard.addTitle}
             </Button>
           </div>
 

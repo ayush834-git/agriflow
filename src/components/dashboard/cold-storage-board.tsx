@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { InventoryItem } from "@/lib/inventory/types";
 import type { MovementRecommendation } from "@/lib/recommendations/types";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 
 type ColdStorageBoardProps = {
   inventory: InventoryItem[];
@@ -50,6 +51,7 @@ export function ColdStorageBoard({
   const [error, setError] = useState<string | null>(null);
   const [activeInventoryId, setActiveInventoryId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { dict } = useI18n();
 
   return (
     <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_30px_90px_-64px_rgba(29,77,50,0.45)]">
@@ -58,10 +60,9 @@ export function ColdStorageBoard({
           <Clock3 className="size-5" />
         </div>
         <div>
-          <p className="text-sm font-medium">Cold storage deadline board</p>
+          <p className="text-sm font-medium">{dict.fpo.coldStorage.title}</p>
           <p className="text-sm text-muted-foreground">
-            Sorted by deadline so emergency movement plans can be generated in one
-            click.
+            {dict.fpo.coldStorage.desc}
           </p>
         </div>
       </div>
@@ -92,7 +93,7 @@ export function ColdStorageBoard({
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">{item.cropName}</p>
+                        <p className="font-medium">{dict.crops?.[item.cropSlug as keyof typeof dict.crops] ?? item.cropName}</p>
                         <Badge className="border border-white/0 bg-white/70 text-foreground">
                           {item.quantityKg.toLocaleString("en-IN")} kg
                         </Badge>
@@ -105,7 +106,7 @@ export function ColdStorageBoard({
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                       <div className="space-y-2">
                         <div className="text-sm text-muted-foreground">
-                          {daysLeft} day(s) left · risk {item.spoilageScore.toFixed(0)}
+                          {daysLeft} {dict.fpo.coldStorage.daysLeft} · {dict.fpo.coldStorage.risk} {item.spoilageScore.toFixed(0)}
                         </div>
                         <AiConfidenceBadge confidence={spoilage?.confidence} />
                       </div>
@@ -143,12 +144,12 @@ export function ColdStorageBoard({
                         {isPending && activeInventoryId === item.id ? (
                           <>
                             <LoaderCircle className="size-4 animate-spin" />
-                            Planning
+                            {dict.fpo.coldStorage.planning}
                           </>
                         ) : (
                           <>
                             <Siren className="size-4" />
-                            Emergency movement plan
+                            {dict.fpo.coldStorage.emergencyPlan}
                           </>
                         )}
                       </Button>
@@ -156,7 +157,7 @@ export function ColdStorageBoard({
                   </div>
                   <ExplainabilityPanel
                     className="mt-4"
-                    title="Why this lot is urgent"
+                    title={dict.fpo.coldStorage.whyUrgent}
                     summary={
                       spoilage?.summary ??
                       "This urgency is based on the spoilage model and deadline pressure."

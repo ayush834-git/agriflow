@@ -15,11 +15,15 @@ import {
 
 import { AiConfidenceBadge } from "@/components/dashboard/ai-confidence-badge";
 import { AlertsReportsPanel } from "@/components/dashboard/alerts-reports-panel";
+import { BestTimeToSell } from "@/components/dashboard/best-time-to-sell";
 import { DistrictHeatmap } from "@/components/dashboard/district-heatmap";
 import { ExplainabilityPanel } from "@/components/dashboard/explainability-panel";
 import { FpoDirectoryMap } from "@/components/dashboard/fpo-directory-map";
 import { ListingManager } from "@/components/dashboard/listing-manager";
 import { MarketPriceChart } from "@/components/dashboard/market-price-chart";
+import { MyEarnings } from "@/components/dashboard/my-earnings";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { PageTransition } from "@/components/layout/page-transition";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +32,7 @@ import type { MarketMatch } from "@/lib/matches/types";
 import type { AppNotification } from "@/lib/notifications/types";
 import { cn } from "@/lib/utils";
 import type { SupportedLanguage } from "@/lib/whatsapp/types";
+import { useI18n } from "@/lib/i18n/context";
 
 type FarmerDashboardClientProps = {
   data: FarmerDashboardData;
@@ -87,6 +92,8 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
     data.profile.preferredLanguage,
   );
   const [languageStatus, setLanguageStatus] = useState<string | null>(null);
+  const { dict } = useI18n();
+
   const deferredCropSlug = useDeferredValue(selectedCropSlug);
   const deferredDistrict = useDeferredValue(selectedDistrict);
   const activeCrop =
@@ -129,9 +136,10 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
     null;
 
   return (
+    <PageTransition pageKey="farmer-dashboard">
     <main
       className={cn(
-        "mx-auto flex w-full max-w-[1500px] flex-col gap-6 px-4 py-5 transition-opacity sm:px-6 lg:px-8",
+        "mx-auto flex w-full max-w-[1500px] flex-col gap-6 px-4 py-5 pb-20 transition-opacity sm:px-6 sm:pb-5 lg:px-8",
         isPending ? "opacity-95" : "opacity-100",
       )}
       aria-busy={isPending}
@@ -158,16 +166,13 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
 
             <div className="space-y-3">
               <p className="text-sm font-medium uppercase tracking-[0.22em] text-white/72">
-                Farmer dashboard
+                {dict.farmer.dashboardTitle}
               </p>
               <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                Follow prices, publish listings, and react fast when buyers respond.
+                {dict.farmer.heroHeadline}
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
-                The farmer side now carries the matching and alert loop plus FPO
-                discovery, forecast support, and explainability: route intelligence,
-                listing creation, match notifications, and direct links to nearby
-                organizations before external wiring lands.
+                {dict.farmer.heroSub}
               </p>
             </div>
 
@@ -196,7 +201,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
             <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                Farmer
+                {dict.farmer.profile}
               </p>
               <p className="mt-3 text-2xl font-semibold">{data.profile.fullName}</p>
               <p className="mt-2 text-sm text-white/70">
@@ -208,23 +213,20 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
             <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                Local quote
+                {dict.farmer.localQuote}
               </p>
               <p className="mt-3 text-2xl font-semibold">
-                {localPrice ? formatCurrency(localPrice.modalPrice) : "No quote"}
+                {localPrice ? formatCurrency(localPrice.modalPrice) : dict.farmer.market.noQuote}
               </p>
               <p className="mt-2 text-sm text-white/70">
-                {activeCrop.name} in the latest mandi snapshot
+                {dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ?? activeCrop.name}
               </p>
             </div>
             <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                Match inbox
+                {dict.farmer.matchInbox}
               </p>
               <p className="mt-3 text-2xl font-semibold">{matches.length}</p>
-              <p className="mt-2 text-sm text-white/70">
-                {notifications.length} recent notifications
-              </p>
             </div>
           </div>
         </div>
@@ -236,7 +238,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             <div className="flex items-start gap-3">
               <BellRing className="mt-0.5 size-4 shrink-0" />
               <div className="space-y-1">
-                <p className="font-medium">You have a match for {activeMatch.cropName}.</p>
+                <p className="font-medium">You have a match for {dict.crops?.[activeMatch.cropSlug as keyof typeof dict.crops] ?? activeMatch.cropName}.</p>
                 <p>
                   Buyer interest is live for{" "}
                   {activeMatch.quantityKg?.toLocaleString("en-IN") ?? "--"} kg. You can
@@ -284,7 +286,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 })
               }
             >
-              {isActionPending ? "Accepting..." : "Accept in app"}
+              {isActionPending ? dict.farmer.accepting : dict.farmer.acceptMatch}
             </Button>
           </div>
           {acceptanceMessage ? <p className="mt-3">{acceptanceMessage}</p> : null}
@@ -328,7 +330,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-lg font-semibold">{crop.name}</p>
+                  <p className="text-lg font-semibold">{dict.crops?.[crop.slug as keyof typeof dict.crops] ?? crop.name}</p>
                   <ArrowUpRight
                     className={cn(
                       "size-4 transition-transform duration-300",
@@ -337,11 +339,11 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                   />
                 </div>
                 <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-                  <p>Average {formatCurrency(crop.averageModalPrice)}</p>
+                  <p>{dict.common.average} {formatCurrency(crop.averageModalPrice)}</p>
                   <p>
-                    Best corridor{" "}
+                    {dict.common.bestCorridor}{" "}
                     <span className="font-medium text-foreground">
-                      {topRoute ? formatCurrency(topRoute.priceGap) : "No spread"}
+                      {topRoute ? formatCurrency(topRoute.priceGap) : dict.farmer.market.noSpread}
                     </span>
                   </p>
                 </div>
@@ -372,7 +374,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-                  Selected district
+                  {dict.farmer.decisionBoard}
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight">
                   {deferredDistrict}
@@ -385,48 +387,43 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
 
             <div className="mt-5 space-y-4 text-sm">
               <div className="border-b border-border/60 pb-4">
-                <p className="text-muted-foreground">Current local quote</p>
+                <p className="text-muted-foreground">{dict.farmer.market.currentQuote}</p>
                 <p className="mt-2 text-2xl font-semibold">
-                  {localPrice ? formatCurrency(localPrice.modalPrice) : "No quote"}
-                </p>
-                <p className="mt-1 text-muted-foreground">
-                  {localPrice
-                    ? `Market date ${localPrice.marketDate}`
-                    : "Waiting for the next feed snapshot."}
+                  {localPrice ? formatCurrency(localPrice.modalPrice) : dict.farmer.market.noQuote}
                 </p>
               </div>
 
               <div className="border-b border-border/60 pb-4">
-                <p className="text-muted-foreground">Best destination market</p>
+                <p className="text-muted-foreground">{dict.farmer.market.bestDestination}</p>
                 <p className="mt-2 text-xl font-semibold">
-                  {bestRoute ? bestRoute.targetDistrict : "No strong destination yet"}
+                  {bestRoute ? bestRoute.targetDistrict : dict.farmer.market.noSpread}
                 </p>
                 <p className="mt-1 text-muted-foreground">
                   {bestRoute
                     ? `${bestRoute.targetState} at ${formatCurrency(bestRoute.targetModalPrice)}`
-                    : "Spread too narrow in this crop right now."}
+                    : null}
                 </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                 <div className="rounded-[1.35rem] border border-border/70 bg-background/65 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Highest quote
+                    {dict.farmer.market.highestQuote}
                   </p>
                   <p className="mt-2 text-lg font-semibold">
                     {highestPrice
                       ? `${highestPrice.district} ${formatCurrency(highestPrice.modalPrice)}`
-                      : "No quote"}
+                      : dict.farmer.market.noQuote}
                   </p>
                 </div>
                 <div className="rounded-[1.35rem] border border-border/70 bg-background/65 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Average route spread
+                    {dict.farmer.market.averageSpread}
                   </p>
                   <p className="mt-2 text-lg font-semibold">
                     {activeCrop.routes.length > 0
                       ? formatCurrency(averageGap)
-                      : "No routes"}
+                      : "0"}
                   </p>
                 </div>
               </div>
@@ -461,14 +458,13 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5">
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-medium">Language sync</p>
+                <p className="text-sm font-medium">{dict.farmer.languageSync}</p>
                 <p className="text-sm text-muted-foreground">
-                  Change the farmer language here and future WhatsApp alerts will
-                  follow the same preference.
+                  {dict.farmer.languageSyncDesc}
                 </p>
               </div>
               <label className="space-y-2 text-sm font-medium" htmlFor="farmer-language">
-                <span>Preferred language</span>
+                <span>{dict.farmer.preferredLanguage}</span>
                 <select
                   id="farmer-language"
                   className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -530,10 +526,10 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-                Decision board
+                {dict.farmer.decisionBoard}
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                Operating detail for {activeCrop.name}
+                {dict.farmer.cropDetail} {dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ?? activeCrop.name}
               </h2>
             </div>
             <TabsList
@@ -541,11 +537,13 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
               className="bg-transparent p-0"
               aria-label="Farmer dashboard sections"
             >
-              <TabsTrigger value="routes">Route board</TabsTrigger>
-              <TabsTrigger value="prices">Price ladder</TabsTrigger>
-              <TabsTrigger value="listings">My listings</TabsTrigger>
-              <TabsTrigger value="fpos">Find FPO</TabsTrigger>
-              <TabsTrigger value="alerts">Alerts</TabsTrigger>
+              <TabsTrigger value="routes">{dict.farmer.tabs.whereToSell}</TabsTrigger>
+              <TabsTrigger value="prices">{dict.farmer.tabs.marketPrices}</TabsTrigger>
+              <TabsTrigger value="forecast">{dict.farmer.tabs.forecast}</TabsTrigger>
+              <TabsTrigger value="listings">{dict.farmer.tabs.listings}</TabsTrigger>
+              <TabsTrigger value="earnings">{dict.farmer.tabs.earnings}</TabsTrigger>
+              <TabsTrigger value="fpos">{dict.farmer.tabs.findFpo}</TabsTrigger>
+              <TabsTrigger value="alerts">{dict.farmer.tabs.alerts}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -575,18 +573,15 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                     </p>
                   </div>
                   <div className="space-y-1 text-muted-foreground">
-                    <p>Source {formatCurrency(route.sourceModalPrice)}</p>
-                    <p>Target {formatCurrency(route.targetModalPrice)}</p>
+                    <p>{dict.common.source} {formatCurrency(route.sourceModalPrice)}</p>
+                    <p>{dict.common.target} {formatCurrency(route.targetModalPrice)}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="font-medium">{formatCurrency(route.priceGap)}</p>
-                    <p className="text-muted-foreground">
-                      score {route.opportunityScore.toFixed(0)}
-                    </p>
+                    <p className="font-medium">{formatCurrency(route.priceGap)} {dict.farmer.routes.spread}</p>
                   </div>
                   <div className="lg:col-span-3">
                     <ExplainabilityPanel
-                      title="Why this route"
+                      title={dict.farmer.routes.whyThisRoute}
                       summary="The route score combines demand strength, transport feasibility, and the local price spread."
                       reasons={[
                         `Demand strength ${route.demandStrength.toFixed(2)} and transport feasibility ${route.transportFeasibility.toFixed(2)} support this corridor.`,
@@ -634,6 +629,18 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
           </TabsContent>
 
+          <TabsContent value="forecast">
+            <div className="mt-4">
+              <BestTimeToSell
+                cropName={activeCrop.name}
+                cropSlug={activeCrop.slug}
+                prices={activeCrop.prices}
+                localDistrict={deferredDistrict}
+                source={data.source}
+              />
+            </div>
+          </TabsContent>
+
           <TabsContent value="listings">
             <div className="mt-4">
               <ListingManager
@@ -641,6 +648,18 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 farmerUserId={data.profile.id}
                 district={data.profile.district ?? deferredDistrict}
                 state={data.profile.state ?? localState}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="earnings">
+            <div className="mt-4">
+              <MyEarnings
+                matches={matches}
+                cropName={activeCrop.name}
+                prices={activeCrop.prices}
+                routes={activeCrop.routes}
+                localDistrict={deferredDistrict}
               />
             </div>
           </TabsContent>
@@ -667,5 +686,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
         </Tabs>
       </section>
     </main>
+    <MobileBottomNav variant="farmer" />
+    </PageTransition>
   );
 }

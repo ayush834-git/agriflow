@@ -126,7 +126,7 @@ function round(value: number) {
 async function buildSharedDashboardData(): Promise<SharedDashboardData> {
   const feed = await resolveAgmarknetFeed({
     historyDays: 7,
-    mode: "auto",
+    mode: "mock",
   });
   const computedRoutes = computePriceGaps(feed.records, {
     maxSourceDistricts: 5,

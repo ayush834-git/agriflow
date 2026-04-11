@@ -18,6 +18,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/health",
   "/api/cron/(.*)",
   "/api/whatsapp/(.*)",
+  "/api/voice/(.*)",
   "/api/sms/(.*)",
   "/api/demo/(.*)",
   "/api/prices/(.*)",
@@ -32,7 +33,7 @@ function hasClerkKeys() {
   );
 }
 
-export default function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   // When Clerk is not configured, pass through (demo mode)
   if (!hasClerkKeys()) {
     return NextResponse.next();

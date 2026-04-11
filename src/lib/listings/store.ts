@@ -188,7 +188,7 @@ function filterListings(listings: ListingItem[], filters: ListingSearchFilters =
 }
 
 export async function listListings(filters: ListingSearchFilters = {}) {
-  if (!hasSupabaseWriteConfig()) {
+  if (!hasSupabaseWriteConfig() || (filters.farmerUserId && filters.farmerUserId.startsWith("demo-"))) {
     return filterListings(Array.from(getListingStore().values()), filters);
   }
 

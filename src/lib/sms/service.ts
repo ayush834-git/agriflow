@@ -191,7 +191,7 @@ export async function processSmsMessage(
 ): Promise<SmsBotResult> {
   const registeredUser = await findUserByPhone(incomingMessage.from);
   const fallbackLanguage = registeredUser?.preferredLanguage ?? "en";
-  const intentResult = classifyIntent(
+  const intentResult = await classifyIntent(
     {
       from: incomingMessage.from,
       body: incomingMessage.body,

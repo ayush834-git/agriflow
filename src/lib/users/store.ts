@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { getTargetCropOrThrow } from "@/lib/agmarknet/catalog";
 import { hasSupabaseWriteConfig } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
@@ -286,6 +287,70 @@ export async function listFarmerCropsForUser(userId: string) {
   }
 
   return ((data ?? []) as PersistedFarmerCropRow[]).map(mapFarmerCropRow);
+}
+
+export async function upsertFarmerCropAlertThreshold(params: {
+  userId: string;
+  cropSlug: string;
+  threshold: number;
+  district?: string | null;
+}) {
+  const user = await findUserById(params.userId);
+  const crop = getTargetCropOrThrow(params.cropSlug);
+  const district = params.district ?? user?.district ?? null;
+
+  if (!hasSupabaseWriteConfig() || params.userId.startsWith("demo-")) {
+    const current = [...(getFarmerCropStore().get(params.userId) ?? [])];
+    const existingIndex = current.findIndex(
+      (entry) =>
+        entry.cropSlug === crop.slug &&
+        (entry.district ?? null) === district,
+    );
+    const nextEntry: FarmerCropPreference = {
+      cropSlug: crop.slug,
+      cropName: crop.name,
+      district: district ?? undefined,
+      alertThreshold: params.threshold,
+    };
+
+    if (existingIndex >= 0) {
+      current[existingIndex] = {
+        ...current[existingIndex],
+        ...nextEntry,
+      };
+    } else {
+      current.push(nextEntry);
+    }
+
+    getFarmerCropStore().set(params.userId, current);
+    return nextEntry;
+  }
+
+  const admin = getSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("farmer_crops")
+    .upsert(
+      {
+        user_id: params.userId,
+        crop_slug: crop.slug,
+        crop_name: crop.name,
+        district,
+        alert_threshold: params.threshold,
+        is_active: true,
+      } as never,
+      {
+        onConflict: "user_id,crop_slug,district",
+        ignoreDuplicates: false,
+      },
+    )
+    .select("user_id, crop_slug, crop_name, district, alert_threshold")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to save farmer crop alert threshold: ${error.message}`);
+  }
+
+  return mapFarmerCropRow(data as PersistedFarmerCropRow);
 }
 
 export async function listFarmersWithCrops() {

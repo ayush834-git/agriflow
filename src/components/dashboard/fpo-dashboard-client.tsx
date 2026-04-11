@@ -19,6 +19,9 @@ import type { MarketMatch } from "@/lib/matches/types";
 import type { AppNotification } from "@/lib/notifications/types";
 import type { MovementRecommendation } from "@/lib/recommendations/types";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { PageTransition } from "@/components/layout/page-transition";
 
 type FpoDashboardClientProps = {
   data: FpoDashboardData;
@@ -41,6 +44,7 @@ function formatGeneratedAt(value: string) {
 
 export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   const [isPending, startTransition] = useTransition();
+  const { dict } = useI18n();
   const [selectedTab, setSelectedTab] = useState("overview");
   const [selectedCropSlug, setSelectedCropSlug] = useState(data.defaultCropSlug);
   const [selectedDistrict, setSelectedDistrict] = useState(
@@ -117,9 +121,10 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   }
 
   return (
+    <PageTransition pageKey="fpo-dashboard">
     <main
       className={cn(
-        "mx-auto flex w-full max-w-[1540px] flex-col gap-6 px-4 py-5 transition-opacity sm:px-6 lg:px-8",
+        "mx-auto flex w-full max-w-[1540px] flex-col gap-6 px-4 py-5 pb-20 transition-opacity sm:px-6 sm:pb-5 lg:px-8",
         isPending ? "opacity-95" : "opacity-100",
       )}
       aria-busy={isPending}
@@ -129,29 +134,27 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="border-white/12 bg-white/10 text-white hover:bg-white/10">
-                Phase 10 workspace
+                {dict.fpo.badges.phase}
               </Badge>
               <Badge className="border-white/12 bg-white/8 text-white/82 hover:bg-white/8">
-                {data.source === "mock" ? "Demo-safe market stream" : "Live route signal"}
+                {data.source === "mock" ? dict.fpo.badges.demoSignal : dict.fpo.badges.liveSignal}
               </Badge>
               {data.owner.isDemo ? (
                 <Badge className="border-white/12 bg-white/8 text-white/82 hover:bg-white/8">
-                  Demo role gate until Clerk is wired
+                  Demo Auth
                 </Badge>
               ) : null}
             </div>
 
             <div className="space-y-3">
               <p className="text-sm font-medium uppercase tracking-[0.22em] text-white/68">
-                FPO operations dashboard
+                {dict.fpo.dashboardTitle}
               </p>
               <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                Run movement plans, contact farmers, and keep storage risk under control.
+                {dict.fpo.heroHeadline}
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
-                This workspace now carries the guide’s full operations chain: heatmap
-                discovery, route recommendations, buyer matching, daily alerts, and
-                cold-storage response loops.
+                {dict.fpo.heroSub}
               </p>
             </div>
 
@@ -162,7 +165,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
                 className="border-white/10 bg-white text-[rgb(33,79,56)] hover:bg-white/92"
               >
                 <Link href="/register/fpo">
-                  Register FPO profile
+                  {dict.nav.register} FPO
                   <ChevronRight className="size-4" />
                 </Link>
               </Button>
@@ -172,7 +175,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
                 variant="outline"
                 className="border-white/18 bg-transparent text-white hover:bg-white/8 hover:text-white"
               >
-                <Link href="/dashboard">Farmer view</Link>
+                <Link href="/dashboard">{dict.nav.farmer}</Link>
               </Button>
             </div>
           </div>
@@ -180,36 +183,36 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                Workspace
+                {dict.fpo.metrics.workspace}
               </p>
               <p className="mt-3 text-2xl font-semibold">
                 {data.owner.organizationName}
               </p>
               <p className="mt-2 text-sm text-white/72">
-                Updated {formatGeneratedAt(data.generatedAt)}
+                {dict.fpo.badges.updated} {formatGeneratedAt(data.generatedAt)}
               </p>
             </div>
             <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                Active inventory
+                {dict.fpo.inventory}
               </p>
               <p className="mt-3 text-2xl font-semibold">
                 {derivedMetrics.activeInventoryCount}
               </p>
               <p className="mt-2 text-sm text-white/72">
-                {derivedMetrics.atRiskQuantityKg.toLocaleString("en-IN")} kg at risk
+                {derivedMetrics.atRiskQuantityKg.toLocaleString("en-IN")} {dict.fpo.metrics.kgAtRisk}
               </p>
             </div>
             <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                Strongest corridor
+                {dict.fpo.metrics.strongestCorridor}
               </p>
               <p className="mt-3 text-2xl font-semibold">
                 {strongestRoute ? formatCurrency(strongestRoute.priceGap) : "No route"}
               </p>
               <p className="mt-2 text-sm text-white/72">
                 {strongestRoute
-                  ? `${strongestRoute.sourceDistrict} to ${strongestRoute.targetDistrict}`
+                  ? `${strongestRoute.sourceDistrict} ➔ ${strongestRoute.targetDistrict}`
                   : "Waiting for stronger cross-district spread"}
               </p>
             </div>
@@ -258,7 +261,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-lg font-semibold">{crop.name}</p>
+                  <p className="text-lg font-semibold">{dict.crops?.[crop.slug as keyof typeof dict.crops] ?? crop.name}</p>
                   <ArrowUpRight
                     className={cn(
                       "size-4 transition-transform duration-300",
@@ -267,11 +270,11 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
                   />
                 </div>
                 <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-                  <p>Route score {topRoute?.opportunityScore.toFixed(0) ?? "--"}</p>
+                  <p>{dict.common.routeScore} {topRoute?.opportunityScore.toFixed(0) ?? "--"}</p>
                   <p>
-                    Best gap{" "}
+                    {dict.common.bestGap}{" "}
                     <span className="font-medium text-foreground">
-                      {topRoute ? formatCurrency(topRoute.priceGap) : "No spread"}
+                      {topRoute ? formatCurrency(topRoute.priceGap) : dict.farmer.market.noSpread}
                     </span>
                   </p>
                 </div>
@@ -301,38 +304,38 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
               <Waves className="size-5" />
             </div>
             <div>
-              <p className="text-sm font-medium">Live signal shape</p>
+              <p className="text-sm font-medium">{dict.fpo.metrics.liveSignalShape}</p>
               <p className="text-sm text-muted-foreground">
-                Recommendation margin updates against the same route engine as the farmer view.
+                {dict.fpo.metrics.recommendationMargin}
               </p>
             </div>
           </div>
         </div>
         <div className="rounded-[1.7rem] border border-border/70 bg-card/88 p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Urgent lots
+            {dict.fpo.metrics.urgentLots}
           </p>
           <p className="mt-2 text-3xl font-semibold">{derivedMetrics.urgentInventoryCount}</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            High and critical spoilage lots that should be moved first.
+            {dict.fpo.metrics.urgentDesc}
           </p>
         </div>
         <div className="rounded-[1.7rem] border border-border/70 bg-card/88 p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Route plans
+            {dict.fpo.metrics.routePlans}
           </p>
           <p className="mt-2 text-3xl font-semibold">{derivedMetrics.recommendationCount}</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Stored recommendation cards across the active inventory board.
+            {dict.fpo.metrics.routeDesc}
           </p>
         </div>
         <div className="rounded-[1.7rem] border border-border/70 bg-card/88 p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Live matches
+            {dict.fpo.metrics.liveMatches}
           </p>
           <p className="mt-2 text-3xl font-semibold">{derivedMetrics.liveMatchCount}</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Farmers currently in the contact or acceptance loop.
+            {dict.fpo.metrics.liveMatchesDesc}
           </p>
         </div>
       </section>
@@ -342,10 +345,10 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-                Operations board
+                {dict.fpo.operations.board}
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                Execute movement, matching, and alerts
+                {dict.fpo.operations.subtitle}
               </h2>
             </div>
             <TabsList
@@ -353,10 +356,10 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
               className="bg-transparent p-0"
               aria-label="FPO dashboard sections"
             >
-              <TabsTrigger value="overview">Inventory</TabsTrigger>
-              <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-              <TabsTrigger value="directory">Buyer directory</TabsTrigger>
-              <TabsTrigger value="alerts">Alerts & reports</TabsTrigger>
+              <TabsTrigger value="overview">{dict.fpo.tabs.inventory}</TabsTrigger>
+              <TabsTrigger value="recommendations">{dict.fpo.tabs.recommendations}</TabsTrigger>
+              <TabsTrigger value="directory">{dict.fpo.tabs.directory}</TabsTrigger>
+              <TabsTrigger value="alerts">{dict.fpo.tabs.alerts}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -414,5 +417,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
         </Tabs>
       </section>
     </main>
+    <MobileBottomNav variant="fpo" />
+    </PageTransition>
   );
 }

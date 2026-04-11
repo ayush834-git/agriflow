@@ -11,6 +11,7 @@ import type {
 } from "@/lib/dashboard";
 import { DISTRICT_POSITIONS } from "@/lib/regions-map";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 
 type FpoHeatmapHeroProps = {
   crop: DashboardCropView;
@@ -41,6 +42,7 @@ export function FpoHeatmapHero({
   source,
   onSelectDistrict,
 }: FpoHeatmapHeroProps) {
+  const { dict } = useI18n();
   const topRoutes = crop.routes.slice(0, 5);
   const maxOpportunity = Math.max(...topRoutes.map((route) => route.opportunityScore), 1);
 
@@ -50,10 +52,10 @@ export function FpoHeatmapHero({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge className="border-white/12 bg-white/10 text-white hover:bg-white/10">
-              Heatmap hero
+              {dict.fpo.badges.heatmapHero}
             </Badge>
             <Badge className="border-white/12 bg-white/8 text-white/80 hover:bg-white/8">
-              Realtime-ready route grid
+              {dict.fpo.badges.routeGrid}
             </Badge>
             <DataFreshnessBadge
               generatedAt={generatedAt}
@@ -64,15 +66,13 @@ export function FpoHeatmapHero({
 
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.22em] text-white/62">
-              FPO movement monitor
+              {dict.fpo.heatmap.monitor}
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              {crop.name} supply flow opportunity
+              {dict.crops?.[crop.slug as keyof typeof dict.crops] ?? crop.name} {dict.fpo.heatmap.supplyFlow}
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-              Surplus districts glow green, demand centers burn warmer, and the
-              strongest cross-district routes stay in view so an operator can act
-              in seconds.
+              {dict.fpo.heatmap.desc}
             </p>
           </div>
 
@@ -179,7 +179,7 @@ export function FpoHeatmapHero({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-white/58">
-                  Selected district
+                  {dict.fpo.heatmap.selectedDistrict}
                 </p>
                 <h3 className="mt-2 text-2xl font-semibold">{selectedDistrict}</h3>
               </div>
@@ -188,8 +188,7 @@ export function FpoHeatmapHero({
               </div>
             </div>
             <p className="mt-3 text-sm leading-6 text-white/72">
-              Focus the route board around one district to inspect the strongest
-              dispatch opportunities first.
+              {dict.fpo.heatmap.focusDesc}
             </p>
           </div>
 
@@ -197,9 +196,9 @@ export function FpoHeatmapHero({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-white/58">
-                  Top opportunity routes
+                  {dict.fpo.heatmap.topRoutes}
                 </p>
-                <h3 className="mt-2 text-xl font-semibold">{crop.name} route board</h3>
+                <h3 className="mt-2 text-xl font-semibold">{dict.crops?.[crop.slug as keyof typeof dict.crops] ?? crop.name} {dict.fpo.heatmap.routeBoard}</h3>
               </div>
               <div className="flex size-10 items-center justify-center rounded-2xl bg-white/10 text-white">
                 <Radio className="size-5" />
@@ -227,7 +226,7 @@ export function FpoHeatmapHero({
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-white">
-                          {route.sourceDistrict} to {route.targetDistrict}
+                          {route.sourceDistrict} ➔ {route.targetDistrict}
                         </p>
                         <p className="mt-1 text-sm text-white/68">
                           {route.sourceState}
@@ -240,10 +239,10 @@ export function FpoHeatmapHero({
                       </Badge>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm text-white/76 sm:grid-cols-2">
-                      <p>Source {formatCurrency(route.sourceModalPrice)}</p>
-                      <p>Target {formatCurrency(route.targetModalPrice)}</p>
-                      <p>Gap {formatCurrency(route.priceGap)}</p>
-                      <p>Feasibility {route.transportFeasibility.toFixed(2)}</p>
+                      <p>{dict.common.source} {formatCurrency(route.sourceModalPrice)}</p>
+                      <p>{dict.common.target} {formatCurrency(route.targetModalPrice)}</p>
+                      <p>{dict.common.gap} {formatCurrency(route.priceGap)}</p>
+                      <p>{dict.common.feasibility} {route.transportFeasibility.toFixed(2)}</p>
                     </div>
                   </button>
                 );
@@ -259,7 +258,7 @@ export function FpoHeatmapHero({
                   onSelectDistrict(topRoutes[0]?.sourceDistrict ?? selectedDistrict)
                 }
               >
-                Jump to strongest source district
+                {dict.fpo.heatmap.jumpToBest}
                 <ChevronRight className="size-4" />
               </Button>
             </div>

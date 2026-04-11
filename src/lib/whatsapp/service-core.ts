@@ -1,4 +1,5 @@
 import { getTargetCropOrThrow } from "@/lib/agmarknet/catalog";
+import { transcribeAudioBufferWithGemini } from "@/lib/gemini-audio";
 import { getGeminiClient } from "@/lib/gemini";
 import { resolveAgmarknetFeed } from "@/lib/agmarknet/service";
 import type { NormalizedMandiPriceRecord } from "@/lib/agmarknet/types";
@@ -11,8 +12,13 @@ import {
   buildFarmerRegistrationUrl,
   formatRegistrationPrompt,
 } from "@/lib/users/registration";
-import { findUserByPhone, listFposForDistrict } from "@/lib/users/store";
+import {
+  findUserByPhone,
+  listFposForDistrict,
+  upsertFarmerCropAlertThreshold,
+} from "@/lib/users/store";
 import type { AppUser } from "@/lib/users/types";
+import { downloadTwilioMedia } from "@/lib/twilio";
 import { classifyIntent } from "@/lib/whatsapp/intents";
 import {
   getWhatsAppSession,
@@ -116,10 +122,10 @@ const NEED_CROP_TEXT: Record<SupportedLanguage, string> = {
 };
 
 const VOICE_TEXT: Record<SupportedLanguage, string> = {
-  te: "Voice note vachindi. Transcription wiring tarvata vastundi. Ippatiki crop peru type cheyyandi.",
-  hi: "Voice note mila. Transcription baad mein wire karenge. Abhi crop ka naam type kijiye.",
-  kn: "Voice note bandide. Transcription nantara wire madutteve. Iga crop hesaru type madi.",
-  en: "I received your voice note. We will wire transcription later. For now, please type the crop name.",
+  te: "Voice note clear ga ardham kaaledu. Oka sari malli voice note leda text pampandi.",
+  hi: "Voice note saaf samajh nahi aaya. Kripya dobara voice note ya text bhejiye.",
+  kn: "Voice note spashtavagi sigalilla. Dayavittu mattomme voice note athava text kalisi.",
+  en: "I could not understand that voice note clearly. Please try another voice note or send text.",
 };
 
 const MATCH_CONFIRM_TEXT: Record<SupportedLanguage, string> = {
@@ -149,6 +155,75 @@ const LISTING_PROFILE_TEXT: Record<SupportedLanguage, string> = {
   kn: "Listing create madalu nimma farmer profile alli district mattu state irabeku. /register/farmer update madi.",
   en: "Your farmer profile needs a district and state before I can create a listing. Please update /register/farmer first.",
 };
+
+const MEDIA_TEXT: Record<SupportedLanguage, string> = {
+  te: "Audio voice note pampandi leda direct ga text type cheyyandi.",
+  hi: "Kripya audio voice note bhejiye ya seedha text type kijiye.",
+  kn: "Dayavittu audio voice note kalisi athava text type madi.",
+  en: "Please send an audio voice note or just type your message.",
+};
+
+function normalizeIncomingMediaMimeType(mimeType?: string) {
+  return mimeType?.split(";")[0]?.trim().toLowerCase() ?? "";
+}
+
+function isAudioMediaType(mimeType?: string) {
+  return normalizeIncomingMediaMimeType(mimeType).startsWith("audio/");
+}
+
+async function resolveIncomingWhatsAppBody(
+  incomingMessage: IncomingWhatsAppMessage,
+  fallbackLanguage: SupportedLanguage,
+) {
+  const typedText = incomingMessage.body.trim();
+
+  if (typedText) {
+    return {
+      body: typedText,
+    };
+  }
+
+  if (incomingMessage.numMedia <= 0) {
+    return {
+      body: typedText,
+    };
+  }
+
+  if (!incomingMessage.mediaUrl || !incomingMessage.mediaContentType) {
+    return {
+      errorBody: MEDIA_TEXT[fallbackLanguage],
+    };
+  }
+
+  if (!isAudioMediaType(incomingMessage.mediaContentType)) {
+    return {
+      errorBody: MEDIA_TEXT[fallbackLanguage],
+    };
+  }
+
+  try {
+    const audioBuffer = await downloadTwilioMedia(incomingMessage.mediaUrl);
+    const transcript = await transcribeAudioBufferWithGemini(
+      audioBuffer,
+      incomingMessage.mediaContentType,
+    );
+
+    if (!transcript) {
+      return {
+        errorBody: VOICE_TEXT[fallbackLanguage],
+      };
+    }
+
+    return {
+      body: transcript,
+    };
+  } catch (error) {
+    console.warn("WhatsApp audio transcription failed.", error);
+    return {
+      errorBody: VOICE_TEXT[fallbackLanguage],
+    };
+  }
+}
 
 async function humanizeResponse(text: string, language: SupportedLanguage): Promise<string> {
   const gemini = getGeminiClient();
@@ -928,7 +1003,38 @@ export async function processWhatsAppMessage(
   const registeredUser = await findUserByPhone(incomingMessage.from);
   const fallbackLanguage =
     registeredUser?.preferredLanguage ?? session.language ?? "te";
-  const intentResult = await classifyIntent(incomingMessage, fallbackLanguage);
+  const resolvedIncomingBody = await resolveIncomingWhatsAppBody(
+    incomingMessage,
+    fallbackLanguage,
+  );
+
+  if (resolvedIncomingBody.body == null) {
+    const mediaSession = touchSession(session, {
+      ...(registeredUser
+        ? {
+            userId: registeredUser.id,
+            language: registeredUser.preferredLanguage,
+          }
+        : {}),
+      language: fallbackLanguage,
+      state: "AWAITING_TEXT_AFTER_MEDIA",
+    });
+    await saveWhatsAppSession(mediaSession);
+
+    return {
+      body: resolvedIncomingBody.errorBody ?? VOICE_TEXT[fallbackLanguage],
+      session: mediaSession,
+    };
+  }
+
+  const normalizedIncomingMessage: IncomingWhatsAppMessage = {
+    ...incomingMessage,
+    body: resolvedIncomingBody.body,
+  };
+  const intentResult = await classifyIntent(
+    normalizedIncomingMessage,
+    fallbackLanguage,
+  );
   const enrichedIntent: IntentResult = {
     ...intentResult,
     cropSlug: intentResult.cropSlug ?? session.context.lastCropSlug,
@@ -961,7 +1067,7 @@ export async function processWhatsAppMessage(
       body: formatRegistrationPrompt(
         enrichedIntent.language,
         buildFarmerRegistrationUrl({
-          phone: incomingMessage.from,
+          phone: normalizedIncomingMessage.from,
           language: enrichedIntent.language,
           source: "whatsapp",
         }),
@@ -970,22 +1076,9 @@ export async function processWhatsAppMessage(
     };
   }
 
-  if (incomingMessage.numMedia > 0 && !incomingMessage.body.trim()) {
-    nextSession = touchSession(nextSession, {
-      language: fallbackLanguage,
-      state: "AWAITING_TEXT_AFTER_MEDIA",
-    });
-    await saveWhatsAppSession(nextSession);
-
-    return {
-      body: VOICE_TEXT[fallbackLanguage],
-      session: nextSession,
-    };
-  }
-
   if (isListingFlowActive(nextSession, enrichedIntent.intent)) {
     const listingResult = await handleListingConversation({
-      message: incomingMessage,
+      message: normalizedIncomingMessage,
       session: nextSession,
       intentResult: enrichedIntent,
       registeredUser,
@@ -994,7 +1087,7 @@ export async function processWhatsAppMessage(
     return listingResult;
   }
 
-  if (looksLikeMatchAcceptance(incomingMessage.body)) {
+  if (looksLikeMatchAcceptance(normalizedIncomingMessage.body)) {
     const acceptedMatch = await acceptPendingMatchForFarmer(
       registeredUser.id,
       session.context.pendingMatchId,
@@ -1056,6 +1149,12 @@ export async function processWhatsAppMessage(
     case "SETUP_ALERT": {
       const crop = getTargetCropOrThrow(enrichedIntent.cropSlug!);
       const threshold = enrichedIntent.threshold ?? 2200;
+      await upsertFarmerCropAlertThreshold({
+        userId: registeredUser.id,
+        cropSlug: crop.slug,
+        threshold,
+        district: enrichedIntent.district ?? registeredUser.district,
+      });
       body = formatAlertReply(crop.name, threshold, enrichedIntent.language);
       nextSession = touchSession(nextSession, {
         state: "ALERT_CONFIGURED",
