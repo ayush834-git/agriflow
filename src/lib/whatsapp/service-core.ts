@@ -200,7 +200,7 @@ async function humanizeResponse(text: string, language: SupportedLanguage): Prom
   }
 
   try {
-    const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const langMap = { te: "Telugu", hi: "Hindi", kn: "Kannada", en: "English" };
     const localeName = langMap[language] ?? "English";

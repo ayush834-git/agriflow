@@ -435,6 +435,27 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
           </section>
 
+          <FarmerSettingsPanel
+            userId={data.profile.id}
+            phone={data.profile.phone}
+            initialLanguage={data.profile.preferredLanguage}
+            initialAddress={data.profile.address}
+            initialDistrict={data.profile.district}
+            initialState={data.profile.state}
+            initialCropSlugs={data.cropPreferences.map((crop) => crop.cropSlug)}
+            onLanguageUpdated={(language) => {
+              setPreferredLanguage(language);
+            }}
+          />
+
+          <section className="rounded-[1.5rem] border border-border/70 bg-card/60 p-4 mt-2">
+            <p className="text-sm font-medium">Want to change your role?</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">If you are a cooperative or aggregrator, switch to the FPO dashboard.</p>
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <Link href="/register">Change Role</Link>
+            </Button>
+          </section>
+
         </aside>
       </section>
 
@@ -461,7 +482,6 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
               <TabsTrigger value="earnings">{dict.farmer.tabs.earnings}</TabsTrigger>
               <TabsTrigger value="fpos">{dict.farmer.tabs.findFpo}</TabsTrigger>
               <TabsTrigger value="alerts">{dict.farmer.tabs.alerts}</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
           </div>
 
@@ -598,23 +618,6 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 matches={matches}
                 title="Alerts and match inbox"
                 description="Daily crop alerts, match interest, and push previews are all visible here."
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <div className="mt-4">
-              <FarmerSettingsPanel
-                userId={data.profile.id}
-                phone={data.profile.phone}
-                initialLanguage={data.profile.preferredLanguage}
-                initialAddress={data.profile.address}
-                initialDistrict={data.profile.district}
-                initialState={data.profile.state}
-                initialCropSlugs={data.cropPreferences.map((crop) => crop.cropSlug)}
-                onLanguageUpdated={(language) => {
-                  setPreferredLanguage(language);
-                }}
               />
             </div>
           </TabsContent>
