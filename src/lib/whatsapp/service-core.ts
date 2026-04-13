@@ -1035,8 +1035,10 @@ export async function processWhatsAppMessage(
     normalizedIncomingMessage,
     fallbackLanguage,
   );
+  const forcedLanguage = registeredUser?.preferredLanguage ?? intentResult.language;
   const enrichedIntent: IntentResult = {
     ...intentResult,
+    language: forcedLanguage,
     cropSlug: intentResult.cropSlug ?? session.context.lastCropSlug,
     district:
       intentResult.district ??

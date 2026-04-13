@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useDeferredValue, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useState, useTransition } from "react";
 import { ArrowUpRight, ChevronRight, ShieldAlert, Waves } from "lucide-react";
 
 import { AlertsReportsPanel } from "@/components/dashboard/alerts-reports-panel";
@@ -13,6 +13,7 @@ import { MovementRecommendationsBoard } from "@/components/dashboard/movement-re
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FpoSettingsPanel } from "@/components/settings/fpo-settings-panel";
 import type { FpoDashboardData } from "@/lib/dashboard";
 import type { InventoryItem } from "@/lib/inventory/types";
 import type { MarketMatch } from "@/lib/matches/types";
@@ -44,7 +45,7 @@ function formatGeneratedAt(value: string) {
 
 export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   const [isPending, startTransition] = useTransition();
-  const { dict } = useI18n();
+  const { dict, setLang } = useI18n();
   const [selectedTab, setSelectedTab] = useState("overview");
   const [selectedCropSlug, setSelectedCropSlug] = useState(data.defaultCropSlug);
   const [selectedDistrict, setSelectedDistrict] = useState(
@@ -87,6 +88,10 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
       (match) => match.status === "CONTACTED" || match.status === "ACCEPTED",
     ).length,
   };
+
+  useEffect(() => {
+    setLang(data.owner.preferredLanguage);
+  }, [data.owner.preferredLanguage, setLang]);
 
   if (!activeCrop) {
     return null;
@@ -339,6 +344,19 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
           </p>
         </div>
       </section>
+
+      <FpoSettingsPanel
+        userId={data.owner.id}
+        email={data.owner.email}
+        initialLanguage={data.owner.preferredLanguage}
+        initialAddress={data.owner.address}
+        initialState={data.owner.state}
+        initialOrganizationName={data.owner.organizationName}
+        initialDistrictsServed={data.owner.districtsServed}
+        initialCropsHandled={data.owner.cropsHandled}
+        initialServiceRadiusKm={data.owner.serviceRadiusKm}
+        initialServiceSummary={data.owner.serviceSummary}
+      />
 
       <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_28px_90px_-62px_rgba(30,78,50,0.45)]">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="gap-5">

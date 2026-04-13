@@ -41,26 +41,33 @@ export async function GET(
 
     const latest = latestPricesForCrop(prices, targetCrop.slug).slice(0, limit);
 
-    return NextResponse.json({
-      crop: {
-        slug: targetCrop.slug,
-        name: targetCrop.name,
+    return NextResponse.json(
+      {
+        crop: {
+          slug: targetCrop.slug,
+          name: targetCrop.name,
+        },
+        source,
+        count: latest.length,
+        prices: latest.map((record) => ({
+          district: record.district,
+          state: record.state,
+          mandiName: record.mandiName,
+          marketDate: record.marketDate,
+          minPrice: record.minPrice,
+          maxPrice: record.maxPrice,
+          modalPrice: record.modalPrice,
+          arrivalsTonnes: record.arrivalsTonnes,
+          fetchedAt: record.fetchedAt,
+        })),
+        warnings,
       },
-      source,
-      count: latest.length,
-      prices: latest.map((record) => ({
-        district: record.district,
-        state: record.state,
-        mandiName: record.mandiName,
-        marketDate: record.marketDate,
-        minPrice: record.minPrice,
-        maxPrice: record.maxPrice,
-        modalPrice: record.modalPrice,
-        arrivalsTonnes: record.arrivalsTonnes,
-        fetchedAt: record.fetchedAt,
-      })),
-      warnings,
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      },
+    );
   } catch (error) {
     return NextResponse.json(
       {

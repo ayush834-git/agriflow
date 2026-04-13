@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { useI18n } from "@/lib/i18n/context";
-import type { SupportedLang } from "@/lib/i18n/dictionaries";
 
 const NAV_LINKS = [
   { href: "/dashboard", labelKey: "farmer" as const },
@@ -24,23 +23,21 @@ function AuthControls() {
   if (!isLoaded) return null;
 
   if (isSignedIn) {
-    return (
-      <UserButton
-        appearance={{ elements: { avatarBox: "size-8" } }}
-      />
-    );
+    return <UserButton appearance={{ elements: { avatarBox: "size-8" } }} />;
   }
 
   return (
     <SignInButton mode="redirect">
-      <Button variant="outline" size="sm">Sign in</Button>
+      <Button variant="outline" size="sm">
+        Sign in
+      </Button>
     </SignInButton>
   );
 }
 
 export function SiteNav() {
   const pathname = usePathname();
-  const { dict, lang, setLang } = useI18n();
+  const { dict, lang } = useI18n();
 
   if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
     return null;
@@ -49,7 +46,6 @@ export function SiteNav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[1500px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
         <Link
           href="/"
           className="flex items-center gap-2 font-semibold tracking-tight text-primary"
@@ -58,7 +54,6 @@ export function SiteNav() {
           <span>AgriFlow</span>
         </Link>
 
-        {/* Nav links */}
         <nav className="hidden items-center gap-1 sm:flex">
           {NAV_LINKS.map((link) => (
             <Link
@@ -76,18 +71,21 @@ export function SiteNav() {
           ))}
         </nav>
 
-        {/* Auth and Lang */}
         <div className="flex items-center gap-2">
-          <select
-            title="Language"
-            className="h-8 rounded-md border border-input bg-transparent px-2 text-xs outline-none focus-visible:border-ring"
-            value={lang}
-            onChange={(e) => setLang(e.target.value as SupportedLang)}
-          >
-            <option value="en">English</option>
-            <option value="hi">हिंदी (HI)</option>
-            <option value="te">తెలుగు (TE)</option>
-          </select>
+          <span className="rounded-md border border-input px-2 py-1 text-xs text-muted-foreground">
+            {lang.toUpperCase()}
+          </span>
+          <Button asChild variant="outline" size="sm">
+            <Link
+              href={
+                pathname.startsWith("/dashboard/fpo")
+                  ? "/dashboard/fpo"
+                  : "/dashboard"
+              }
+            >
+              Settings
+            </Link>
+          </Button>
           {hasClerkKey ? (
             <AuthControls />
           ) : (
@@ -100,3 +98,4 @@ export function SiteNav() {
     </header>
   );
 }
+

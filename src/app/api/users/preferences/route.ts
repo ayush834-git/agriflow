@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { updateUserPreferredLanguage } from "@/lib/users/store";
+import { updateUserSettings } from "@/lib/users/store";
+import { syncWhatsAppSessionLanguage } from "@/lib/whatsapp/session-store";
 import type { SupportedLanguage } from "@/lib/whatsapp/types";
 
 const SUPPORTED_LANGUAGES: SupportedLanguage[] = ["te", "hi", "kn", "en"];
@@ -32,7 +33,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await updateUserPreferredLanguage(body.userId, body.preferredLanguage);
+    const { user } = await updateUserSettings({
+      userId: body.userId,
+      preferredLanguage: body.preferredLanguage,
+      whatsappBotLanguage: body.preferredLanguage,
+    });
+
+    if (user.phone) {
+      await syncWhatsAppSessionLanguage({
+        phone: user.phone,
+        language: user.whatsappBotLanguage ?? user.preferredLanguage,
+        userId: user.id,
+      });
+    }
 
     return NextResponse.json({
       ok: true,

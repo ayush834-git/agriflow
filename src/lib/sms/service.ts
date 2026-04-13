@@ -199,8 +199,10 @@ export async function processSmsMessage(
     },
     fallbackLanguage,
   );
+  const forcedLanguage = registeredUser?.preferredLanguage ?? intentResult.language;
   const enrichedIntent: IntentResult = {
     ...intentResult,
+    language: forcedLanguage,
     district: intentResult.district ?? registeredUser?.district ?? undefined,
   };
 

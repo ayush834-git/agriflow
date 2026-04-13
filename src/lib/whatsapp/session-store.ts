@@ -1,7 +1,11 @@
 import { hasSupabaseWriteConfig } from "@/lib/env";
 import { getRedisClient } from "@/lib/redis";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import type { WhatsAppIntent, WhatsAppSession } from "@/lib/whatsapp/types";
+import type {
+  SupportedLanguage,
+  WhatsAppIntent,
+  WhatsAppSession,
+} from "@/lib/whatsapp/types";
 
 const SESSION_TTL_HOURS = 24;
 
@@ -149,4 +153,19 @@ export function touchSession(
     lastMessageAt: now.toISOString(),
     sessionExpiresAt: expiresAt.toISOString(),
   };
+}
+
+export async function syncWhatsAppSessionLanguage(options: {
+  phone: string;
+  language: SupportedLanguage;
+  userId?: string | null;
+}) {
+  const current = await getWhatsAppSession(options.phone);
+  const next = touchSession(current, {
+    language: options.language,
+    ...(options.userId !== undefined ? { userId: options.userId } : {}),
+  });
+
+  await saveWhatsAppSession(next);
+  return next;
 }

@@ -17,6 +17,8 @@ export type AppUser = {
   phone?: string | null;
   email?: string | null;
   preferredLanguage: SupportedLanguage;
+  whatsappBotLanguage?: SupportedLanguage;
+  address?: string | null;
   district?: string | null;
   state?: string | null;
   organizationName?: string | null;

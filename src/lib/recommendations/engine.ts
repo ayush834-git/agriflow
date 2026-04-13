@@ -131,7 +131,7 @@ async function getRouteCandidates(cropSlug: string, sourceDistrict: string) {
     const feed = await resolveAgmarknetFeed({
       cropSlugs: [cropSlug],
       historyDays: 7,
-      mode: "mock",
+      mode: "auto",
     });
     routes = computePriceGaps(feed.records, {
       maxSourceDistricts: 5,

@@ -10,6 +10,7 @@ import {
   Store,
 } from "lucide-react";
 
+import { useI18n } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 const FARMER_NAV_ITEMS = [
@@ -32,6 +33,7 @@ type MobileBottomNavProps = {
 
 export function MobileBottomNav({ variant = "farmer" }: MobileBottomNavProps) {
   const pathname = usePathname();
+  const { dict } = useI18n();
   const items = variant === "fpo" ? FPO_NAV_ITEMS : FARMER_NAV_ITEMS;
 
   return (
@@ -65,7 +67,19 @@ export function MobileBottomNav({ variant = "farmer" }: MobileBottomNavProps) {
                   isActive ? "scale-110 text-primary" : "",
                 )}
               />
-              <span>{item.label}</span>
+              <span>
+                {variant === "farmer" && item.href.endsWith("#alerts")
+                  ? dict.farmer.tabs.alerts
+                  : variant === "farmer" && item.href.endsWith("#listings")
+                    ? dict.farmer.tabs.listings
+                    : variant === "fpo" && item.href.endsWith("#alerts")
+                      ? dict.fpo.tabs.alerts
+                      : variant === "fpo" && item.href.endsWith("#directory")
+                        ? dict.fpo.tabs.directory
+                        : variant === "fpo" && item.href.endsWith("#overview")
+                          ? dict.fpo.tabs.inventory
+                          : item.label}
+              </span>
               {isActive ? (
                 <span className="absolute -top-0.5 h-0.5 w-8 rounded-full bg-primary" />
               ) : null}

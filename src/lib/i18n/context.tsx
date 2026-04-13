@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { DICTIONARIES, type SupportedLang } from "./dictionaries";
 
 type I18nContextType = {
@@ -11,15 +11,22 @@ type I18nContextType = {
 
 const I18nContext = createContext<I18nContextType | null>(null);
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<SupportedLang>("en");
+function getInitialLanguage(): SupportedLang {
+  if (typeof window === "undefined") {
+    return "en";
+  }
 
-  useEffect(() => {
-    const saved = localStorage.getItem("agriflow:lang") as SupportedLang;
-    if (saved && (saved === "en" || saved === "hi" || saved === "te")) {
-      setLangState(saved);
-    }
-  }, []);
+  const saved = localStorage.getItem("agriflow:lang");
+
+  if (saved === "en" || saved === "hi" || saved === "te" || saved === "kn") {
+    return saved;
+  }
+
+  return "en";
+}
+
+export function I18nProvider({ children }: { children: React.ReactNode }) {
+  const [lang, setLangState] = useState<SupportedLang>(() => getInitialLanguage());
 
   const setLang = (newLang: SupportedLang) => {
     setLangState(newLang);

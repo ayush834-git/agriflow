@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useDeferredValue, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useState, useTransition } from "react";
 import {
   ArrowUpRight,
   BellRing,
@@ -24,6 +24,7 @@ import { MarketPriceChart } from "@/components/dashboard/market-price-chart";
 import { MyEarnings } from "@/components/dashboard/my-earnings";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { PageTransition } from "@/components/layout/page-transition";
+import { FarmerSettingsPanel } from "@/components/settings/farmer-settings-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,10 +46,6 @@ type MatchAcceptResponse =
       farmerNotification: AppNotification;
       farmerMessage: string;
     }
-  | { ok: false; error?: string };
-
-type LanguagePreferenceResponse =
-  | { ok: true; user: { preferredLanguage: SupportedLanguage } }
   | { ok: false; error?: string };
 
 const LANGUAGE_OPTIONS: Array<{ value: SupportedLanguage; label: string }> = [
@@ -76,7 +73,6 @@ function formatGeneratedAt(value: string) {
 export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   const [isPending, startTransition] = useTransition();
   const [isActionPending, startActionTransition] = useTransition();
-  const [isLanguagePending, startLanguageTransition] = useTransition();
   const [selectedCropSlug, setSelectedCropSlug] = useState(data.defaultCropSlug);
   const [selectedDistrict, setSelectedDistrict] = useState(
     data.profile.district ??
@@ -91,8 +87,11 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   const [preferredLanguage, setPreferredLanguage] = useState(
     data.profile.preferredLanguage,
   );
-  const [languageStatus, setLanguageStatus] = useState<string | null>(null);
-  const { dict } = useI18n();
+  const { dict, setLang } = useI18n();
+
+  useEffect(() => {
+    setLang(data.profile.preferredLanguage);
+  }, [data.profile.preferredLanguage, setLang]);
 
   const deferredCropSlug = useDeferredValue(selectedCropSlug);
   const deferredDistrict = useDeferredValue(selectedDistrict);
@@ -455,69 +454,18 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5">
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-medium">{dict.farmer.languageSync}</p>
-                <p className="text-sm text-muted-foreground">
-                  {dict.farmer.languageSyncDesc}
-                </p>
-              </div>
-              <label className="space-y-2 text-sm font-medium" htmlFor="farmer-language">
-                <span>{dict.farmer.preferredLanguage}</span>
-                <select
-                  id="farmer-language"
-                  className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                  value={preferredLanguage}
-                  onChange={(event) => {
-                    const nextLanguage = event.target.value as SupportedLanguage;
-                    const previousLanguage = preferredLanguage;
-
-                    setPreferredLanguage(nextLanguage);
-                    setLanguageStatus(null);
-                    startLanguageTransition(async () => {
-                      const response = await fetch("/api/users/preferences", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                          userId: data.profile.id,
-                          preferredLanguage: nextLanguage,
-                        }),
-                      });
-                      const payload = (await response.json()) as LanguagePreferenceResponse;
-
-                      if (!response.ok || !payload.ok) {
-                        setPreferredLanguage(previousLanguage);
-                        setLanguageStatus(
-                          ("error" in payload ? payload.error : undefined) ??
-                            "Could not update language preference.",
-                        );
-                        return;
-                      }
-
-                      setLanguageStatus(
-                        `${LANGUAGE_OPTIONS.find((option) => option.value === nextLanguage)?.label ?? nextLanguage} is now the preferred language for alerts and WhatsApp replies.`,
-                      );
-                    });
-                  }}
-                >
-                  {LANGUAGE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {languageStatus ? (
-                <p className="text-sm text-muted-foreground">{languageStatus}</p>
-              ) : null}
-              {isLanguagePending ? (
-                <p className="text-sm text-muted-foreground">Saving language preference...</p>
-              ) : null}
-            </div>
-          </section>
+          <FarmerSettingsPanel
+            userId={data.profile.id}
+            phone={data.profile.phone}
+            initialLanguage={data.profile.preferredLanguage}
+            initialAddress={data.profile.address}
+            initialDistrict={data.profile.district}
+            initialState={data.profile.state}
+            initialCropSlugs={data.cropPreferences.map((crop) => crop.cropSlug)}
+            onLanguageUpdated={(language) => {
+              setPreferredLanguage(language);
+            }}
+          />
         </aside>
       </section>
 

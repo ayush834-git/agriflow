@@ -41,29 +41,36 @@ export async function GET(
       warnings.push("Using the seeded demo opportunity routes.");
     }
 
-    return NextResponse.json({
-      crop: {
-        slug: targetCrop.slug,
-        name: targetCrop.name,
+    return NextResponse.json(
+      {
+        crop: {
+          slug: targetCrop.slug,
+          name: targetCrop.name,
+        },
+        source,
+        count: gaps.length,
+        routes: gaps.map((gap) => ({
+          sourceDistrict: gap.sourceDistrict,
+          sourceState: gap.sourceState,
+          sourceModalPrice: gap.sourceModalPrice,
+          targetDistrict: gap.targetDistrict,
+          targetState: gap.targetState,
+          targetModalPrice: gap.targetModalPrice,
+          priceGap: gap.priceGap,
+          demandStrength: gap.demandStrength,
+          transportFeasibility: gap.transportFeasibility,
+          opportunityScore: gap.opportunityScore,
+          fetchedAt: gap.fetchedAt,
+          explanation: gap.explanation,
+        })),
+        warnings,
       },
-      source,
-      count: gaps.length,
-      routes: gaps.map((gap) => ({
-        sourceDistrict: gap.sourceDistrict,
-        sourceState: gap.sourceState,
-        sourceModalPrice: gap.sourceModalPrice,
-        targetDistrict: gap.targetDistrict,
-        targetState: gap.targetState,
-        targetModalPrice: gap.targetModalPrice,
-        priceGap: gap.priceGap,
-        demandStrength: gap.demandStrength,
-        transportFeasibility: gap.transportFeasibility,
-        opportunityScore: gap.opportunityScore,
-        fetchedAt: gap.fetchedAt,
-        explanation: gap.explanation,
-      })),
-      warnings,
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      },
+    );
   } catch (error) {
     return NextResponse.json(
       {
