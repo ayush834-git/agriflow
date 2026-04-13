@@ -95,6 +95,8 @@ export function FarmerRegistrationForm() {
   async function submitRegistration() {
     setError(null);
     setFieldErrors({});
+    const normalizedDistrict = district.trim();
+    const normalizedState = stateName.trim();
 
     try {
       const response = await fetch("/api/onboarding/register", {
@@ -106,12 +108,15 @@ export function FarmerRegistrationForm() {
           role: "FARMER",
           fullName,
           phone,
-          district,
-          state: stateName,
+          district: normalizedDistrict,
+          state: normalizedState,
           preferredLanguage,
           crops: selectedCropSlugs.map((cropSlug) => ({
             cropSlug,
-            district,
+            // Avoid sending an invalid empty district for each crop.
+            // District itself is validated at the top-level field.
+            district:
+              normalizedDistrict.length >= 2 ? normalizedDistrict : undefined,
           })),
         }),
       });
