@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { TARGET_CROPS, TARGET_REGIONS } from "@/lib/agmarknet/catalog";
 import { resolveAgmarknetFeed } from "@/lib/agmarknet/service";
 import type { PriceGapRecord } from "@/lib/agmarknet/types";
@@ -134,7 +135,7 @@ function round(value: number) {
   return Number(value.toFixed(2));
 }
 
-async function buildSharedDashboardData(): Promise<SharedDashboardData> {
+async function _buildSharedDashboardData(): Promise<SharedDashboardData> {
   const feed = await resolveAgmarknetFeed({
     historyDays: 7,
     mode: "auto",
@@ -213,6 +214,12 @@ async function buildSharedDashboardData(): Promise<SharedDashboardData> {
     crops,
   };
 }
+
+const buildSharedDashboardData = unstable_cache(
+  async () => _buildSharedDashboardData(),
+  ["agriflow-shared-dashboard-v2"],
+  { revalidate: 300 }
+);
 
 export async function buildFarmerDashboardData(clerkUserId?: string | null): Promise<FarmerDashboardData> {
   const baseData = await buildSharedDashboardData();

@@ -340,19 +340,6 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
         </div>
       </section>
 
-      <FpoSettingsPanel
-        userId={data.owner.id}
-        email={data.owner.email}
-        initialLanguage={data.owner.preferredLanguage}
-        initialAddress={data.owner.address}
-        initialState={data.owner.state}
-        initialOrganizationName={data.owner.organizationName}
-        initialDistrictsServed={data.owner.districtsServed}
-        initialCropsHandled={data.owner.cropsHandled}
-        initialServiceRadiusKm={data.owner.serviceRadiusKm}
-        initialServiceSummary={data.owner.serviceSummary}
-      />
-
       <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_28px_90px_-62px_rgba(30,78,50,0.45)]">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="gap-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -373,6 +360,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
               <TabsTrigger value="recommendations">{dict.fpo.tabs.recommendations}</TabsTrigger>
               <TabsTrigger value="directory">{dict.fpo.tabs.directory}</TabsTrigger>
               <TabsTrigger value="alerts">{dict.fpo.tabs.alerts}</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
           </div>
 
@@ -424,6 +412,23 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
                 matches={matches}
                 title="Alerts, reports, and match loop"
                 description="Cron-driven spoilage alerts, email report previews, and live farmer responses all land here."
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <div className="mt-4">
+              <FpoSettingsPanel
+                userId={data.owner.id}
+                email={data.owner.email}
+                initialLanguage={data.owner.preferredLanguage}
+                initialAddress={data.owner.address}
+                initialState={data.owner.state}
+                initialOrganizationName={data.owner.organizationName}
+                initialDistrictsServed={data.owner.districtsServed}
+                initialCropsHandled={data.owner.cropsHandled}
+                initialServiceRadiusKm={data.owner.serviceRadiusKm}
+                initialServiceSummary={data.owner.serviceSummary}
               />
             </div>
           </TabsContent>

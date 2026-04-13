@@ -37,7 +37,7 @@ function AuthControls() {
 
 export function SiteNav() {
   const pathname = usePathname();
-  const { dict, lang } = useI18n();
+  const { dict, lang, setLang } = useI18n();
 
   if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
     return null;
@@ -72,9 +72,16 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <span className="rounded-md border border-input px-2 py-1 text-xs text-muted-foreground">
-            {lang.toUpperCase()}
-          </span>
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value as "en" | "hi" | "te" | "kn")}
+            className="rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground outline-none cursor-pointer hover:bg-accent"
+          >
+            <option value="en">EN</option>
+            <option value="hi">HI</option>
+            <option value="te">TE</option>
+            <option value="kn">KN</option>
+          </select>
           {hasClerkKey ? (
             <AuthControls />
           ) : (

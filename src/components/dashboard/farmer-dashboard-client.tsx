@@ -7,8 +7,6 @@ import {
   BellRing,
   ChevronRight,
   LocateFixed,
-  PackageCheck,
-  RadioTower,
   ShieldAlert,
   Smartphone,
 } from "lucide-react";
@@ -429,7 +427,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             <div className="mt-4 space-y-3">
               <p className="text-sm">Try sending this message:</p>
               <div className="rounded-[1.25rem] border border-green-200/60 bg-white/60 px-4 py-3 text-sm italic text-green-800">
-                "నేడు టమాటా ధర ఎంత?"
+                &quot;నేడు టమాటా ధర ఎంత?&quot;
               </div>
               <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white">
                 <a href="https://wa.me/14155238886?text=Hi" target="_blank" rel="noreferrer">
@@ -439,18 +437,6 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
           </section>
 
-          <FarmerSettingsPanel
-            userId={data.profile.id}
-            phone={data.profile.phone}
-            initialLanguage={data.profile.preferredLanguage}
-            initialAddress={data.profile.address}
-            initialDistrict={data.profile.district}
-            initialState={data.profile.state}
-            initialCropSlugs={data.cropPreferences.map((crop) => crop.cropSlug)}
-            onLanguageUpdated={(language) => {
-              setPreferredLanguage(language);
-            }}
-          />
         </aside>
       </section>
 
@@ -477,6 +463,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
               <TabsTrigger value="earnings">{dict.farmer.tabs.earnings}</TabsTrigger>
               <TabsTrigger value="fpos">{dict.farmer.tabs.findFpo}</TabsTrigger>
               <TabsTrigger value="alerts">{dict.farmer.tabs.alerts}</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
           </div>
 
@@ -613,6 +600,23 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 matches={matches}
                 title="Alerts and match inbox"
                 description="Daily crop alerts, match interest, and push previews are all visible here."
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <div className="mt-4">
+              <FarmerSettingsPanel
+                userId={data.profile.id}
+                phone={data.profile.phone}
+                initialLanguage={data.profile.preferredLanguage}
+                initialAddress={data.profile.address}
+                initialDistrict={data.profile.district}
+                initialState={data.profile.state}
+                initialCropSlugs={data.cropPreferences.map((crop) => crop.cropSlug)}
+                onLanguageUpdated={(language) => {
+                  setPreferredLanguage(language);
+                }}
               />
             </div>
           </TabsContent>
