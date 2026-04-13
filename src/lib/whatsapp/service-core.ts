@@ -76,90 +76,58 @@ const LISTING_STATES = new Set([
 ]);
 
 const HELP_TEXT: Record<SupportedLanguage, string> = {
-  te: [
-    "Nenu prices, best market, sell advice, FPO connect, 7-day forecast, and listing setup lo help chestanu.",
-    "Examples:",
-    "tomato price",
-    "best market for onion",
-    "find fpo for tomato",
-    "forecast tomato",
-    "create listing",
-  ].join("\n"),
-  hi: [
-    "Main prices, best market, sell advice, FPO connect, 7-day forecast, aur listing setup mein madad kar sakta hoon.",
-    "Examples:",
-    "tomato price",
-    "best market for onion",
-    "find fpo for tomato",
-    "forecast tomato",
-    "create listing",
-  ].join("\n"),
-  kn: [
-    "Nanu prices, best market, sell advice, FPO connect, 7-day forecast, mattu listing setup nalli help maduttene.",
-    "Examples:",
-    "tomato price",
-    "best market for onion",
-    "find fpo for tomato",
-    "forecast tomato",
-    "create listing",
-  ].join("\n"),
-  en: [
-    "I can help with prices, best market, sell advice, FPO connect, 7-day forecast, and listing setup.",
-    "Examples:",
-    "tomato price",
-    "best market for onion",
-    "find fpo for tomato",
-    "forecast tomato",
-    "create listing",
-  ].join("\n"),
+  te: "నేను ధరలు, ఉత్తమమైన మార్కెట్, అమ్మకపు సలహా, FPO తో కనెక్ట్ కావడం, 7 రోజుల అంచనా, మరియు లిస్టింగ్ సెటప్ చేయడంలో సహాయం చేస్తాను.\nఉదాహరణలు:\ntomato price\nbest market for onion",
+  hi: "मैं आपको फसलों के दाम, बेहतरीन बाज़ार, बेचने की सलाह, FPO से जुड़ने, 7 दिन का अनुमान लगाने और लिस्टिंग सेटअप में मदद कर सकता हूँ।\nउदाहरण:\ntomato price\nbest market for onion",
+  kn: "ನಾನು ಬೆಲೆಗಳು, ಉತ್ತಮ ಮಾರುಕಟ್ಟೆ, ಮಾರಾಟದ ಸಲಹೆ, FPO ಗೆ ಸಂಪರ್ಕಿಸಲು, 7 ದಿನದ ಭವಿಷ್ಯ ಮತ್ತು ಲಿಸ್ಟಿಂಗ್ ರಚಿಸುವಲ್ಲಿ ಸಹಾಯ ಮಾಡುತ್ತೇನೆ.\nಉದಾಹರಣೆಗಳು:\ntomato price\nbest market for onion",
+  en: "I can help with prices, best market, sell advice, FPO connect, 7-day forecast, and listing setup.\nExamples:\ntomato price\nbest market for onion",
 };
 
 const NEED_CROP_TEXT: Record<SupportedLanguage, string> = {
-  te: "Ye crop gurinchi cheppali? Example: tomato, onion, chilli, paddy.",
-  hi: "Kis crop ke baare mein batana hai? Example: tomato, onion, chilli, paddy.",
-  kn: "Yava crop bagge nodbeku? Example: tomato, onion, chilli, paddy.",
+  te: "ఏ పంట గురించి తెలుసుకోవాలి? ఉదాహరణ: tomato, onion, chilli, paddy.",
+  hi: "आप किस फसल के बारे में जानना चाहते हैं? उदाहरण: tomato, onion, chilli, paddy.",
+  kn: "ಯಾವ ಬೆಳೆಯ ಬಗ್ಗೆ ತಿಳಿಯಬೇಕು? ಉದಾಹರಣೆ: tomato, onion, chilli, paddy.",
   en: "Which crop do you want to check? Example: tomato, onion, chilli, paddy.",
 };
 
 const VOICE_TEXT: Record<SupportedLanguage, string> = {
-  te: "Voice note clear ga ardham kaaledu. Oka sari malli voice note leda text pampandi.",
-  hi: "Voice note saaf samajh nahi aaya. Kripya dobara voice note ya text bhejiye.",
-  kn: "Voice note spashtavagi sigalilla. Dayavittu mattomme voice note athava text kalisi.",
+  te: "వాయిస్ నోట్ స్పష్టంగా అర్థం కాలేదు. దయచేసి మళ్లీ పంపండి లేదా టైప్ చేయండి.",
+  hi: "आपका वॉयस नोट ठीक से सुनाई नहीं दिया। कृपया फिर से भेजें या टाइप करें।",
+  kn: "ನಿಮ್ಮ ವಾಯ್ಸ್ ನೋಟ್ ಸರಿಯಾಗಿ ಅರ್ಥವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಕಳುಹಿಸಿ ಅಥವಾ ಟೈಪ್ ಮಾಡಿ.",
   en: "I could not understand that voice note clearly. Please try another voice note or send text.",
 };
 
 const MATCH_CONFIRM_TEXT: Record<SupportedLanguage, string> = {
-  te: "Ippudu pending match ledu. Match alert vachinappudu YES reply ivvandi.",
-  hi: "Abhi koi pending match nahi hai. Match alert aane par YES reply kijiye.",
-  kn: "Iga pending match illa. Match alert bandaga YES reply madi.",
+  te: "ప్రస్తుతం ఏ పెండింగ్ మ్యాచ్ లేదు. మీకు మ్యాచ్ అలర్ట్ వచ్చినప్పుడు YES అని రిప్లై ఇవ్వండి.",
+  hi: "अभी कोई पेंडिंग मैच नहीं है। मैच अलर्ट आने पर YES रिप्लाई करें।",
+  kn: "ಈಗ ಯಾವುದೇ ಪೆಂಡಿಂಗ್ ಮ್ಯಾಚ್ ಇಲ್ಲ. ಮ್ಯಾಚ್ ಅಲರ್ಟ್ ಬಂದಾಗ YES ರಿಪ್ಲೈ ಮಾಡಿ.",
   en: "There is no pending match right now. Reply YES when a match alert arrives.",
 };
 
 const LISTING_CANCEL_TEXT: Record<SupportedLanguage, string> = {
-  te: "Listing setup cancel chesanu. Malla create listing ani pampandi appudu restart chestanu.",
-  hi: "Listing setup cancel kar diya. Dobara create listing bhejenge to restart karunga.",
-  kn: "Listing setup cancel madide. Matte create listing anta kalisidre restart maduttene.",
+  te: "లిస్టింగ్ సెటప్ క్యాన్సిల్ చేశాను. 'create listing' అని పంపించి మళ్ళీ ప్రారంభించండి.",
+  hi: "मैंने लिस्टिंग का सेटअप रद्द कर दिया है। 'create listing' भेजकर दोबारा शुरू करें।",
+  kn: "ನಾನು ಲಿಸ್ಟಿಂಗ್ ಸೆಟಪ್ ರದ್ದುಗೊಳಿಸಿದ್ದೇನೆ. 'create listing' ಕಳುಹಿಸಿ ಮತ್ತೆ ಪ್ರಾರಂಭಿಸಿ.",
   en: "I cancelled the listing setup. Send 'create listing' when you want to start again.",
 };
 
 const LISTING_CONFIRM_TEXT: Record<SupportedLanguage, string> = {
-  te: "Reply YES to create this listing, or NO to restart.",
-  hi: "Is listing ko create karne ke liye YES reply kijiye, ya restart ke liye NO.",
-  kn: "Ee listing create madalu YES reply madi, restart ge NO reply madi.",
+  te: "లిస్టింగ్ క్రియేట్ చేయడానికి YES అని, మళ్ళీ ప్రారంభించడానికి NO అని రిప్లై ఇవ్వండి.",
+  hi: "लिस्टिंग कन्फर्म करने के लिए YES दें, या दोबारा शुरू करने के लिए NO।",
+  kn: "ಲಿಸ್ಟಿಂಗ್ ರಚಿಸಲು YES ಎಂದು ರಿಪ್ಲೈ ಮಾಡಿ, ಅಥವಾ ರದ್ದುಗೊಳಿಸಲು NO.",
   en: "Reply YES to create this listing, or NO to restart.",
 };
 
 const LISTING_PROFILE_TEXT: Record<SupportedLanguage, string> = {
-  te: "Listing create cheyyadaniki mee farmer profile lo district and state undali. /register/farmer ni update cheyyandi.",
-  hi: "Listing create karne ke liye aapke farmer profile mein district aur state hona chahiye. /register/farmer update kijiye.",
-  kn: "Listing create madalu nimma farmer profile alli district mattu state irabeku. /register/farmer update madi.",
+  te: "లిస్టింగ్ క్రియేట్ చేయడానికి మీ ఫార్మర్ ప్రొఫైల్ లో జిల్లా మరియు రాష్ట్రం ఉండాలి. దయచేసి /register/farmer అప్‌డేట్ చేయండి.",
+  hi: "लिस्टिंग के लिए आपकी प्रोफ़ाइल में जिला और राज्य होना ज़रूरी है। कृपया /register/farmer अपडेट करें।",
+  kn: "ಲಿಸ್ಟಿಂಗ್ ರಚಿಸಲು ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ನಲ್ಲಿ ಜಿಲ್ಲೆ ಮತ್ತು ರಾಜ್ಯ ಇರಬೇಕು. ದಯವಿಟ್ಟು /register/farmer ಅಪ್‌ಡೇಟ್ ಮಾಡಿ.",
   en: "Your farmer profile needs a district and state before I can create a listing. Please update /register/farmer first.",
 };
 
 const MEDIA_TEXT: Record<SupportedLanguage, string> = {
-  te: "Audio voice note pampandi leda direct ga text type cheyyandi.",
-  hi: "Kripya audio voice note bhejiye ya seedha text type kijiye.",
-  kn: "Dayavittu audio voice note kalisi athava text type madi.",
+  te: "దయచేసి ఆడియో వాయిస్ నోట్ పంపండి లేదా మెసేజ్ టైప్ చేయండి.",
+  hi: "कृपया ऑडियो वॉयस नोट या संदेश भेजें।",
+  kn: "ದಯವಿಟ್ಟು ಆಡಿಯೋ ವಾಯ್ಸ್ ನೋಟ್ ಅಥವಾ ಸಂದೇಶ ಕಳುಹಿಸಿ.",
   en: "Please send an audio voice note or just type your message.",
 };
 
@@ -239,6 +207,7 @@ async function humanizeResponse(text: string, language: SupportedLanguage): Prom
 
     const prompt = `You are the AgriFlow WhatsApp Bot, an AI assistant for Indian farmers. 
 Take the following raw system output and humanize it into a friendly, helpful, and natural sounding message in ${localeName}.
+IMPORTANT: You MUST write your response in the NATIVE SCRIPT of ${localeName} (e.g. Telugu script for Telugu, Devanagari for Hindi). Do NOT use English transliteration.
 Keep the data completely accurate (do not make up prices or quantities). Use appropriate emojis. 
 If the response is an error or fallback, explain it kindly.
 

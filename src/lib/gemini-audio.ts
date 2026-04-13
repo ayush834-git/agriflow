@@ -34,9 +34,9 @@ export async function transcribeAudioBufferWithGemini(
   const result = await model.generateContent([
     {
       text: [
-        "Transcribe this farmer voice message exactly.",
-        "Return only the spoken words as plain text.",
-        "Do not summarize, translate, add labels, or add markdown.",
+        "Transcribe this voice message exactly in the language it is spoken (e.g. Telugu, Hindi, Kannada, English).",
+        "Output the transcript strictly in the native script of that language (e.g. use Telugu script for Telugu).",
+        "Do not translate it to English or transliterate. Return ONLY the transcribed text without extra labels.",
       ].join(" "),
     },
     {

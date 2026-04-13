@@ -87,9 +87,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   );
   const { dict, setLang } = useI18n();
 
-  useEffect(() => {
-    setLang(data.profile.preferredLanguage);
-  }, [data.profile.preferredLanguage, setLang]);
+
 
   const deferredCropSlug = useDeferredValue(selectedCropSlug);
   const deferredDistrict = useDeferredValue(selectedDistrict);

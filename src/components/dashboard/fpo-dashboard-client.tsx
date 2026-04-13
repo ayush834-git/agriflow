@@ -89,9 +89,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
     ).length,
   };
 
-  useEffect(() => {
-    setLang(data.owner.preferredLanguage);
-  }, [data.owner.preferredLanguage, setLang]);
+
 
   if (!activeCrop) {
     return null;
