@@ -21,6 +21,50 @@ type RegistrationResult = {
   }>;
 };
 
+type FieldErrorKey =
+  | "fullName"
+  | "phone"
+  | "district"
+  | "state"
+  | "preferredLanguage"
+  | "crops";
+
+type RegistrationErrorPayload = {
+  ok?: false;
+  error?: string;
+  details?: {
+    fieldErrors?: Partial<Record<FieldErrorKey, string[]>>;
+  };
+};
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractErrorPayload(payload: unknown): RegistrationErrorPayload {
+  if (!isObject(payload)) {
+    return {};
+  }
+
+  const details = isObject(payload.details)
+    ? {
+        fieldErrors: isObject(payload.details.fieldErrors)
+          ? (payload.details.fieldErrors as Partial<Record<FieldErrorKey, string[]>>)
+          : undefined,
+      }
+    : undefined;
+
+  return {
+    ok: payload.ok === false ? false : undefined,
+    error: typeof payload.error === "string" ? payload.error : undefined,
+    details,
+  };
+}
+
+function firstFieldError(messages?: string[]) {
+  return Array.isArray(messages) && messages.length > 0 ? messages[0] : null;
+}
+
 export function FarmerRegistrationForm() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -33,6 +77,9 @@ export function FarmerRegistrationForm() {
   );
   const [selectedCropSlugs, setSelectedCropSlugs] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<FieldErrorKey, string>>
+  >({});
   const [result, setResult] = useState<RegistrationResult | null>(null);
 
   const source = searchParams.get("source");
@@ -47,39 +94,69 @@ export function FarmerRegistrationForm() {
 
   async function submitRegistration() {
     setError(null);
+    setFieldErrors({});
 
-    const response = await fetch("/api/onboarding/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        role: "FARMER",
-        fullName,
-        phone,
-        district,
-        state: stateName,
-        preferredLanguage,
-        crops: selectedCropSlugs.map((cropSlug) => ({
-          cropSlug,
+    try {
+      const response = await fetch("/api/onboarding/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: "FARMER",
+          fullName,
+          phone,
           district,
-        })),
-      }),
-    });
+          state: stateName,
+          preferredLanguage,
+          crops: selectedCropSlugs.map((cropSlug) => ({
+            cropSlug,
+            district,
+          })),
+        }),
+      });
 
-    const payload = (await response.json()) as
-      | (RegistrationResult & { ok: true })
-      | { ok: false; error?: string };
+      const rawPayload = await response.text();
+      const parsedPayload = rawPayload ? JSON.parse(rawPayload) : null;
 
-    if (!response.ok || !("ok" in payload) || !payload.ok) {
-      setError(("error" in payload ? payload.error : undefined) ?? "Registration failed.");
-      return;
+      if (!response.ok) {
+        const payload = extractErrorPayload(parsedPayload);
+        const nextFieldErrors: Partial<Record<FieldErrorKey, string>> = {
+          fullName: firstFieldError(payload.details?.fieldErrors?.fullName) ?? undefined,
+          phone: firstFieldError(payload.details?.fieldErrors?.phone) ?? undefined,
+          district: firstFieldError(payload.details?.fieldErrors?.district) ?? undefined,
+          state: firstFieldError(payload.details?.fieldErrors?.state) ?? undefined,
+          preferredLanguage:
+            firstFieldError(payload.details?.fieldErrors?.preferredLanguage) ?? undefined,
+          crops: firstFieldError(payload.details?.fieldErrors?.crops) ?? undefined,
+        };
+
+        setFieldErrors(nextFieldErrors);
+        setError(
+          payload.error ??
+            (response.status === 404
+              ? "Registration endpoint is unavailable in this session."
+              : "Registration failed."),
+        );
+        return;
+      }
+
+      const payload = parsedPayload as RegistrationResult & { ok: true };
+
+      if (!payload || payload.ok !== true) {
+        setError("Registration failed.");
+        return;
+      }
+
+      setResult({
+        user: payload.user,
+        crops: payload.crops,
+      });
+    } catch {
+      setError(
+        "Could not submit registration right now. Please retry in a moment.",
+      );
     }
-
-    setResult({
-      user: payload.user,
-      crops: payload.crops,
-    });
   }
 
   if (result) {
@@ -135,10 +212,14 @@ export function FarmerRegistrationForm() {
             </label>
             <Input
               id="full-name"
+              className={fieldErrors.fullName ? "border-destructive/60" : undefined}
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               placeholder="Ravi Kumar"
             />
+            {fieldErrors.fullName ? (
+              <p className="text-xs text-destructive">{fieldErrors.fullName}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="phone">
@@ -146,10 +227,14 @@ export function FarmerRegistrationForm() {
             </label>
             <Input
               id="phone"
+              className={fieldErrors.phone ? "border-destructive/60" : undefined}
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               placeholder="+91 9876543210"
             />
+            {fieldErrors.phone ? (
+              <p className="text-xs text-destructive">{fieldErrors.phone}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="district">
@@ -157,10 +242,14 @@ export function FarmerRegistrationForm() {
             </label>
             <Input
               id="district"
+              className={fieldErrors.district ? "border-destructive/60" : undefined}
               value={district}
               onChange={(event) => setDistrict(event.target.value)}
               placeholder="Kurnool"
             />
+            {fieldErrors.district ? (
+              <p className="text-xs text-destructive">{fieldErrors.district}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="state">
@@ -168,10 +257,14 @@ export function FarmerRegistrationForm() {
             </label>
             <Input
               id="state"
+              className={fieldErrors.state ? "border-destructive/60" : undefined}
               value={stateName}
               onChange={(event) => setStateName(event.target.value)}
               placeholder="Andhra Pradesh"
             />
+            {fieldErrors.state ? (
+              <p className="text-xs text-destructive">{fieldErrors.state}</p>
+            ) : null}
           </div>
         </div>
 
@@ -181,7 +274,11 @@ export function FarmerRegistrationForm() {
           </label>
           <select
             id="language"
-            className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className={`flex h-10 w-full rounded-lg border bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ${
+              fieldErrors.preferredLanguage
+                ? "border-destructive/60"
+                : "border-input"
+            }`}
             value={preferredLanguage}
             onChange={(event) => setPreferredLanguage(event.target.value)}
           >
@@ -191,6 +288,11 @@ export function FarmerRegistrationForm() {
               </option>
             ))}
           </select>
+          {fieldErrors.preferredLanguage ? (
+            <p className="text-xs text-destructive">
+              {fieldErrors.preferredLanguage}
+            </p>
+          ) : null}
         </div>
 
         <div className="space-y-3">
@@ -224,6 +326,9 @@ export function FarmerRegistrationForm() {
               );
             })}
           </div>
+          {fieldErrors.crops ? (
+            <p className="text-xs text-destructive">{fieldErrors.crops}</p>
+          ) : null}
         </div>
 
         {error ? (
