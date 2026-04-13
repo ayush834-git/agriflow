@@ -13,16 +13,16 @@ import {
 const registrationTracks = [
   {
     href: "/register/farmer",
-    title: "Farmer registration",
+    title: "I am a Farmer",
     description:
-      "Create the profile that the WhatsApp and SMS bot will recognize for crop prices, alerts, and sell advice.",
+      "Get live crop prices, find where to sell for the most profit, and connect with buyers directly on WhatsApp.",
     icon: Tractor,
   },
   {
     href: "/register/fpo",
-    title: "FPO registration",
+    title: "I am a Trader / FPO",
     description:
-      "Set up the organization contact and districts served so the operations layer is ready for inventory and movement workflows.",
+      "Find crop supply, track your inventory, and get the smartest transport routes to maximize your margins.",
     icon: Building2,
   },
 ];
@@ -34,21 +34,20 @@ export default function RegisterPage() {
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="space-y-4">
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary/80">
-              Registration
+              Welcome
             </p>
             <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              Connect people to the AgriFlow messaging layer.
+              Join AgriFlow
             </h1>
             <p className="max-w-2xl text-base leading-8 text-muted-foreground">
-              This phase keeps onboarding service-agnostic for now. We can save
-              farmer and FPO profiles already, then wire Clerk and Twilio later
-              without changing the product flow.
+              Create your account to start getting live market intelligence. We just need
+              a few details to make sure you get the right prices for the crops you care about.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg">
                 <Link href="/register/farmer">
-                  Start farmer flow
-                  <ArrowRight className="size-4" />
+                  I'm a Farmer
+                  <ArrowRight className="size-4 ml-2" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
@@ -59,21 +58,19 @@ export default function RegisterPage() {
 
           <Card className="border border-border/70 bg-background/70">
             <CardHeader>
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-green-100 text-green-700">
                 <MessageSquareText className="size-6" />
               </div>
-              <CardTitle>Bot-ready onboarding</CardTitle>
+              <CardTitle>Connected to WhatsApp</CardTitle>
               <CardDescription>
-                Use the same phone number from WhatsApp or SMS so the assistant
-                can identify the farmer immediately after registration.
+                Use your WhatsApp number to register so our assistant can recognize you instantly.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-7 text-muted-foreground">
-              <p>Farmer flow stores district, language, and crops to monitor.</p>
-              <p>FPO flow stores the organization contact and districts served.</p>
+              <p>We'll only send you alerts when your crops reach your target price.</p>
+              <p>Everything is available in your local language.</p>
               <p>
-                Both paths already support local persistence now and Supabase
-                writes later.
+                No hidden fees. Free for farmers forever.
               </p>
             </CardContent>
           </Card>
@@ -85,7 +82,7 @@ export default function RegisterPage() {
           const Icon = track.icon;
 
           return (
-            <Card key={track.href} className="border border-border/70 bg-card/85">
+            <Card key={track.href} className="border border-border/70 bg-card/85 hover:border-primary/50 transition-colors">
               <CardHeader>
                 <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <Icon className="size-5" />
@@ -96,8 +93,8 @@ export default function RegisterPage() {
               <CardContent>
                 <Button asChild>
                   <Link href={track.href}>
-                    Open flow
-                    <ArrowRight className="size-4" />
+                    Continue
+                    <ArrowRight className="size-4 ml-2" />
                   </Link>
                 </Button>
               </CardContent>

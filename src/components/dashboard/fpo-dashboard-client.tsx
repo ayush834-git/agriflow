@@ -139,16 +139,11 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="border-white/12 bg-white/10 text-white hover:bg-white/10">
-                {dict.fpo.badges.phase}
+                Live operations
               </Badge>
               <Badge className="border-white/12 bg-white/8 text-white/82 hover:bg-white/8">
-                {data.source === "mock" ? dict.fpo.badges.demoSignal : dict.fpo.badges.liveSignal}
+                Updated {formatGeneratedAt(data.generatedAt)}
               </Badge>
-              {data.owner.isDemo ? (
-                <Badge className="border-white/12 bg-white/8 text-white/82 hover:bg-white/8">
-                  Demo Auth
-                </Badge>
-              ) : null}
             </div>
 
             <div className="space-y-3">

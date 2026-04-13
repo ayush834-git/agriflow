@@ -148,19 +148,11 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="border-white/15 bg-white/12 text-white hover:bg-white/12">
-                Phase 10 workspace
-              </Badge>
-              <Badge className="border-white/15 bg-white/8 text-white/86 hover:bg-white/8">
-                {data.source === "mock" ? "Demo-safe market stream" : "Live feed"}
+                Live in AP & TS
               </Badge>
               <Badge className="border-white/15 bg-white/8 text-white/86 hover:bg-white/8">
                 Updated {formatGeneratedAt(data.generatedAt)}
               </Badge>
-              {data.profile.isDemo ? (
-                <Badge className="border-white/15 bg-white/8 text-white/86 hover:bg-white/8">
-                  Demo farmer profile
-                </Badge>
-              ) : null}
             </div>
 
             <div className="space-y-3">
@@ -182,17 +174,9 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 className="border-white/10 bg-white text-[rgb(33,79,56)] hover:bg-white/92"
               >
                 <Link href="/register/farmer">
-                  Update farmer profile
+                  Update your profile
                   <ChevronRight className="size-4" />
                 </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-white/18 bg-transparent text-white hover:bg-white/8 hover:text-white"
-              >
-                <Link href="/api/health">Check data readiness</Link>
               </Button>
             </div>
           </div>
@@ -429,28 +413,29 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5">
+          <section className="rounded-[2rem] border border-border/70 bg-green-50 p-5 text-green-950">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <RadioTower className="size-5" />
+              <div className="flex size-10 items-center justify-center rounded-2xl bg-green-600/10 text-green-700">
+                <Smartphone className="size-5" />
               </div>
               <div>
-                <p className="text-sm font-medium">Alert-ready shell</p>
-                <p className="text-sm text-muted-foreground">
-                  Installable PWA shell, match inbox, and alert logging are now connected.
+                <p className="text-sm font-medium">Use AgriFlow on WhatsApp</p>
+                <p className="text-sm text-green-900/80">
+                  Instantly get prices and best markets.
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-3 rounded-[1.25rem] border border-border/70 bg-background/60 px-4 py-3">
-                <Smartphone className="size-4 text-primary" />
-                Push preview can be enabled from the alerts tab
+            <div className="mt-4 space-y-3">
+              <p className="text-sm">Try sending this message:</p>
+              <div className="rounded-[1.25rem] border border-green-200/60 bg-white/60 px-4 py-3 text-sm italic text-green-800">
+                "నేడు టమాటా ధర ఎంత?"
               </div>
-              <div className="flex items-center gap-3 rounded-[1.25rem] border border-border/70 bg-background/60 px-4 py-3">
-                <PackageCheck className="size-4 text-primary" />
-                Listings are now available to FPO buyer matching
-              </div>
+              <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white">
+                <a href="https://wa.me/14155238886?text=Hi" target="_blank" rel="noreferrer">
+                  Open WhatsApp
+                </a>
+              </Button>
             </div>
           </section>
 

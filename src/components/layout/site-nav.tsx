@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -75,17 +75,6 @@ export function SiteNav() {
           <span className="rounded-md border border-input px-2 py-1 text-xs text-muted-foreground">
             {lang.toUpperCase()}
           </span>
-          <Button asChild variant="outline" size="sm">
-            <Link
-              href={
-                pathname.startsWith("/dashboard/fpo")
-                  ? "/dashboard/fpo"
-                  : "/dashboard"
-              }
-            >
-              Settings
-            </Link>
-          </Button>
           {hasClerkKey ? (
             <AuthControls />
           ) : (
@@ -98,4 +87,3 @@ export function SiteNav() {
     </header>
   );
 }
-
