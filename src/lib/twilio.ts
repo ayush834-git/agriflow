@@ -58,12 +58,24 @@ export async function downloadTwilioMedia(mediaUrl: string) {
     `${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`,
   ).toString("base64");
 
-  const response = await fetch(mediaUrl, {
+  let response = await fetch(mediaUrl, {
     headers: {
       Authorization: `Basic ${authorization}`,
     },
     cache: "no-store",
+    redirect: "manual",
   });
+
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get("location");
+    if (!location) {
+      throw new Error(`Twilio redirect missing location header (status: ${response.status}).`);
+    }
+
+    response = await fetch(location, {
+      cache: "no-store",
+    });
+  }
 
   if (!response.ok) {
     throw new Error(
