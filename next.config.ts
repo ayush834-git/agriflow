@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["ogg-opus-decoder"],
+
   // Disable source maps in dev — large projects (like this one) get significant
   // memory savings since Turbopack doesn't have to hold full source map trees.
   productionBrowserSourceMaps: false,
