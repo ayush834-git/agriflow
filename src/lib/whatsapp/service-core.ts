@@ -186,7 +186,16 @@ async function resolveIncomingWhatsAppBody(
       body: transcript,
     };
   } catch (error) {
-    console.warn("WhatsApp audio transcription failed.", error);
+    const mediaUrlHost =
+      incomingMessage.mediaUrl && URL.canParse(incomingMessage.mediaUrl)
+        ? new URL(incomingMessage.mediaUrl).host
+        : null;
+    console.error("[whatsapp] audio transcription failed", {
+      from: incomingMessage.from,
+      mediaContentType: incomingMessage.mediaContentType,
+      mediaUrlHost,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return {
       errorBody: VOICE_TEXT[fallbackLanguage],
     };
@@ -277,6 +286,10 @@ function requiresCrop(intent: WhatsAppIntent) {
     "SETUP_ALERT",
     "FORECAST",
   ].includes(intent);
+}
+
+function supportsGuestIntent(intent: WhatsAppIntent) {
+  return intent === "PRICE_CHECK" || intent === "BEST_MARKET";
 }
 
 function isListingFlowActive(session: WhatsAppSession, intent: WhatsAppIntent) {
@@ -1028,31 +1041,71 @@ export async function processWhatsAppMessage(
   );
 
   if (!registeredUser) {
-    nextSession = touchSession(nextSession, {
-      state: "AWAITING_REGISTRATION",
-      language: enrichedIntent.language,
-    });
+    if (!supportsGuestIntent(enrichedIntent.intent)) {
+      nextSession = touchSession(nextSession, {
+        state: "AWAITING_REGISTRATION",
+        language: enrichedIntent.language,
+      });
+      await saveWhatsAppSession(nextSession);
+
+      return {
+        body: formatRegistrationPrompt(
+          enrichedIntent.language,
+          buildFarmerRegistrationUrl({
+            phone: normalizedIncomingMessage.from,
+            language: enrichedIntent.language,
+            source: "whatsapp",
+          }),
+        ),
+        session: nextSession,
+      };
+    }
+
+    if (!enrichedIntent.cropSlug) {
+      nextSession = touchSession(nextSession, { state: "AWAITING_CROP" });
+      await saveWhatsAppSession(nextSession);
+
+      return {
+        body: NEED_CROP_TEXT[enrichedIntent.language],
+        session: nextSession,
+      };
+    }
+
+    let guestBody = HELP_TEXT[enrichedIntent.language];
+    if (enrichedIntent.intent === "PRICE_CHECK") {
+      const snapshot = await getMarketSnapshot(enrichedIntent.cropSlug);
+      guestBody = formatPriceReply(
+        snapshot,
+        enrichedIntent.language,
+        enrichedIntent.district,
+      );
+      nextSession = touchSession(nextSession, { state: "PRICE_SHARED" });
+    } else {
+      const snapshot = await getMarketSnapshot(enrichedIntent.cropSlug);
+      guestBody = formatBestMarketReply(
+        snapshot,
+        enrichedIntent.language,
+        enrichedIntent.district,
+      );
+      nextSession = touchSession(nextSession, { state: "BEST_MARKET_SHARED" });
+    }
+
     await saveWhatsAppSession(nextSession);
 
     return {
-      body: formatRegistrationPrompt(
-        enrichedIntent.language,
-        buildFarmerRegistrationUrl({
-          phone: normalizedIncomingMessage.from,
-          language: enrichedIntent.language,
-          source: "whatsapp",
-        }),
-      ),
+      body: await humanizeResponse(guestBody, enrichedIntent.language),
       session: nextSession,
     };
   }
+
+  const activeUser = registeredUser;
 
   if (isListingFlowActive(nextSession, enrichedIntent.intent)) {
     const listingResult = await handleListingConversation({
       message: normalizedIncomingMessage,
       session: nextSession,
       intentResult: enrichedIntent,
-      registeredUser,
+      registeredUser: activeUser,
     });
     await saveWhatsAppSession(listingResult.session);
     return listingResult;
@@ -1060,7 +1113,7 @@ export async function processWhatsAppMessage(
 
   if (looksLikeMatchAcceptance(normalizedIncomingMessage.body)) {
     const acceptedMatch = await acceptPendingMatchForFarmer(
-      registeredUser.id,
+      activeUser.id,
       session.context.pendingMatchId,
     );
 
@@ -1121,10 +1174,10 @@ export async function processWhatsAppMessage(
       const crop = getTargetCropOrThrow(enrichedIntent.cropSlug!);
       const threshold = enrichedIntent.threshold ?? 2200;
       await upsertFarmerCropAlertThreshold({
-        userId: registeredUser.id,
+        userId: activeUser.id,
         cropSlug: crop.slug,
         threshold,
-        district: enrichedIntent.district ?? registeredUser.district,
+        district: enrichedIntent.district ?? activeUser.district,
       });
       body = formatAlertReply(crop.name, threshold, enrichedIntent.language);
       nextSession = touchSession(nextSession, {
@@ -1138,12 +1191,12 @@ export async function processWhatsAppMessage(
     }
     case "CONNECT_FPO": {
       const fpos = await listFposForDistrict({
-        district: enrichedIntent.district ?? registeredUser.district,
+        district: enrichedIntent.district ?? activeUser.district,
         cropSlug: enrichedIntent.cropSlug,
       });
       body = formatConnectFpoReply({
         cropSlug: enrichedIntent.cropSlug,
-        district: enrichedIntent.district ?? registeredUser.district ?? undefined,
+        district: enrichedIntent.district ?? activeUser.district ?? undefined,
         fpos,
       });
       nextSession = touchSession(nextSession, { state: "FPO_DIRECTORY_SHARED" });
