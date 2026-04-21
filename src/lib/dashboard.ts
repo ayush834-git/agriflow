@@ -148,7 +148,7 @@ export async function buildSharedDashboardData(selectedCropSlugs: string[]): Pro
 
   const feedResult = await resolveAgmarknetFeed({
     cropSlugs: fallbackCrops.map(c => c.slug),
-    historyDays: 7,
+    historyDays: 3,
     mode: "auto",
   });
 

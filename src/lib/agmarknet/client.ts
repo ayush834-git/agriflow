@@ -59,14 +59,17 @@ function dedupeRawRecords(records: AgmarknetRawRecord[]) {
 export async function fetchLiveAgmarknetFeed(options: LiveFetchOptions = {}) {
   const fetchedAt = new Date().toISOString();
   const historyDays = Math.max(1, options.historyDays ?? 1);
-  const limit = options.limit ?? 1000;
-  const maxPages = options.maxPages ?? 2;
+  const limit = options.limit ?? 500;
+  const maxPages = options.maxPages ?? 1;
   const crops = resolveRequestedCrops(options.cropSlugs);
   const warnings: string[] = [];
   const normalizedRecords: NormalizedMandiPriceRecord[] = [];
 
-  for (const crop of crops) {
-    for (const state of ["Andhra Pradesh", "Telangana", "Karnataka"]) {
+  const STATES = ["Andhra Pradesh", "Telangana", "Karnataka"];
+
+  // Fetch all crop×state combinations in parallel
+  const fetchTasks = crops.flatMap((crop) =>
+    STATES.map(async (state) => {
       const districts = new Set(getDistrictsForState(state));
       let stateRecords: AgmarknetRawRecord[] = [];
 
@@ -78,15 +81,15 @@ export async function fetchLiveAgmarknetFeed(options: LiveFetchOptions = {}) {
             limit: String(limit),
             offset: String(page * limit),
           });
-
           params.set("filters[state]", state);
           params.set("filters[commodity]", commodityFilter);
 
-          const payload = await requestAgmarknetRecords(params);
-          const records = payload.records ?? [];
-          commodityRecords.push(...records);
-
-          if (records.length < limit) {
+          try {
+            const payload = await requestAgmarknetRecords(params);
+            const records = payload.records ?? [];
+            commodityRecords.push(...records);
+            if (records.length < limit) break;
+          } catch {
             break;
           }
         }
@@ -99,7 +102,7 @@ export async function fetchLiveAgmarknetFeed(options: LiveFetchOptions = {}) {
 
       if (stateRecords.length === 0) {
         warnings.push(`No live records returned for ${crop.name} in ${state}.`);
-        continue;
+        return;
       }
 
       const lowerBoundDate = new Date();
@@ -111,18 +114,15 @@ export async function fetchLiveAgmarknetFeed(options: LiveFetchOptions = {}) {
           name: crop.name,
         });
 
-        if (!normalized || !districts.has(normalized.district)) {
-          continue;
-        }
-
-        if (new Date(`${normalized.marketDate}T00:00:00Z`) < lowerBoundDate) {
-          continue;
-        }
+        if (!normalized || !districts.has(normalized.district)) continue;
+        if (new Date(`${normalized.marketDate}T00:00:00Z`) < lowerBoundDate) continue;
 
         normalizedRecords.push(normalized);
       }
-    }
-  }
+    }),
+  );
+
+  await Promise.all(fetchTasks);
 
   return {
     records: normalizedRecords,

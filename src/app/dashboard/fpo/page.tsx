@@ -1,13 +1,24 @@
+import { Suspense } from "react";
+import { auth } from "@clerk/nextjs/server";
+import { unstable_cache } from "next/cache";
+
 import { FpoDashboardClient } from "@/components/dashboard/fpo-dashboard-client";
 import { buildFpoDashboardData } from "@/lib/dashboard";
+import FpoDashboardLoading from "./loading";
 
-import { auth } from "@clerk/nextjs/server";
+function getCachedFpoData(clerkUserId: string | null) {
+  return unstable_cache(
+    () => buildFpoDashboardData(clerkUserId),
+    ["fpo-dashboard", clerkUserId ?? "guest"],
+    {
+      revalidate: 5 * 60,
+      tags: [`fpo-${clerkUserId ?? "guest"}`],
+    },
+  )();
+}
 
-export const dynamic = "force-dynamic";
-
-export default async function FpoDashboardPage() {
+async function FpoContent() {
   let clerkUserId: string | null = null;
-
   try {
     const session = await auth();
     clerkUserId = session.userId ?? null;
@@ -15,7 +26,14 @@ export default async function FpoDashboardPage() {
     clerkUserId = null;
   }
 
-  const data = await buildFpoDashboardData(clerkUserId);
-
+  const data = await getCachedFpoData(clerkUserId);
   return <FpoDashboardClient data={data} />;
+}
+
+export default function FpoDashboardPage() {
+  return (
+    <Suspense fallback={<FpoDashboardLoading />}>
+      <FpoContent />
+    </Suspense>
+  );
 }
