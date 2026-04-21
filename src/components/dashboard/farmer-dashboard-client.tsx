@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDeferredValue, useState, useTransition } from "react";
-import { ShieldAlert } from "lucide-react";
 
 import { AiConfidenceBadge } from "@/components/dashboard/ai-confidence-badge";
 import { ExplainabilityPanel } from "@/components/dashboard/explainability-panel";
@@ -11,11 +11,11 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { Button } from "@/components/ui/button";
 import type { FarmerDashboardData } from "@/lib/dashboard";
+import { useI18n } from "@/lib/i18n/context";
 import type { MarketMatch } from "@/lib/matches/types";
 import type { AppNotification } from "@/lib/notifications/types";
 import { cn } from "@/lib/utils";
 import type { SupportedLanguage } from "@/lib/whatsapp/types";
-import { useI18n } from "@/lib/i18n/context";
 
 type FarmerDashboardClientProps = {
   data: FarmerDashboardData;
@@ -25,14 +25,6 @@ type MatchAcceptResponse =
   | { ok: true; match: MarketMatch; farmerNotification: AppNotification; farmerMessage: string }
   | { ok: false; error?: string };
 
-const LANGUAGE_OPTIONS: Array<{ value: SupportedLanguage; label: string }> = [
-  { value: "te", label: "Telugu" },
-  { value: "hi", label: "Hindi" },
-  { value: "kn", label: "Kannada" },
-  { value: "en", label: "English" },
-];
-
-// Crop emoji/icon map
 const CROP_ICONS: Record<string, string> = {
   tomato: "nutrition",
   onion: "radio_button_checked",
@@ -51,47 +43,47 @@ const CROP_COLORS: Record<string, string> = {
   default: "text-emerald-600",
 };
 
-function DashboardPanelLoading({ label }: { label: string }) {
+function PanelLoading({ label }: { label: string }) {
   return (
-    <div className="rounded-xl bg-surface-container-low p-5 text-sm text-on-surface-variant animate-pulse">
-      Loading {label}...
+    <div className="rounded-xl bg-surface-container-low p-8 text-sm text-on-surface-variant animate-pulse text-center">
+      Loading {label}…
     </div>
   );
 }
 
 const BestTimeToSell = dynamic(
-  () => import("@/components/dashboard/best-time-to-sell").then((mod) => mod.BestTimeToSell),
-  { ssr: false, loading: () => <DashboardPanelLoading label="forecast" /> },
+  () => import("@/components/dashboard/best-time-to-sell").then((m) => m.BestTimeToSell),
+  { ssr: false, loading: () => <PanelLoading label="forecast" /> },
 );
 
 const FpoDirectoryMap = dynamic(
-  () => import("@/components/dashboard/fpo-directory-map").then((mod) => mod.FpoDirectoryMap),
-  { loading: () => <DashboardPanelLoading label="FPO directory" /> },
+  () => import("@/components/dashboard/fpo-directory-map").then((m) => m.FpoDirectoryMap),
+  { loading: () => <PanelLoading label="FPO directory" /> },
 );
 
 const ListingManager = dynamic(
-  () => import("@/components/dashboard/listing-manager").then((mod) => mod.ListingManager),
-  { ssr: false, loading: () => <DashboardPanelLoading label="listings" /> },
+  () => import("@/components/dashboard/listing-manager").then((m) => m.ListingManager),
+  { ssr: false, loading: () => <PanelLoading label="listings" /> },
 );
 
 const MarketPriceChart = dynamic(
-  () => import("@/components/dashboard/market-price-chart").then((mod) => mod.MarketPriceChart),
-  { ssr: false, loading: () => <DashboardPanelLoading label="market chart" /> },
+  () => import("@/components/dashboard/market-price-chart").then((m) => m.MarketPriceChart),
+  { ssr: false, loading: () => <PanelLoading label="price chart" /> },
 );
 
 const MyEarnings = dynamic(
-  () => import("@/components/dashboard/my-earnings").then((mod) => mod.MyEarnings),
-  { ssr: false, loading: () => <DashboardPanelLoading label="earnings" /> },
+  () => import("@/components/dashboard/my-earnings").then((m) => m.MyEarnings),
+  { ssr: false, loading: () => <PanelLoading label="earnings" /> },
 );
 
 const AlertsReportsPanel = dynamic(
-  () => import("@/components/dashboard/alerts-reports-panel").then((mod) => mod.AlertsReportsPanel),
-  { loading: () => <DashboardPanelLoading label="alerts" /> },
+  () => import("@/components/dashboard/alerts-reports-panel").then((m) => m.AlertsReportsPanel),
+  { loading: () => <PanelLoading label="alerts" /> },
 );
 
 const FarmerSettingsPanel = dynamic(
-  () => import("@/components/settings/farmer-settings-panel").then((mod) => mod.FarmerSettingsPanel),
-  { ssr: false, loading: () => <DashboardPanelLoading label="settings" /> },
+  () => import("@/components/settings/farmer-settings-panel").then((m) => m.FarmerSettingsPanel),
+  { ssr: false, loading: () => <PanelLoading label="settings" /> },
 );
 
 function formatCurrency(value: number) {
@@ -102,22 +94,35 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Quick-action full-tab views (navigated via URL ?tab=)
+// ─────────────────────────────────────────────────────────────────
+
+function TabHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="mb-8">
+      <h1 className="text-3xl font-extrabold font-headline tracking-tight text-on-surface">{title}</h1>
+      {subtitle && <p className="text-on-surface-variant mt-1">{subtitle}</p>}
+    </div>
+  );
+}
+
 export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") ?? "overview";
+
   const [, startTransition] = useTransition();
   const [isActionPending, startActionTransition] = useTransition();
-  const [activePanel, setActivePanel] = useState<string | null>(null);
   const [selectedCropSlug, setSelectedCropSlug] = useState(data.defaultCropSlug);
-  const [selectedDistrict, setSelectedDistrict] = useState(
-    data.profile.district ??
-      data.districts.find((d) => d.district === "Kurnool")?.district ??
-      data.districts[0]?.district ??
-      "",
+  const [selectedDistrict] = useState(
+    data.profile.district ?? data.districts[0]?.district ?? "",
   );
   const [matches, setMatches] = useState(data.matches);
   const [notifications, setNotifications] = useState(data.notifications);
   const [, setAcceptanceMessage] = useState<string | null>(null);
   const [, setActionError] = useState<string | null>(null);
-  const [preferredLanguage] = useState(data.profile.preferredLanguage);
+  const [preferredLanguage] = useState<SupportedLanguage>(data.profile.preferredLanguage);
   const { dict } = useI18n();
 
   const deferredCropSlug = useDeferredValue(selectedCropSlug);
@@ -129,24 +134,194 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   const localPrice =
     activeCrop.prices.find((p) => p.district === deferredDistrict) ?? activeCrop.prices[0];
   const bestRoute =
-    activeCrop.routes.find((r) => r.sourceDistrict === deferredDistrict) ?? activeCrop.routes[0];
+    activeCrop.routes.find((r) => r.sourceDistrict === deferredDistrict) ??
+    activeCrop.routes[0];
   const highestPrice = activeCrop.prices[0];
   const localState =
     data.districts.find((d) => d.district === deferredDistrict)?.state ??
     localPrice?.state ??
     "";
-
   const activeMatch =
     matches.find((m) => m.status === "CONTACTED" || m.status === "OPEN") ?? null;
-
   const priceGap =
-    localPrice && highestPrice
-      ? highestPrice.modalPrice - localPrice.modalPrice
-      : 0;
+    localPrice && highestPrice ? highestPrice.modalPrice - localPrice.modalPrice : 0;
 
-  // If a panel is open, show it full-width below hero
-  const showPanel = activePanel !== null;
+  function navigate(tab: string) {
+    router.push(tab === "overview" ? "/dashboard" : `/dashboard?tab=${tab}`);
+  }
 
+  // ── HEATMAP TAB ──────────────────────────────────────────────
+  if (activeTab === "heatmap") {
+    return (
+      <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+        <div className="p-6 md:p-8">
+          <TabHeader title="Price Gap Heatmap" subtitle="Live district-level price comparison across your crops" />
+          <MarketPriceChart prices={activeCrop.prices} localDistrict={deferredDistrict} />
+        </div>
+        <MobileBottomNav variant="farmer" />
+      </DashboardShell>
+    );
+  }
+
+  // ── INVENTORY / LISTINGS TAB ─────────────────────────────────
+  if (activeTab === "inventory") {
+    return (
+      <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+        <div className="p-6 md:p-8">
+          <TabHeader title="My Listings" subtitle="Manage your active crop listings and track interest" />
+          <ListingManager
+            initialListings={data.listings}
+            farmerUserId={data.profile.id}
+            district={data.profile.district ?? deferredDistrict}
+            state={data.profile.state ?? localState}
+          />
+        </div>
+        <MobileBottomNav variant="farmer" />
+      </DashboardShell>
+    );
+  }
+
+  // ── RECOMMENDATIONS / WHERE-TO-SELL TAB ─────────────────────
+  if (activeTab === "recommendations") {
+    return (
+      <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+        <div className="p-6 md:p-8">
+          <TabHeader title="Where to Sell" subtitle="AI-ranked trade routes — highest margin first" />
+          <div className="grid gap-4">
+            {activeCrop.routes.slice(0, 8).map((route) => (
+              <div
+                key={`${route.sourceDistrict}:${route.targetDistrict}`}
+                className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 flex flex-col sm:flex-row gap-6"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <p className="font-bold text-lg text-on-surface">
+                      {route.sourceDistrict} → {route.targetDistrict}
+                    </p>
+                    <AiConfidenceBadge confidence={route.opportunityScore / 100} />
+                  </div>
+                  <p className="text-on-surface-variant text-sm mb-4">
+                    {route.sourceState} → {route.targetState}
+                  </p>
+                  <ExplainabilityPanel
+                    title="Why this route?"
+                    summary="Score combines demand, transport feasibility, and price spread."
+                    reasons={[
+                      `Demand strength: ${route.demandStrength.toFixed(2)}`,
+                      `Transport feasibility: ${route.transportFeasibility.toFixed(2)}`,
+                      `${route.targetDistrict} pays ${formatCurrency(route.targetModalPrice)} vs ${formatCurrency(route.sourceModalPrice)} locally.`,
+                    ]}
+                  />
+                </div>
+                <div className="flex flex-col items-end justify-between gap-4 shrink-0">
+                  <span className="px-4 py-2 bg-tertiary-container text-on-tertiary-container rounded-full font-bold text-lg">
+                    +{formatCurrency(route.priceGap)}
+                  </span>
+                  <button
+                    onClick={() => navigate("directory")}
+                    className="bg-gradient-to-r from-primary to-primary-container text-white px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition-all"
+                  >
+                    Find Buyers Here
+                  </button>
+                </div>
+              </div>
+            ))}
+            {activeCrop.routes.length === 0 && (
+              <div className="text-center py-16 text-on-surface-variant">
+                <span className="material-symbols-outlined text-5xl mb-4 block" data-icon="route">route</span>
+                <p className="font-semibold">No routes available for this crop yet.</p>
+                <p className="text-sm mt-1">Price data is being collected. Check back soon.</p>
+              </div>
+            )}
+          </div>
+        </div>
+        <MobileBottomNav variant="farmer" />
+      </DashboardShell>
+    );
+  }
+
+  // ── DIRECTORY / FPOs TAB ─────────────────────────────────────
+  if (activeTab === "directory") {
+    return (
+      <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+        <div className="p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface">Find FPOs</h1>
+              <p className="text-on-surface-variant mt-1 italic">Connect with aggregators who buy from your region</p>
+            </div>
+            <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10">
+              <span className="text-xs font-semibold text-primary uppercase tracking-wider block">Near You</span>
+              <span className="text-2xl font-bold font-headline">{data.fpos.length} FPOs</span>
+            </div>
+          </div>
+          <FpoDirectoryMap fpos={data.fpos} farmerDistrict={data.profile.district ?? deferredDistrict} />
+        </div>
+        <MobileBottomNav variant="farmer" />
+      </DashboardShell>
+    );
+  }
+
+  // ── EARNINGS TAB ─────────────────────────────────────────────
+  if (activeTab === "earnings") {
+    return (
+      <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+        <div className="p-6 md:p-8">
+          <TabHeader title="My Earnings" subtitle="Track sales, matches, and profit history" />
+          <MyEarnings
+            matches={matches}
+            cropName={activeCrop.name}
+            prices={activeCrop.prices}
+            routes={activeCrop.routes}
+            localDistrict={deferredDistrict}
+          />
+        </div>
+        <MobileBottomNav variant="farmer" />
+      </DashboardShell>
+    );
+  }
+
+  // ── ALERTS TAB ───────────────────────────────────────────────
+  if (activeTab === "alerts") {
+    return (
+      <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+        <div className="p-6 md:p-8">
+          <TabHeader title="Alerts & Inbox" subtitle="Match interest, price alerts, and system notifications" />
+          <AlertsReportsPanel
+            notifications={notifications}
+            matches={matches}
+            title="My Alerts"
+            description="Real-time crop alerts and buyer match notifications."
+          />
+        </div>
+        <MobileBottomNav variant="farmer" />
+      </DashboardShell>
+    );
+  }
+
+  // ── SETTINGS TAB ─────────────────────────────────────────────
+  if (activeTab === "settings") {
+    return (
+      <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+        <div className="p-6 md:p-8">
+          <TabHeader title="Settings" subtitle="Update your crop preferences, language, and contact details" />
+          <FarmerSettingsPanel
+            userId={data.profile.id}
+            phone={data.profile.phone}
+            initialLanguage={preferredLanguage}
+            initialAddress={data.profile.address}
+            initialDistrict={data.profile.district}
+            initialState={data.profile.state}
+            initialCropSlugs={data.cropPreferences.map((c) => c.cropSlug)}
+            onLanguageUpdated={() => {}}
+          />
+        </div>
+        <MobileBottomNav variant="farmer" />
+      </DashboardShell>
+    );
+  }
+
+  // ── OVERVIEW (default) ────────────────────────────────────────
   return (
     <DashboardShell role="farmer" districtLabel={deferredDistrict}>
       {/* ── HERO BANNER ── */}
@@ -173,16 +348,9 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           </div>
         </div>
 
-        {/* ── OPPORTUNITIES + ALERT 2-col ── */}
-        {data.warnings.length > 0 && (
-          <div className="flex items-center gap-3 mb-4 bg-error-container/60 rounded-xl p-4">
-            <ShieldAlert className="size-5 text-error shrink-0" />
-            <p className="text-sm text-on-surface">{data.warnings[0]}</p>
-          </div>
-        )}
-
+        {/* ── MARKET GAP + ALERT CARDS ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Market Gap Card */}
+          {/* Market Gap */}
           <div className="lg:col-span-2 bg-surface-container-lowest rounded-xl p-8 shadow-sm border-l-[6px] border-primary relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <span className="material-symbols-outlined text-8xl" data-icon="trending_up">trending_up</span>
@@ -194,24 +362,24 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
               <h3 className="text-2xl font-bold text-on-surface mb-4 leading-tight">
                 {bestRoute
                   ? <>Sell in {bestRoute.targetDistrict} for <span className="text-primary font-black text-3xl">{formatCurrency(bestRoute.targetModalPrice)}</span></>
-                  : "No routes available yet"}
+                  : "Analysing best routes…"}
               </h3>
               {bestRoute && (
                 <p className="text-on-surface-variant text-lg mb-6">
                   That&apos;s{" "}
-                  <span className="text-emerald-700 font-bold">{formatCurrency(bestRoute.priceGap)} More Profit</span>{" "}
+                  <span className="text-emerald-700 font-bold">{formatCurrency(bestRoute.priceGap)}/kg More Profit</span>{" "}
                   compared to local Mandis.
                 </p>
               )}
               <div className="flex flex-wrap gap-4">
                 <button
-                  onClick={() => setActivePanel("fpos")}
+                  onClick={() => navigate("directory")}
                   className="bg-gradient-to-r from-primary to-primary-container text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:shadow-primary/20 hover:opacity-90 transition-all"
                 >
                   Unlock Logistics
                 </button>
                 <button
-                  onClick={() => setActivePanel("fpos")}
+                  onClick={() => navigate("directory")}
                   className="bg-surface-container-high text-on-surface px-6 py-3 rounded-lg font-semibold hover:bg-surface-container-highest transition-colors"
                 >
                   View {data.fpos.length} Near FPOs
@@ -220,7 +388,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
           </div>
 
-          {/* Alert / Match Card */}
+          {/* Alert / Match card */}
           {activeMatch ? (
             <div className="bg-secondary-container text-on-secondary-container rounded-xl p-6 flex flex-col justify-between">
               <div>
@@ -236,13 +404,13 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 onClick={() =>
                   startActionTransition(async () => {
                     setActionError(null);
-                    const response = await fetch("/api/matches/accept", {
+                    const res = await fetch("/api/matches/accept", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ farmerUserId: data.profile.id, matchId: activeMatch.id }),
                     });
-                    const payload = (await response.json()) as MatchAcceptResponse;
-                    if (!response.ok || !payload.ok) {
+                    const payload = (await res.json()) as MatchAcceptResponse;
+                    if (!res.ok || !payload.ok) {
                       setActionError(("error" in payload ? payload.error : undefined) ?? "Could not accept.");
                       return;
                     }
@@ -252,23 +420,26 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                   })
                 }
               >
-                {isActionPending ? "Accepting..." : "Accept Match"}
+                {isActionPending ? "Accepting…" : "Accept Match"}
               </Button>
             </div>
           ) : (
             <div className="bg-secondary-container text-on-secondary-container rounded-xl p-6 flex flex-col justify-between">
               <div>
                 <span className="material-symbols-outlined text-4xl mb-4 block" data-icon="priority_high">priority_high</span>
-                <h4 className="text-xl font-bold mb-2">Inventory Alert</h4>
+                <h4 className="text-xl font-bold mb-2">Price Alert</h4>
                 <p className="opacity-90 text-sm">
                   {priceGap > 0
-                    ? `You could earn ${formatCurrency(priceGap)} more per quintal by selling in ${highestPrice?.district ?? "another market"}.`
-                    : "Monitor your crops and set price alerts via WhatsApp."}
+                    ? `Earn ${formatCurrency(priceGap)} more per quintal in ${highestPrice?.district ?? "top market"}.`
+                    : "Set price alerts via WhatsApp to stay ahead."}
                 </p>
               </div>
-              <div className="mt-6 flex justify-end">
-                <span className="font-black text-4xl opacity-40">!</span>
-              </div>
+              <button
+                onClick={() => navigate("alerts")}
+                className="mt-6 bg-white/20 hover:bg-white/30 text-white font-bold border-0 rounded-lg py-2 px-4 text-sm transition-all"
+              >
+                View Alerts
+              </button>
             </div>
           )}
         </div>
@@ -281,7 +452,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             <h2 className="text-2xl font-black font-headline text-emerald-900">My Live Crops</h2>
             <p className="text-slate-500">Real-time local vs. state-wide comparisons</p>
           </div>
-          <Link href="/register/farmer" className="text-primary font-bold hover:underline flex items-center gap-1">
+          <Link href="/register/farmer" className="text-primary font-bold hover:underline flex items-center gap-1 text-sm">
             Edit Farm <span className="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
           </Link>
         </div>
@@ -302,14 +473,12 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 onClick={() => startTransition(() => setSelectedCropSlug(crop.slug))}
                 className={cn(
                   "bg-surface-container-low p-6 rounded-xl transition-all hover:bg-surface-container-high text-left",
-                  isActive && "ring-2 ring-primary"
+                  isActive && "ring-2 ring-primary",
                 )}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                    <span className={cn("material-symbols-outlined text-3xl", iconColor)} data-icon={icon}>
-                      {icon}
-                    </span>
+                    <span className={cn("material-symbols-outlined text-3xl", iconColor)} data-icon={icon}>{icon}</span>
                   </div>
                   {isScarcity ? (
                     <span className="px-2 py-1 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold rounded">SCARCITY</span>
@@ -323,37 +492,32 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 <div className="flex justify-between items-end">
                   <div>
                     <p className="text-[10px] text-slate-500 uppercase tracking-tighter">Local Price</p>
-                    <p className="text-xl font-black text-slate-900">
-                      {cropLocalPrice ? formatCurrency(cropLocalPrice.modalPrice) : "—"}
-                    </p>
+                    <p className="text-xl font-black text-slate-900">{cropLocalPrice ? formatCurrency(cropLocalPrice.modalPrice) : "—"}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-slate-500 uppercase tracking-tighter">Best State</p>
-                    <p className="text-xl font-black text-emerald-700">
-                      {cropBestPrice ? formatCurrency(cropBestPrice.modalPrice) : "—"}
-                    </p>
+                    <p className="text-xl font-black text-emerald-700">{cropBestPrice ? formatCurrency(cropBestPrice.modalPrice) : "—"}</p>
                   </div>
                 </div>
               </button>
             );
           })}
 
-          {/* Add New Crop */}
           <Link
             href="/register/farmer"
-            className="border-2 border-dashed border-outline-variant p-6 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-colors cursor-pointer"
+            className="border-2 border-dashed border-outline-variant p-6 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-colors"
           >
             <span className="material-symbols-outlined text-3xl mb-2" data-icon="add_circle">add_circle</span>
-            <span className="font-bold">Add New Crop</span>
+            <span className="font-bold text-sm">Add New Crop</span>
           </Link>
         </div>
       </section>
 
       {/* ── FORECAST + QUICK ACTIONS ── */}
-      <section className="px-6 mb-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Chart module */}
+      <section className="px-6 mb-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Forecast chart */}
         <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-xl font-black font-headline text-on-surface">
                 {dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ?? activeCrop.name} Forecast
@@ -362,13 +526,11 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
             {bestRoute && bestRoute.priceGap > 0 ? (
               <div className="flex items-center bg-tertiary-container text-on-tertiary-container px-4 py-2 rounded-full font-bold text-sm">
-                <span className="material-symbols-outlined text-xl mr-1" data-icon="trending_up">trending_up</span>
-                SELL
+                <span className="material-symbols-outlined text-xl mr-1" data-icon="trending_up">trending_up</span>SELL
               </div>
             ) : (
               <div className="flex items-center bg-secondary-fixed text-on-secondary-fixed px-4 py-2 rounded-full font-bold text-sm">
-                <span className="material-symbols-outlined text-xl mr-1" data-icon="front_hand">front_hand</span>
-                HOLD
+                <span className="material-symbols-outlined text-xl mr-1" data-icon="front_hand">front_hand</span>HOLD
               </div>
             )}
           </div>
@@ -383,21 +545,18 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           </div>
         </div>
 
-        {/* Quick Actions 2×2 */}
+        {/* Quick Actions 2×2 — each navigates to the correct tab */}
         <div className="grid grid-cols-2 gap-4">
           {[
-            { label: "Find Buyer", icon: "search", panel: "fpos" },
-            { label: "List My Crop", icon: "add_box", panel: "listings" },
-            { label: "Find FPO", icon: "hub", panel: "fpos" },
-            { label: "Track Sales", icon: "local_shipping", panel: "earnings" },
+            { label: "Find Buyer", icon: "search", tab: "directory" },
+            { label: "List My Crop", icon: "add_box", tab: "inventory" },
+            { label: "Find FPO", icon: "hub", tab: "directory" },
+            { label: "Track Sales", icon: "local_shipping", tab: "earnings" },
           ].map((action) => (
             <button
               key={action.label}
-              onClick={() => setActivePanel(activePanel === action.panel ? null : action.panel)}
-              className={cn(
-                "flex flex-col items-center justify-center bg-surface-container-low hover:bg-primary hover:text-white transition-all p-8 rounded-xl group",
-                activePanel === action.panel && "bg-primary text-white"
-              )}
+              onClick={() => navigate(action.tab)}
+              className="flex flex-col items-center justify-center bg-surface-container-low hover:bg-primary hover:text-white transition-all p-8 rounded-xl group cursor-pointer"
             >
               <span
                 className="material-symbols-outlined text-4xl mb-4 group-hover:scale-110 transition-transform"
@@ -410,117 +569,6 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           ))}
         </div>
       </section>
-
-      {/* ── EXPANDABLE PANELS ── */}
-      {showPanel && (
-        <section className="px-6 mb-10">
-          <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 bg-surface-container-low border-b border-outline-variant/10">
-              <h3 className="font-headline font-bold text-lg text-on-surface capitalize">{activePanel}</h3>
-              <button
-                onClick={() => setActivePanel(null)}
-                className="text-on-surface-variant hover:text-on-surface"
-              >
-                <span className="material-symbols-outlined" data-icon="close">close</span>
-              </button>
-            </div>
-            <div className="p-6">
-              {activePanel === "prices" && (
-                <MarketPriceChart prices={activeCrop.prices} localDistrict={deferredDistrict} />
-              )}
-              {activePanel === "forecast" && (
-                <BestTimeToSell
-                  cropName={activeCrop.name}
-                  cropSlug={activeCrop.slug}
-                  prices={activeCrop.prices}
-                  localDistrict={deferredDistrict}
-                  source={data.source}
-                />
-              )}
-              {activePanel === "listings" && (
-                <ListingManager
-                  initialListings={data.listings}
-                  farmerUserId={data.profile.id}
-                  district={data.profile.district ?? deferredDistrict}
-                  state={data.profile.state ?? localState}
-                />
-              )}
-              {activePanel === "earnings" && (
-                <MyEarnings
-                  matches={matches}
-                  cropName={activeCrop.name}
-                  prices={activeCrop.prices}
-                  routes={activeCrop.routes}
-                  localDistrict={deferredDistrict}
-                />
-              )}
-              {activePanel === "fpos" && (
-                <FpoDirectoryMap fpos={data.fpos} farmerDistrict={data.profile.district ?? deferredDistrict} />
-              )}
-              {activePanel === "alerts" && (
-                <AlertsReportsPanel
-                  notifications={notifications}
-                  matches={matches}
-                  title="Alerts & Match Inbox"
-                  description="Daily crop alerts, match interest, and push previews."
-                />
-              )}
-              {activePanel === "routes" && (
-                <div className="grid gap-4">
-                  {activeCrop.routes.slice(0, 6).map((route) => (
-                    <div
-                      key={`${route.sourceDistrict}:${route.targetDistrict}`}
-                      className="flex flex-col sm:flex-row gap-4 bg-surface-container-low rounded-xl px-5 py-5"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <p className="font-bold text-on-surface">
-                            {route.sourceDistrict}{" "}
-                            <span className="material-symbols-outlined align-middle text-[18px] text-on-surface-variant mx-1">arrow_forward</span>{" "}
-                            {route.targetDistrict}
-                          </p>
-                          <AiConfidenceBadge confidence={route.opportunityScore / 100} />
-                        </div>
-                        <p className="text-on-surface-variant text-sm">{route.sourceState} → {route.targetState}</p>
-                      </div>
-                      <div>
-                        <span className="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded text-sm font-bold">
-                          +{formatCurrency(route.priceGap)}
-                        </span>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <ExplainabilityPanel
-                          title="Why this route?"
-                          summary="Score combines demand, feasibility, and price spread."
-                          reasons={[
-                            `Demand ${route.demandStrength.toFixed(2)} | Feasibility ${route.transportFeasibility.toFixed(2)}`,
-                            `${route.targetDistrict} pays ${formatCurrency(route.targetModalPrice)} vs ${formatCurrency(route.sourceModalPrice)} locally.`,
-                          ]}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  {activeCrop.routes.length === 0 && (
-                    <p className="text-center text-on-surface-variant py-8">No routes available.</p>
-                  )}
-                </div>
-              )}
-              {activePanel === "settings" && (
-                <FarmerSettingsPanel
-                  userId={data.profile.id}
-                  phone={data.profile.phone}
-                  initialLanguage={preferredLanguage}
-                  initialAddress={data.profile.address}
-                  initialDistrict={data.profile.district}
-                  initialState={data.profile.state}
-                  initialCropSlugs={data.cropPreferences.map((c) => c.cropSlug)}
-                  onLanguageUpdated={() => {}}
-                />
-              )}
-            </div>
-          </div>
-        </section>
-      )}
 
       <MobileBottomNav variant="farmer" />
     </DashboardShell>

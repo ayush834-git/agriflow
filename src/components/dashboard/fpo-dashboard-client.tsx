@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useDeferredValue, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
@@ -63,10 +63,13 @@ function SpoilageChip({ level }: { level: string }) {
 export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   const [, startTransition] = useTransition();
   const { dict } = useI18n();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const urlTab = searchParams.get("tab");
-  const resolvedTab = urlTab ?? "overview";
-  const [selectedTab, setSelectedTab] = useState(resolvedTab);
+  // Derive active tab directly from URL — reactive to all navigation
+  const selectedTab = searchParams.get("tab") ?? "overview";
+  function setSelectedTab(tab: string) {
+    router.push(tab === "overview" ? "/dashboard/fpo" : `/dashboard/fpo?tab=${tab}`);
+  }
   const [selectedCropSlug] = useState(data.defaultCropSlug);
   const [selectedDistrict, setSelectedDistrict] = useState(
     data.owner.districtsServed[0] ?? data.districts[0]?.district ?? "",
