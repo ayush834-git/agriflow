@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AgriFlow | Market Intelligence Dashboard</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-secondary-fixed-variant": "#930013",
+                "secondary-fixed": "#ffdad7",
+                "surface-variant": "#e1e3e4",
+                "secondary-fixed-dim": "#ffb3ad",
+                "primary-fixed-dim": "#4edea3",
+                "on-error": "#ffffff",
+                "on-secondary-container": "#fffbff",
+                "tertiary": "#006e2f",
+                "on-tertiary": "#ffffff",
+                "primary-fixed": "#6ffbbe",
+                "on-tertiary-fixed": "#002109",
+                "inverse-primary": "#4edea3",
+                "tertiary-fixed-dim": "#4ae176",
+                "tertiary-fixed": "#6bff8f",
+                "background": "#f8f9fa",
+                "on-primary-fixed-variant": "#005236",
+                "on-secondary-fixed": "#410004",
+                "on-primary-container": "#00422b",
+                "on-tertiary-fixed-variant": "#005321",
+                "primary-container": "#10b981",
+                "on-surface-variant": "#3c4a42",
+                "surface-container-high": "#e7e8e9",
+                "tertiary-container": "#06bb56",
+                "on-error-container": "#93000a",
+                "surface": "#f8f9fa",
+                "outline": "#6c7a71",
+                "on-secondary": "#ffffff",
+                "surface-container": "#edeeef",
+                "error-container": "#ffdad6",
+                "secondary-container": "#da3437",
+                "error": "#ba1a1a",
+                "on-primary": "#ffffff",
+                "on-surface": "#191c1d",
+                "surface-tint": "#006c49",
+                "inverse-surface": "#2e3132",
+                "outline-variant": "#bbcabf",
+                "surface-container-highest": "#e1e3e4",
+                "surface-container-lowest": "#ffffff",
+                "on-primary-fixed": "#002113",
+                "surface-bright": "#f8f9fa",
+                "secondary": "#b61722",
+                "inverse-on-surface": "#f0f1f2",
+                "primary": "#006c49",
+                "on-tertiary-container": "#00431a",
+                "surface-container-low": "#f3f4f5",
+                "on-background": "#191c1d",
+                "surface-dim": "#d9dadb"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "fontFamily": {
+                "headline": ["Plus Jakarta Sans"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body overflow-hidden h-screen flex">
+<!-- Sidebar (Shared Component: SideNavBar) -->
+<aside class="hidden md:flex flex-col h-full py-4 space-y-2 bg-slate-50 dark:bg-slate-950 h-screen w-64 border-r-0 font-['Inter'] text-sm font-medium">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">agriculture</span>
+</div>
+<div>
+<h1 class="text-lg font-bold text-emerald-900 dark:text-emerald-100 leading-tight">FPO Hub</h1>
+<p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">District: Nashik</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Heatmap Active -->
+<a class="flex items-center gap-3 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-100 rounded-lg mx-2 px-4 py-3 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span>Heatmap</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-3 transition-all ease-in-out hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-lg mx-2" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Inventory</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-3 transition-all ease-in-out hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-lg mx-2" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span>Recommendations</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-3 transition-all ease-in-out hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-lg mx-2" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>Directory</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-3 transition-all ease-in-out hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-lg mx-2" href="#">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span>Alerts</span>
+</a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Listing
+            </button>
+<div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-1">
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-2 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-2 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Support</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col relative">
+<!-- Top Bar (Shared Component Logic: TopNavBar) -->
+<header class="flex justify-between items-center w-full px-6 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 shadow-sm dark:shadow-none">
+<div class="flex items-center gap-8">
+<div class="text-xl font-black text-emerald-800 dark:text-emerald-200 font-headline tracking-tight">AgriFlow</div>
+<nav class="hidden lg:flex items-center space-x-6 text-sm font-semibold font-headline">
+<a class="text-emerald-700 dark:text-emerald-300 border-b-2 border-emerald-600 pb-1" href="#">Market Insights</a>
+<a class="text-slate-500 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-emerald-800/30 px-2 py-1 rounded transition-colors" href="#">Logistics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex flex-col items-end mr-4">
+<span class="text-[10px] uppercase font-bold text-slate-400 tracking-tighter">Live Status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="text-xs font-semibold">Last Updated: 12m ago</span>
+</div>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full border border-outline-variant/15">
+<span class="material-symbols-outlined text-emerald-600 text-lg">location_on</span>
+<span class="text-sm font-medium">Nashik, Maharashtra</span>
+</div>
+<button class="p-2 rounded-full hover:bg-emerald-50 text-slate-600">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<img alt="User avatar" class="w-8 h-8 rounded-full border-2 border-emerald-100" data-alt="close-up portrait of a professional male smiling with a clean blurred office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB29P2JFZGMByXTJZjfsLm5wXie8qjrZIcmGBNf294vXDVvgLUz8HCL1gIgCCzT5r7DG7Z0LTzXQcfWAkP1510CIFFhV1kyyUCTyPZVrZAsQR9uRw87M0IYR1fA93ocn1aleKrqMhMB9l95TbffzyjiIVZUuleuyDdAkuzIGIpokyqq2EVPcGTgBVdxryKqMuuiZNyTgYS3QmYFVFcgsE4RQ65uo7qvJVseN4AvQuqqDRY7R8JGV5hezAxJUm3j_i_u18KBLt0v7v0"/>
+</div>
+</header>
+<!-- Dynamic Map Canvas -->
+<div class="flex-1 relative overflow-hidden bg-slate-200">
+<!-- Simulated Map Component -->
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover grayscale opacity-40" data-alt="satellite view of geometric green farm fields and rural landscape in central india with soft atmospheric haze" data-location="Andhra Pradesh" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCb2tfIsrAGwkXEvJcpqWvVP1zqRbH0QG9yuixH1xs7R2r7phIk6UH0jbuBPiO7Zzcxe_S39JKHMvwUE8lwzT6Z8LkRBqRj7r7_0QMdeNix6zpK-bh5F366rC3wJBwvHwSW_rqCYWbtyZmTE4AJ8yZE9ghzhoQ9WgmVEp-EODuGI0pOaTdE3Jc5xqpWmvQCORFfkZefiwhNtbzBpJfuYF3Rzz4O8n-vpiDQb0fDWY6-lZq5EhRT5OARvyAneEb0-sBG0_mh3CptdCE"/>
+<!-- District Heatmap Overlays (Simulated) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" viewbox="0 0 1200 800">
+<!-- Hyderabad Region - High Scarcity -->
+<circle cx="600" cy="400" fill="#b61722" fill-opacity="0.25" r="120"></circle>
+<circle cx="600" cy="400" fill="#b61722" fill-opacity="0.4" r="40"></circle>
+<!-- Kurnool Region - Surplus -->
+<circle cx="500" cy="650" fill="#006e2f" fill-opacity="0.2" r="140"></circle>
+<circle cx="500" cy="650" fill="#006e2f" fill-opacity="0.4" r="50"></circle>
+<!-- Supply Flow Arrows (Animated via CSS Logic) -->
+<path class="opacity-80" d="M 500 650 Q 550 525 600 400" fill="none" stroke="#006c49" stroke-dasharray="10 5" stroke-width="4"></path>
+<polygon fill="#006c49" points="600,400 590,415 610,410"></polygon>
+<!-- Labels -->
+<text fill="#191c1d" font-family="Plus Jakarta Sans" font-size="14" font-weight="800" x="610" y="380">HYDERABAD (Scarcity)</text>
+<text fill="#191c1d" font-family="Plus Jakarta Sans" font-size="14" font-weight="800" x="440" y="680">KURNOOL (Surplus)</text>
+</svg>
+</div>
+<!-- Floating Intelligence Widgets -->
+<div class="absolute top-6 left-6 z-10 space-y-4 max-w-sm">
+<!-- Legend -->
+<div class="glass-panel p-5 rounded-xl shadow-sm border border-white/40">
+<h3 class="text-sm font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">legend_toggle</span>
+                        OPPORTUNITY SCORE
+                    </h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-xs font-semibold">
+<span>High Scarcity (Demand)</span>
+<span class="w-12 h-2 bg-secondary rounded-full"></span>
+</div>
+<div class="flex items-center justify-between text-xs font-semibold">
+<span>Balanced Market</span>
+<span class="w-12 h-2 bg-yellow-400 rounded-full"></span>
+</div>
+<div class="flex items-center justify-between text-xs font-semibold">
+<span>High Surplus (Supply)</span>
+<span class="w-12 h-2 bg-tertiary rounded-full"></span>
+</div>
+</div>
+</div>
+<!-- Current Filter -->
+<div class="glass-panel p-4 rounded-xl shadow-sm border border-white/40 flex items-center justify-between">
+<div>
+<p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Active Commodity</p>
+<p class="text-sm font-black text-emerald-900">Tomato (Rabi Crop)</p>
+</div>
+<button class="bg-emerald-700 text-white p-2 rounded-lg">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</div>
+<!-- Right Sidebar: Top Opportunities -->
+<div class="absolute inset-y-0 right-0 w-80 glass-panel border-l border-white/20 p-6 z-10 flex flex-col gap-6 overflow-y-auto">
+<div>
+<h2 class="text-lg font-extrabold font-headline text-on-surface leading-tight mb-1">Top Opportunities</h2>
+<p class="text-xs text-slate-500">Highest profit gaps identified in the last hour</p>
+</div>
+<!-- Opportunity Card 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-emerald-100 hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<span class="px-2 py-1 bg-secondary-container text-white text-[10px] font-bold rounded-full">HIGH DEMAND</span>
+<span class="text-primary font-bold text-sm">₹11/kg Gap</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="p-2 bg-emerald-50 rounded-lg">
+<span class="material-symbols-outlined text-emerald-600">local_shipping</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Kurnool → Hyderabad</p>
+<p class="text-[10px] text-slate-500">Tomato • 240km distance</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3 border-t border-slate-50">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-slate-400">schedule</span>
+<span class="text-[10px] font-medium text-slate-600">Window: 3 days</span>
+</div>
+<span class="text-[10px] font-bold text-emerald-700">Book Route</span>
+</div>
+</div>
+<!-- Opportunity Card 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-slate-50 hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<span class="px-2 py-1 bg-tertiary-container text-white text-[10px] font-bold rounded-full">STEADY FLOW</span>
+<span class="text-primary font-bold text-sm">₹6.5/kg Gap</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="p-2 bg-emerald-50 rounded-lg">
+<span class="material-symbols-outlined text-emerald-600">local_shipping</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Guntur → Vijayawada</p>
+<p class="text-[10px] text-slate-500">Chilli • 40km distance</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3 border-t border-slate-50">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-slate-400">schedule</span>
+<span class="text-[10px] font-medium text-slate-600">Window: 7 days</span>
+</div>
+<span class="text-[10px] font-bold text-emerald-700">View Data</span>
+</div>
+</div>
+<!-- Insight Bento Card -->
+<div class="mt-auto bg-emerald-900 text-emerald-50 p-5 rounded-2xl relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-[10px] font-bold opacity-70 uppercase mb-1">Weekly Forecast</p>
+<h4 class="text-base font-bold mb-3">Onion prices expected to surge in 72h</h4>
+<div class="h-12 w-full flex items-end gap-1 mb-3">
+<div class="flex-1 bg-emerald-500/30 h-1/2 rounded-t-sm"></div>
+<div class="flex-1 bg-emerald-500/30 h-3/4 rounded-t-sm"></div>
+<div class="flex-1 bg-emerald-500/30 h-2/3 rounded-t-sm"></div>
+<div class="flex-1 bg-emerald-400 h-full rounded-t-sm"></div>
+<div class="flex-1 bg-emerald-400 h-5/6 rounded-t-sm"></div>
+</div>
+<button class="text-xs font-black flex items-center gap-2">
+                            FULL ANALYSIS <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<!-- Decorative background pattern -->
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-8xl" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Mobile Controls (Mobile view logic) -->
+<div class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-4 glass-panel rounded-full shadow-xl border border-white/50 z-50">
+<span class="material-symbols-outlined text-emerald-800">map</span>
+<span class="material-symbols-outlined text-slate-400">inventory</span>
+<div class="w-12 h-12 bg-emerald-700 rounded-full flex items-center justify-center text-white shadow-lg -mt-8">
+<span class="material-symbols-outlined">add</span>
+</div>
+<span class="material-symbols-outlined text-slate-400">insights</span>
+<span class="material-symbols-outlined text-slate-400">notifications</span>
+</div>
+</main>
+</body></html>

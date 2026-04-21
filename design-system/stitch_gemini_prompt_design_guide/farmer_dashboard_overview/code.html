@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AgriFlow - Farmer Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#930013",
+                    "secondary-fixed": "#ffdad7",
+                    "surface-variant": "#e1e3e4",
+                    "secondary-fixed-dim": "#ffb3ad",
+                    "primary-fixed-dim": "#4edea3",
+                    "on-error": "#ffffff",
+                    "on-secondary-container": "#fffbff",
+                    "tertiary": "#006e2f",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed": "#6ffbbe",
+                    "on-tertiary-fixed": "#002109",
+                    "inverse-primary": "#4edea3",
+                    "tertiary-fixed-dim": "#4ae176",
+                    "tertiary-fixed": "#6bff8f",
+                    "background": "#f8f9fa",
+                    "on-primary-fixed-variant": "#005236",
+                    "on-secondary-fixed": "#410004",
+                    "on-primary-container": "#00422b",
+                    "on-tertiary-fixed-variant": "#005321",
+                    "primary-container": "#10b981",
+                    "on-surface-variant": "#3c4a42",
+                    "surface-container-high": "#e7e8e9",
+                    "tertiary-container": "#06bb56",
+                    "on-error-container": "#93000a",
+                    "surface": "#f8f9fa",
+                    "outline": "#6c7a71",
+                    "on-secondary": "#ffffff",
+                    "surface-container": "#edeeef",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#da3437",
+                    "error": "#ba1a1a",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#191c1d",
+                    "surface-tint": "#006c49",
+                    "inverse-surface": "#2e3132",
+                    "outline-variant": "#bbcabf",
+                    "surface-container-highest": "#e1e3e4",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#002113",
+                    "surface-bright": "#f8f9fa",
+                    "secondary": "#b61722",
+                    "inverse-on-surface": "#f0f1f2",
+                    "primary": "#006c49",
+                    "on-tertiary-container": "#00431a",
+                    "surface-container-low": "#f3f4f5",
+                    "on-background": "#191c1d",
+                    "surface-dim": "#d9dadb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
+<div class="flex min-h-screen">
+<!-- Side Navigation - Hidden on Mobile -->
+<aside class="hidden md:flex flex-col h-screen w-64 bg-slate-50 border-r-0 py-4 space-y-2 sticky top-0">
+<div class="px-6 mb-8">
+<h1 class="text-lg font-bold text-emerald-900">FPO Hub</h1>
+<p class="text-xs text-slate-500">District: Nashik</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-4 py-3 mx-2 bg-emerald-100 text-emerald-800 rounded-lg transition-all ease-in-out font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+                    Dashboard
+                </a>
+<a class="flex items-center px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200/50 transition-all ease-in-out font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="map">map</span>
+                    Heatmap
+                </a>
+<a class="flex items-center px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200/50 transition-all ease-in-out font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="inventory_2">inventory_2</span>
+                    Inventory
+                </a>
+<a class="flex items-center px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200/50 transition-all ease-in-out font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="insights">insights</span>
+                    Recommendations
+                </a>
+<a class="flex items-center px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200/50 transition-all ease-in-out font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="groups">groups</span>
+                    Directory
+                </a>
+</nav>
+<div class="px-4 py-4 border-t border-slate-200">
+<a class="flex items-center px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200/50 transition-all font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+                    Settings
+                </a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 min-w-0 pb-24 md:pb-8">
+<!-- Top App Bar -->
+<header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 flex justify-between items-center w-full px-6 py-3 shadow-sm">
+<div class="flex items-center gap-4">
+<span class="text-xl font-black text-emerald-800 font-headline">AgriFlow</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex gap-6 font-['Plus_Jakarta_Sans'] font-semibold">
+<a class="text-emerald-700 border-b-2 border-emerald-600 py-1" href="#">Market Insights</a>
+<a class="text-slate-500 hover:bg-emerald-50 transition-colors py-1 px-2 rounded" href="#">Logistics</a>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-600 cursor-pointer" data-icon="notifications">notifications</span>
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="Portrait of a smiling Indian farmer wearing a traditional turban, warm lighting, natural skin texture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBn7u3z8YNkD6K2lTHsm2Izaadwg9MRMbdRyg1TYdE_yQq7YgUyiSWBIZ7gcCvorBUvi0DKdn3uBZU9z7p5TV6kxCkwum2jDas4ehZh7VifbJuv6CPoGqK_uiWcb8pqtZF9myPW9elwNXPAVIvsXd2qeIXcxRmuoo9vMTAvbz_oxkJZ2507drZEAYc42AMS8AboPJaSM4yyUCEDfStlbeXvVMtCJ_lhT2-Fykcqt6lwKkGsdLthkqV6IJ8V5wNwKLAEOp8iO0p7vpY"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Hero Section -->
+<section class="px-6 pt-8 pb-4">
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-900 to-emerald-700 text-white p-8 mb-6">
+<div class="relative z-10">
+<h2 class="text-3xl md:text-5xl font-black font-headline tracking-tight mb-2">Namaste Ramu!</h2>
+<p class="text-emerald-50 text-lg md:text-xl font-medium opacity-90 max-w-2xl">
+                            Your local price for <span class="font-bold text-white">Tomato</span> in Kurnool is <span class="bg-white/20 px-2 py-0.5 rounded">₹4</span>.
+                        </p>
+</div>
+<div class="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-[12rem]" data-icon="eco">eco</span>
+</div>
+</div>
+<!-- Main Action / Market Opportunity Card -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-xl p-8 shadow-sm border-l-8 border-primary relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-8xl" data-icon="trending_up">trending_up</span>
+</div>
+<div class="relative z-10">
+<span class="inline-block px-3 py-1 rounded-full bg-tertiary-container text-on-tertiary-container text-xs font-bold uppercase tracking-wider mb-4">Market Gap Found</span>
+<h3 class="text-2xl font-bold text-on-surface mb-4 leading-tight">
+                                Sell in Hyderabad for <span class="text-primary font-black text-3xl">₹15</span>
+</h3>
+<p class="text-on-surface-variant text-lg mb-6">
+                                That's <span class="text-emerald-700 font-bold">₹11/kg More Profit</span> compared to local Mandis.
+                            </p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-gradient-to-r from-primary to-primary-container text-white px-8 py-3 rounded-DEFAULT font-bold shadow-lg hover:shadow-primary/20 transition-all">
+                                    Unlock Logistics
+                                </button>
+<button class="bg-surface-container-high text-on-surface px-6 py-3 rounded-DEFAULT font-semibold hover:bg-surface-container-highest transition-colors">
+                                    View 3 Near FPOs
+                                </button>
+</div>
+</div>
+</div>
+<!-- Side High Impact Card -->
+<div class="bg-secondary-container text-on-secondary-container rounded-xl p-6 flex flex-col justify-between">
+<div>
+<span class="material-symbols-outlined text-4xl mb-4" data-icon="priority_high">priority_high</span>
+<h4 class="text-xl font-bold mb-2">Inventory Alert</h4>
+<p class="opacity-90">Stock levels for Onion are reaching critical thresholds in the district hub.</p>
+</div>
+<div class="mt-6 flex justify-end">
+<span class="font-black text-4xl opacity-40">!</span>
+</div>
+</div>
+</div>
+</section>
+<!-- My Crops Section - Bento Grid Style -->
+<section class="px-6 mb-8">
+<div class="flex items-end justify-between mb-6">
+<div>
+<h2 class="text-2xl font-black font-headline text-emerald-900">My Live Crops</h2>
+<p class="text-slate-500">Real-time local vs. state-wide comparisons</p>
+</div>
+<button class="text-primary font-bold hover:underline flex items-center">
+                        Edit Farm <span class="material-symbols-outlined ml-1" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+<!-- Tomato Card -->
+<div class="bg-surface-container-low p-6 rounded-xl transition-all hover:bg-surface-container-high">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-red-500 shadow-sm">
+<span class="material-symbols-outlined text-3xl" data-icon="nutrition" data-weight="fill">nutrition</span>
+</div>
+<span class="px-2 py-1 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold rounded">SCARCITY</span>
+</div>
+<h3 class="text-lg font-bold mb-1">Tomato</h3>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Local Price</p>
+<p class="text-xl font-black text-slate-900">₹4</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Best State</p>
+<p class="text-xl font-black text-emerald-700">₹15</p>
+</div>
+</div>
+</div>
+<!-- Onion Card -->
+<div class="bg-surface-container-low p-6 rounded-xl transition-all hover:bg-surface-container-high">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-amber-600 shadow-sm">
+<span class="material-symbols-outlined text-3xl" data-icon="radio_button_checked" data-weight="fill">radio_button_checked</span>
+</div>
+<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold rounded">SURPLUS</span>
+</div>
+<h3 class="text-lg font-bold mb-1">Onion</h3>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Local Price</p>
+<p class="text-xl font-black text-slate-900">₹22</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Best State</p>
+<p class="text-xl font-black text-emerald-700">₹28</p>
+</div>
+</div>
+</div>
+<!-- Chilli Card -->
+<div class="bg-surface-container-low p-6 rounded-xl transition-all hover:bg-surface-container-high">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-red-700 shadow-sm">
+<span class="material-symbols-outlined text-3xl" data-icon="local_fire_department" data-weight="fill">local_fire_department</span>
+</div>
+</div>
+<h3 class="text-lg font-bold mb-1">Chilli (Dry)</h3>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Local Price</p>
+<p class="text-xl font-black text-slate-900">₹180</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Best State</p>
+<p class="text-xl font-black text-emerald-700">₹195</p>
+</div>
+</div>
+</div>
+<!-- Add New Card -->
+<div class="border-2 border-dashed border-outline-variant p-6 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-3xl mb-2" data-icon="add_circle">add_circle</span>
+<span class="font-bold">Add New Crop</span>
+</div>
+</div>
+</section>
+<!-- Price Forecast & Strategy -->
+<section class="px-6 mb-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Chart Module -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h3 class="text-xl font-black font-headline text-on-surface">Tomato Forecast</h3>
+<p class="text-sm text-slate-500">Predicted daily price trends</p>
+</div>
+<div class="flex items-center bg-secondary-fixed text-on-secondary-fixed px-4 py-2 rounded-full font-bold">
+<span class="material-symbols-outlined text-xl mr-2" data-icon="front_hand">front_hand</span>
+                            HOLD
+                        </div>
+</div>
+<div class="h-48 w-full flex items-end gap-2 px-2">
+<div class="flex-1 bg-primary/10 hover:bg-primary/30 transition-all rounded-t-lg h-[40%] relative group">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">₹4</span>
+</div>
+<div class="flex-1 bg-primary/15 hover:bg-primary/30 transition-all rounded-t-lg h-[45%] relative group"></div>
+<div class="flex-1 bg-primary/20 hover:bg-primary/30 transition-all rounded-t-lg h-[55%] relative group"></div>
+<div class="flex-1 bg-primary/25 hover:bg-primary/30 transition-all rounded-t-lg h-[50%] relative group"></div>
+<div class="flex-1 bg-primary/40 hover:bg-primary/30 transition-all rounded-t-lg h-[70%] relative group"></div>
+<div class="flex-1 bg-primary/60 hover:bg-primary/30 transition-all rounded-t-lg h-[85%] relative group"></div>
+<div class="flex-1 bg-primary hover:bg-primary/80 transition-all rounded-t-lg h-[95%] relative group">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold text-primary">₹18</span>
+</div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+<span>Today</span>
+<span>Tomorrow</span>
+<span>Wed</span>
+<span>Thu</span>
+<span>Fri</span>
+<span>Sat</span>
+<span>Next Sun</span>
+</div>
+<p class="mt-6 text-sm italic text-slate-500 border-t border-slate-100 pt-4">
+                        *Prices expected to surge by 20% next weekend due to warehouse shortages.
+                    </p>
+</div>
+<!-- Quick Actions -->
+<div class="grid grid-cols-2 gap-4">
+<button class="flex flex-col items-center justify-center bg-surface-container-low hover:bg-primary hover:text-white transition-all p-8 rounded-xl group">
+<span class="material-symbols-outlined text-4xl mb-4 group-hover:scale-110 transition-transform" data-icon="search">search</span>
+<span class="font-bold">Find Buyer</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-surface-container-low hover:bg-primary hover:text-white transition-all p-8 rounded-xl group">
+<span class="material-symbols-outlined text-4xl mb-4 group-hover:scale-110 transition-transform" data-icon="add_box">add_box</span>
+<span class="font-bold">List My Crop</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-surface-container-low hover:bg-primary hover:text-white transition-all p-8 rounded-xl group">
+<span class="material-symbols-outlined text-4xl mb-4 group-hover:scale-110 transition-transform" data-icon="hub">hub</span>
+<span class="font-bold">Find FPO</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-surface-container-low hover:bg-primary hover:text-white transition-all p-8 rounded-xl group">
+<span class="material-symbols-outlined text-4xl mb-4 group-hover:scale-110 transition-transform" data-icon="local_shipping">local_shipping</span>
+<span class="font-bold">Track Sales</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation - Mobile Only -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-[0_-8px_24px_rgba(0,0,0,0.05)] flex justify-around items-center px-4 py-3 z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" data-icon="home" data-weight="fill">home</span>
+<span class="text-[10px] font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="text-[10px] font-bold">Markets</span>
+</a>
+<a class="bg-primary text-white -mt-12 w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-primary/40 border-4 border-background" href="#">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="inventory">inventory</span>
+<span class="text-[10px] font-bold">Crops</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[10px] font-bold">Account</span>
+</a>
+</nav>
+</div>
+</body></html>

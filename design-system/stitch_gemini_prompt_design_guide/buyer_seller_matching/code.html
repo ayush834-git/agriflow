@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AgriFlow | Buyer &amp; Seller Directory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed-variant": "#930013",
+                      "secondary-fixed": "#ffdad7",
+                      "surface-variant": "#e1e3e4",
+                      "secondary-fixed-dim": "#ffb3ad",
+                      "primary-fixed-dim": "#4edea3",
+                      "on-error": "#ffffff",
+                      "on-secondary-container": "#fffbff",
+                      "tertiary": "#006e2f",
+                      "on-tertiary": "#ffffff",
+                      "primary-fixed": "#6ffbbe",
+                      "on-tertiary-fixed": "#002109",
+                      "inverse-primary": "#4edea3",
+                      "tertiary-fixed-dim": "#4ae176",
+                      "tertiary-fixed": "#6bff8f",
+                      "background": "#f8f9fa",
+                      "on-primary-fixed-variant": "#005236",
+                      "on-secondary-fixed": "#410004",
+                      "on-primary-container": "#00422b",
+                      "on-tertiary-fixed-variant": "#005321",
+                      "primary-container": "#10b981",
+                      "on-surface-variant": "#3c4a42",
+                      "surface-container-high": "#e7e8e9",
+                      "tertiary-container": "#06bb56",
+                      "on-error-container": "#93000a",
+                      "surface": "#f8f9fa",
+                      "outline": "#6c7a71",
+                      "on-secondary": "#ffffff",
+                      "surface-container": "#edeeef",
+                      "error-container": "#ffdad6",
+                      "secondary-container": "#da3437",
+                      "error": "#ba1a1a",
+                      "on-primary": "#ffffff",
+                      "on-surface": "#191c1d",
+                      "surface-tint": "#006c49",
+                      "inverse-surface": "#2e3132",
+                      "outline-variant": "#bbcabf",
+                      "surface-container-highest": "#e1e3e4",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary-fixed": "#002113",
+                      "surface-bright": "#f8f9fa",
+                      "secondary": "#b61722",
+                      "inverse-on-surface": "#f0f1f2",
+                      "primary": "#006c49",
+                      "on-tertiary-container": "#00431a",
+                      "surface-container-low": "#f3f4f5",
+                      "on-background": "#191c1d",
+                      "surface-dim": "#d9dadb"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.8px",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "fontFamily": {
+                      "headline": ["Plus Jakarta Sans"],
+                      "body": ["Inter"],
+                      "label": ["Inter"]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; color: #191c1d; }
+        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-header { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .sidebar-active { background-color: #d1fae5; color: #065f46; }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-4 space-y-2 bg-slate-50 dark:bg-slate-950 h-screen w-64 border-r-0 z-40 sticky top-0">
+<div class="px-6 mb-8">
+<h1 class="text-lg font-bold text-emerald-900 dark:text-emerald-100">FPO Hub</h1>
+<p class="text-xs text-slate-500">District: Nashik</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-3 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">map</span>
+<span class="font-medium text-sm">Heatmap</span>
+</a>
+<a class="flex items-center text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-3 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">inventory_2</span>
+<span class="font-medium text-sm">Inventory</span>
+</a>
+<a class="flex items-center text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-3 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">insights</span>
+<span class="font-medium text-sm">Recommendations</span>
+</a>
+<a class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-100 rounded-lg mx-2 flex items-center px-4 py-3 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3">groups</span>
+<span class="font-medium text-sm">Directory</span>
+</a>
+<a class="flex items-center text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-4 py-3 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3 text-emerald-600">notifications_active</span>
+<span class="font-medium text-sm">Alerts</span>
+</a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3 rounded-lg font-semibold shadow-sm hover:opacity-90 transition-opacity">
+                    New Listing
+                </button>
+<div class="mt-4 pt-4 border-t border-slate-200 flex flex-col space-y-1">
+<a class="flex items-center text-slate-600 px-4 py-2 hover:bg-slate-200/50 rounded-lg text-sm" href="#">
+<span class="material-symbols-outlined mr-3">settings</span>
+                        Settings
+                    </a>
+<a class="flex items-center text-slate-600 px-4 py-2 hover:bg-slate-200/50 rounded-lg text-sm" href="#">
+<span class="material-symbols-outlined mr-3">help</span>
+                        Support
+                    </a>
+</div>
+</div>
+</aside>
+<div class="flex-1 flex flex-col overflow-hidden">
+<!-- TopNavBar -->
+<header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 flex justify-between items-center w-full px-6 py-3 shadow-sm dark:shadow-none">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black text-emerald-800 dark:text-emerald-200 font-headline">AgriFlow</span>
+<nav class="hidden lg:flex items-center space-x-6 text-sm font-['Plus_Jakarta_Sans'] font-semibold">
+<a class="text-slate-500 dark:text-slate-400 hover:text-emerald-600" href="#">Market Insights</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-emerald-600" href="#">Logistics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<input class="bg-emerald-50/30 border-none rounded-full px-4 py-2 text-sm w-64 focus:ring-2 focus:ring-primary/20" placeholder="Search directory..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-2 text-slate-400">search</span>
+</div>
+<button class="p-2 text-slate-500 hover:bg-emerald-50 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-emerald-100 overflow-hidden border border-emerald-200">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="professional headshot of a middle-aged male executive in a smart casual outfit with a friendly expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvo-5wN46VYkqQ0pkMCp76xIfv1qSc-o25Z_dHoIf5GCXcBFY4jWqzcbDGxecCMXzMkDxK6O1fEfYX4GDaK107vp1iyanE8USvBzVQPWlPwADDZiDKCUpvxmrXn2WrC_NqLTxz9Z5bx-d3TgyU6PqZ7PFP409dxGu_2BlMgGngJ9Sxg_zjp22YiFNrmCCf-WAcV9I_SRXBbeBqLWS_ZSLenrr8EQYqTCNv0ABWEcRPo9Hdk6VLZ1ewZdUassxeQXXUkADzjGrPMhw"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
+<!-- Page Title & Hero Header -->
+<section class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-6">
+<div class="space-y-2">
+<h2 class="text-4xl font-extrabold font-headline tracking-tight text-on-surface">Directory &amp; Matching</h2>
+<p class="text-on-surface-variant max-w-xl italic">Bridging the gap between harvest and demand through editorial-grade supply chain intelligence.</p>
+</div>
+<!-- Stats / Mini Cards -->
+<div class="flex gap-4">
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 flex flex-col min-w-[140px]">
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Active Sellers</span>
+<span class="text-2xl font-bold font-headline">1,248</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 flex flex-col min-w-[140px]">
+<span class="text-xs font-semibold text-tertiary uppercase tracking-wider">Demand</span>
+<span class="text-2xl font-bold font-headline">842 MT</span>
+</div>
+</div>
+</section>
+<!-- Filter Bar (Asymmetric Layout) -->
+<section class="max-w-7xl mx-auto bg-surface-container-low p-6 rounded-xl space-y-4">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="flex flex-col space-y-1">
+<label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Crop Type</label>
+<select class="w-full border-none bg-surface-container-lowest rounded-lg py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20">
+<option>Sona Masuri Rice</option>
+<option>Alphonso Mango</option>
+<option>Red Onions</option>
+<option>Turmeric</option>
+</select>
+</div>
+<div class="flex flex-col space-y-1">
+<label class="text-[10px] font-bold uppercase text-slate-500 ml-1">District</label>
+<div class="relative">
+<input class="w-full border-none bg-surface-container-lowest rounded-lg py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20" placeholder="e.g. Nashik" type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-3 text-slate-400 text-sm">location_on</span>
+</div>
+</div>
+<div class="flex flex-col space-y-1">
+<label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Min. Quantity (MT)</label>
+<input class="w-full border-none bg-surface-container-lowest rounded-lg py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20" placeholder="5" type="number"/>
+</div>
+<div class="flex items-end">
+<button class="w-full bg-on-surface text-surface py-3 px-6 rounded-lg font-bold hover:bg-on-surface/90 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                                Apply Filters
+                            </button>
+</div>
+</div>
+</section>
+<!-- Results Grid (Bento Grid Inspired) -->
+<section class="max-w-7xl mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Featured Top Match -->
+<div class="lg:col-span-8 bg-surface-container-lowest rounded-xl overflow-hidden relative group border border-outline-variant/10 shadow-sm">
+<div class="absolute top-4 right-4 z-10">
+<div class="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-full text-xs font-black uppercase flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">stars</span>
+                                    98% AI Match
+                                </div>
+</div>
+<div class="flex flex-col md:flex-row h-full">
+<div class="md:w-2/5 relative h-64 md:h-auto">
+<img alt="Farmer with harvest" class="w-full h-full object-cover" data-alt="close up of a farmer's hands holding high quality golden wheat grains against a sun-drenched field backdrop" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzaPoTRaIfIiAt-5mwsdxOBWHWyY6IGqxlxgBTlpqx4stfx3LuOcI6gE4OeQWkJ4wNMhw0ob_6lEHYatE01EDmg3VrbBbfaHHnGDccSwLpJSfNA4kchkYh1bfGNSg3jWC_-DcfoB764tYE-UvSXT_47laP-WDhw5Tmu-TNV7DuOBOmxkSIULyIqpYHQGagHc1EgS4o7aODiYhFRpRPL79gUMCqgnJ4LE78tgTlom6bm57VtMIejJX-VmQnho1jEGsBJ6hI7ybn1pk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<p class="text-xs font-bold uppercase tracking-widest opacity-80">Farmer Listing</p>
+<h3 class="text-xl font-bold font-headline">Ramesh G. Patil</h3>
+</div>
+</div>
+<div class="md:w-3/5 p-8 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="text-2xl font-black font-headline text-primary">Sona Masuri Rice</h4>
+<p class="text-sm text-on-surface-variant italic">Grade: Premium (Export Quality)</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold text-slate-400 uppercase">Asking Price</span>
+<p class="text-2xl font-black text-on-surface">₹42,500 <span class="text-sm font-normal text-slate-500">/MT</span></p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 py-4">
+<div class="bg-surface-container-low p-3 rounded-lg">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Available</span>
+<p class="font-bold">25.5 Metric Tons</p>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Valid Until</span>
+<p class="font-bold">24 Oct, 2023</p>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-2 mt-2">
+                                            Harvested using organic practices in the fertile plains of the Krishna river basin. Low moisture content and high elongation ratio.
+                                        </p>
+</div>
+<div class="mt-6 flex gap-3">
+<button class="flex-1 bg-gradient-to-r from-primary to-primary-container text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-all">
+<span class="material-symbols-outlined text-sm">chat</span>
+                                            Connect via WhatsApp
+                                        </button>
+<button class="p-3 bg-surface-container-high rounded-lg text-on-surface hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Listings (Bulk FPO) -->
+<div class="lg:col-span-4 space-y-6">
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm flex flex-col space-y-4">
+<div class="flex justify-between items-center">
+<span class="bg-secondary-container text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">FPO Offer</span>
+<div class="bg-tertiary-container/10 text-tertiary px-2 py-0.5 rounded-full text-[10px] font-bold">92% Match</div>
+</div>
+<div>
+<h4 class="text-lg font-bold font-headline">Nashik Onion Hub</h4>
+<p class="text-xs text-on-surface-variant">District: Nashik, Maharashtra</p>
+</div>
+<div class="flex justify-between items-end border-t border-dashed border-slate-200 pt-4">
+<div>
+<p class="text-sm font-semibold">Red Onions (Bulbs)</p>
+<p class="text-xs text-slate-500">80 Metric Tons</p>
+</div>
+<div class="text-right">
+<p class="text-lg font-black text-secondary">₹18,200</p>
+<p class="text-[10px] text-slate-400">per MT</p>
+</div>
+</div>
+<button class="w-full border-2 border-primary text-primary py-2 rounded-lg font-bold text-sm hover:bg-primary/5 transition-all">
+                                    View Detailed Listing
+                                </button>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm flex flex-col space-y-4">
+<div class="flex justify-between items-center">
+<span class="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-black uppercase">Direct Farmer</span>
+<div class="bg-tertiary-container/10 text-tertiary px-2 py-0.5 rounded-full text-[10px] font-bold">88% Match</div>
+</div>
+<div>
+<h4 class="text-lg font-bold font-headline">Ananya Singh</h4>
+<p class="text-xs text-on-surface-variant">District: Guntur, AP</p>
+</div>
+<div class="flex justify-between items-end border-t border-dashed border-slate-200 pt-4">
+<div>
+<p class="text-sm font-semibold">Guntur Chilies (Dry)</p>
+<p class="text-xs text-slate-500">2.5 Metric Tons</p>
+</div>
+<div class="text-right">
+<p class="text-lg font-black text-on-surface">₹1,45,000</p>
+<p class="text-[10px] text-slate-400">per MT</p>
+</div>
+</div>
+<button class="w-full border-2 border-primary text-primary py-2 rounded-lg font-bold text-sm hover:bg-primary/5 transition-all">
+                                    View Detailed Listing
+                                </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Detailed Listing Pop-out Style Section (Non-modal) -->
+<section class="max-w-7xl mx-auto py-12">
+<div class="bg-surface-container-low rounded-2xl p-1 md:p-8 flex flex-col md:flex-row gap-12">
+<div class="md:w-1/2 space-y-6 p-6 md:p-0">
+<div class="flex items-center gap-4">
+<div class="p-3 bg-white rounded-xl shadow-sm">
+<span class="material-symbols-outlined text-primary text-3xl">verified</span>
+</div>
+<div>
+<h2 class="text-3xl font-black font-headline">Quality Specifications</h2>
+<p class="text-sm text-on-surface-variant">Lab certified listing #AG-4920</p>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest p-6 rounded-xl border-l-4 border-primary">
+<p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Moisture Level</p>
+<p class="text-xl font-bold">12.4% <span class="text-xs font-medium text-tertiary">Ideal Range</span></p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border-l-4 border-primary">
+<p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Foreign Matter</p>
+<p class="text-xl font-bold">&lt; 0.5% <span class="text-xs font-medium text-tertiary">Cleaned</span></p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border-l-4 border-primary">
+<p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Admixture</p>
+<p class="text-xl font-bold">1.0% <span class="text-xs font-medium text-tertiary">Pure</span></p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border-l-4 border-primary">
+<p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Broken Grains</p>
+<p class="text-xl font-bold">2.2% <span class="text-xs font-medium text-tertiary">Premium</span></p>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl shadow-sm border border-outline-variant/10">
+<h5 class="font-bold mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">location_on</span>
+                                    Logistics Node
+                                </h5>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                                    Warehouse Location: APMC Yard, Guntur Rural. Facilities available for direct loading into 10MT / 20MT trucks.
+                                </p>
+</div>
+</div>
+<div class="md:w-1/2 flex flex-col">
+<div class="flex-1 bg-surface-container-lowest rounded-2xl shadow-xl overflow-hidden flex flex-col">
+<div class="p-8 border-b border-outline-variant/10">
+<h3 class="text-xl font-bold font-headline mb-4">Pricing Narrative</h3>
+<div class="flex items-center gap-2 mb-6">
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 w-1/3 bg-tertiary-container rounded-full"></div>
+<div class="h-1 w-8 bg-slate-200 rounded-full"></div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between">
+<span class="text-slate-500">Quote Price</span>
+<span class="font-bold text-lg">₹42,500</span>
+</div>
+<div class="flex justify-between">
+<span class="text-slate-500">Market Avg.</span>
+<span class="font-bold text-lg">₹41,800</span>
+</div>
+<div class="flex justify-between text-tertiary font-bold">
+<span>Premium Value</span>
+<span>+₹700</span>
+</div>
+</div>
+</div>
+<div class="p-8 bg-emerald-50/50 flex-1">
+<div class="flex items-start gap-4 mb-6">
+<div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary">psychology</span>
+</div>
+<div>
+<p class="font-bold text-sm">AI Recommendation</p>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                                This listing is priced slightly above market average but carries a high quality grade with low moisture, making it ideal for long-term storage or export.
+                                            </p>
+</div>
+</div>
+<button class="w-full bg-on-surface text-white py-4 rounded-xl font-black text-lg shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">chat_bubble</span>
+                                        Negotiate Terms
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</div>
+<!-- Mobile Nav -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md flex justify-around items-center py-3 border-t-0 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-50">
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">map</span>
+<span class="text-[10px] font-bold">Map</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-bold">Inventory</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">groups</span>
+<span class="text-[10px] font-bold">Directory</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">notifications_active</span>
+<span class="text-[10px] font-bold">Alerts</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-bold">Settings</span>
+</button>
+</div>
+</body></html>
