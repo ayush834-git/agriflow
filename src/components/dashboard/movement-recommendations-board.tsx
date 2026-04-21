@@ -192,7 +192,7 @@ export function MovementRecommendationsBoard({
                                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
                                   <span className="block text-[10px] text-on-surface-variant font-bold mb-1">CONFIDENCE</span>
                                   <span className="font-bold text-sm text-primary flex justify-center items-center gap-1">
-                                    {(recommendation.confidence * 100).toFixed(0)}% <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                    {((recommendation.confidence ?? 0) * 100).toFixed(0)}% <span className="material-symbols-outlined text-[14px]">check_circle</span>
                                   </span>
                                 </div>
                               </div>

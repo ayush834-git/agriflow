@@ -13,6 +13,7 @@ const FARMER_NAV_ITEMS = [
     isAction: true,
     href: "https://wa.me/14155238886?text=Hi",
     icon: "add",
+    label: "",
   },
   { href: "/dashboard?tab=crops", label: "Crops", icon: "inventory" },
   { href: "/register/farmer", label: "Account", icon: "person" },
