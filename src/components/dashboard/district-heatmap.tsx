@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
+
 import { DataFreshnessBadge } from "@/components/dashboard/data-freshness-badge";
-import { GoogleHeatmapOverlay } from "@/components/dashboard/district-heatmap-google";
-import { useIsMapReady } from "@/components/providers/map-provider";
 import { cn } from "@/lib/utils";
 import type {
   DashboardDistrict,
@@ -23,6 +24,17 @@ type DistrictHeatmapProps = {
   onSelectDistrict: (district: string) => void;
 };
 
+const DistrictHeatmapGoogleShell = dynamic(
+  () =>
+    import("@/components/dashboard/district-heatmap-google-shell").then(
+      (mod) => mod.DistrictHeatmapGoogleShell,
+    ),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
+
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
 }
@@ -38,7 +50,7 @@ export function DistrictHeatmap({
   onSelectDistrict,
 }: DistrictHeatmapProps) {
   const { dict } = useI18n();
-  const isMapReady = useIsMapReady();
+  const [shouldLoadGoogleMap, setShouldLoadGoogleMap] = useState(false);
   const maxPrice = Math.max(...prices.map((price) => price.modalPrice), 1);
   const maxOpportunity = Math.max(
     ...routes.map((route) => route.opportunityScore),
@@ -51,6 +63,26 @@ export function DistrictHeatmap({
         route.targetDistrict === selectedDistrict,
     ).slice(0, 5) || [];
   const fallbackRoutes = visibleRoutes.length > 0 ? visibleRoutes : routes.slice(0, 5);
+
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+      return;
+    }
+
+    const loadMap = () => setShouldLoadGoogleMap(true);
+    const idleCallback =
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(loadMap, { timeout: 1800 })
+        : window.setTimeout(loadMap, 1200);
+
+    return () => {
+      if (typeof idleCallback === "number") {
+        window.clearTimeout(idleCallback);
+      } else if (typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleCallback);
+      }
+    };
+  }, []);
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top,rgba(224,245,223,0.92),rgba(245,247,239,0.98)_58%,rgba(250,252,249,1))] p-5 shadow-[0_35px_100px_-65px_rgba(46,94,61,0.55)]">
@@ -80,17 +112,6 @@ export function DistrictHeatmap({
       </div>
 
       <div className="relative mt-6 min-h-[520px] overflow-hidden rounded-[1.75rem] border border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.55),rgba(242,248,241,0.75))]">
-        {isMapReady ? (
-          <GoogleHeatmapOverlay
-            districts={districts}
-            prices={prices}
-            routes={routes}
-            selectedDistrict={selectedDistrict}
-            maxPrice={maxPrice}
-            maxOpportunity={maxOpportunity}
-            onSelectDistrict={onSelectDistrict}
-          />
-        ) : (
         <>
           <svg
             viewBox="0 0 700 560"
@@ -225,7 +246,17 @@ export function DistrictHeatmap({
           );
         })}
         </>
-        )}
+        {shouldLoadGoogleMap ? (
+          <DistrictHeatmapGoogleShell
+            districts={districts}
+            prices={prices}
+            routes={routes}
+            selectedDistrict={selectedDistrict}
+            maxPrice={maxPrice}
+            maxOpportunity={maxOpportunity}
+            onSelectDistrict={onSelectDistrict}
+          />
+        ) : null}
       </div>
 
       <div className="relative mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

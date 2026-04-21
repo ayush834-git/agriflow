@@ -212,34 +212,34 @@ export function BestTimeToSell({
   }
 
   return (
-    <section className="space-y-5 rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_28px_90px_-62px_rgba(30,78,50,0.45)]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <CalendarClock className="size-5" />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border border-outline-variant/30 bg-surface-container-lowest p-6 rounded-[1.25rem] shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-tertiary-container/30 text-tertiary">
+            <CalendarClock className="size-6" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">Best Time to Sell</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-xl font-headline font-bold text-on-surface">Best Time to Sell</h3>
+            <p className="text-sm text-on-surface-variant font-medium mt-1">
               {cropName} · 7-day trend + 4-day forecast{" "}
               {localPrices.length >= 3 ? `for ${localDistrict}` : "across all districts"}
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="w-fit">
+        <span className="bg-surface-container text-on-surface-variant border border-outline-variant/30 px-3 py-1.5 rounded-lg text-sm font-bold w-fit mt-4 sm:mt-0 uppercase tracking-widest text-[10px]">
           {source === "mock" ? "Demo data" : "Live feed"}
-        </Badge>
+        </span>
       </div>
 
       {/* Recommendation pill */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Badge className={cn("gap-1.5 px-3 py-1.5 text-sm", recConfig.className)}>
-          <RecIcon className="size-3.5" />
+      <div className="flex flex-wrap items-center gap-4 border border-outline-variant/30 bg-surface-container-lowest p-5 rounded-[1.25rem]">
+        <span className={cn("flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm border", recConfig.className)}>
+          <RecIcon className="size-4" />
           {recConfig.label}
-        </Badge>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <TrendingUp className="size-3.5" />
-          Bias: {bias}
+        </span>
+        <div className="flex items-center gap-2 text-sm font-medium text-on-surface-variant bg-surface-container/50 px-3 py-2 rounded-lg border border-outline-variant/20">
+          <TrendingUp className="size-4 text-primary" />
+          Bias: <strong className="text-on-surface">{bias}</strong>
         </div>
         {geminiResult ? (
           <AiConfidenceBadge confidence={geminiResult.confidence} />
@@ -247,33 +247,34 @@ export function BestTimeToSell({
       </div>
 
       {/* Chart */}
-      <div className="h-[260px] w-full rounded-[1.4rem] border border-border/60 bg-background/60 p-4">
+      <div className="h-[300px] w-full rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-6 shadow-sm">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={slices}
-            margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
             <defs>
               <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgba(33,79,56,0.4)" />
-                <stop offset="100%" stopColor="rgba(33,79,56,0.02)" />
+                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="forecastGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgba(212,154,34,0.35)" />
-                <stop offset="100%" stopColor="rgba(212,154,34,0.02)" />
+                <stop offset="0%" stopColor="var(--color-tertiary)" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="var(--color-tertiary)" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline-variant)" strokeOpacity={0.3} />
             <XAxis
               dataKey="dateLabel"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: "rgba(33,79,56,0.6)" }}
+              tick={{ fontSize: 12, fill: "var(--color-on-surface-variant)", fontWeight: 500 }}
+              dy={10}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: "rgba(33,79,56,0.6)" }}
+              tick={{ fontSize: 12, fill: "var(--color-on-surface-variant)", fontWeight: 500 }}
               tickFormatter={(v: number) =>
                 new Intl.NumberFormat("en-IN", {
                   notation: "compact",
@@ -286,24 +287,28 @@ export function BestTimeToSell({
                 if (!active || !payload?.length) return null;
                 const data = payload[0]?.payload as ForecastSlice;
                 return (
-                  <div className="rounded-xl border border-border bg-background p-3 shadow-md">
-                    <p className="font-semibold text-foreground">{data.dateLabel}</p>
-                    {data.actualPrice != null ? (
-                      <p className="mt-1 text-sm text-[rgba(33,79,56,1)]">
-                        Actual: {formatCurrency(data.actualPrice)}
-                      </p>
-                    ) : null}
-                    {data.forecastMid != null ? (
-                      <>
-                        <p className="mt-1 text-sm text-amber-700">
-                          Forecast: {formatCurrency(data.forecastMid)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Range: {formatCurrency(data.forecastLow!)} –{" "}
-                          {formatCurrency(data.forecastHigh!)}
-                        </p>
-                      </>
-                    ) : null}
+                  <div className="rounded-xl border border-outline-variant/30 bg-surface-container-high p-4 shadow-xl">
+                    <p className="font-bold text-on-surface mb-2">{data.dateLabel}</p>
+                    <div className="space-y-1 text-sm font-medium">
+                        {data.actualPrice != null ? (
+                          <p className="flex justify-between gap-4">
+                            <span className="text-on-surface-variant">Actual:</span>
+                            <span className="font-bold text-primary">{formatCurrency(data.actualPrice)}</span>
+                          </p>
+                        ) : null}
+                        {data.forecastMid != null ? (
+                          <>
+                            <p className="flex justify-between gap-4">
+                              <span className="text-on-surface-variant">Forecast:</span>
+                              <span className="font-bold text-tertiary">{formatCurrency(data.forecastMid)}</span>
+                            </p>
+                            <p className="flex justify-between gap-4 text-xs mt-1 pt-1 border-t border-outline-variant/20">
+                              <span className="text-on-surface-variant">Range:</span>
+                              <span className="text-on-surface">{formatCurrency(data.forecastLow!)} – {formatCurrency(data.forecastHigh!)}</span>
+                            </p>
+                          </>
+                        ) : null}
+                    </div>
                   </div>
                 );
               }}
@@ -311,10 +316,10 @@ export function BestTimeToSell({
             <Area
               type="monotone"
               dataKey="actualPrice"
-              stroke="rgba(33,79,56,0.85)"
-              strokeWidth={2.5}
+              stroke="var(--color-primary)"
+              strokeWidth={3}
               fill="url(#actualGrad)"
-              dot={{ r: 4, fill: "rgba(33,79,56,0.9)" }}
+              dot={{ r: 4, fill: "var(--color-primary)", strokeWidth: 2, stroke: "white" }}
               connectNulls={false}
               name="Actual"
             />
@@ -328,18 +333,19 @@ export function BestTimeToSell({
             <Area
               type="monotone"
               dataKey="forecastMid"
-              stroke="rgba(212,154,34,0.8)"
+              stroke="var(--color-tertiary)"
               strokeWidth={2}
               strokeDasharray="6 4"
               fill="none"
-              dot={{ r: 3, fill: "rgba(212,154,34,0.9)" }}
+              dot={{ r: 3, fill: "var(--color-tertiary)" }}
               connectNulls={false}
               name="Forecast"
             />
             <Area
               type="monotone"
               dataKey="forecastLow"
-              stroke="rgba(212,154,34,0.3)"
+              stroke="var(--color-tertiary)"
+              strokeOpacity={0.3}
               strokeWidth={1}
               fill="none"
               connectNulls={false}
@@ -349,72 +355,59 @@ export function BestTimeToSell({
       </div>
 
       {/* Stats row */}
-      <div className="grid gap-3 sm:grid-cols-4">
-        <div className="rounded-[1.3rem] border border-border/70 bg-background/60 p-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Observed low
-          </p>
-          <p className="mt-1 text-lg font-semibold">{formatCurrency(observedLow)}</p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Observed low</p>
+          <p className="mt-2 text-xl font-black text-on-surface">{formatCurrency(observedLow)}</p>
         </div>
-        <div className="rounded-[1.3rem] border border-border/70 bg-background/60 p-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Observed high
-          </p>
-          <p className="mt-1 text-lg font-semibold">{formatCurrency(observedHigh)}</p>
+        <div className="rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Observed high</p>
+          <p className="mt-2 text-xl font-black text-on-surface">{formatCurrency(observedHigh)}</p>
         </div>
-        <div className="rounded-[1.3rem] border border-border/70 bg-background/60 p-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Projected low
-          </p>
-          <p className="mt-1 text-lg font-semibold text-amber-700">
-            {formatCurrency(projectedLow)}
-          </p>
+        <div className="rounded-[1.25rem] border border-tertiary/20 bg-tertiary-container/20 p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-tertiary/80">Projected low</p>
+          <p className="mt-2 text-xl font-black text-tertiary">{formatCurrency(projectedLow)}</p>
         </div>
-        <div className="rounded-[1.3rem] border border-border/70 bg-background/60 p-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Projected high
-          </p>
-          <p className="mt-1 text-lg font-semibold text-amber-700">
-            {formatCurrency(projectedHigh)}
-          </p>
+        <div className="rounded-[1.25rem] border border-tertiary/20 bg-tertiary-container/30 p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-tertiary/80">Projected high</p>
+          <p className="mt-2 text-xl font-black text-tertiary">{formatCurrency(projectedHigh)}</p>
         </div>
       </div>
 
       {/* AI Explanation */}
       {geminiResult ? (
-        <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-primary">
+        <div className="rounded-[1.25rem] border border-primary/20 bg-primary-container/20 p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-sm font-bold text-primary tracking-wider uppercase">
             <Sparkles className="size-4" />
             AI Analysis
           </div>
-          <p className="mt-2 text-sm leading-6 text-foreground/80">
+          <p className="mt-3 text-sm leading-6 text-on-surface font-medium">
             {geminiResult.explanation}
           </p>
           {geminiResult.bestDay ? (
-            <p className="mt-1 text-sm font-medium text-primary">
+            <p className="mt-3 text-sm font-bold text-primary bg-primary/10 w-fit px-3 py-1 rounded">
               Best window: {geminiResult.bestDay}
             </p>
           ) : null}
         </div>
       ) : (
         <Button
-          variant="outline"
-          size="sm"
+          type="button"
           disabled={isPending}
           onClick={requestGeminiExplanation}
-          className="w-fit"
+          className="w-full sm:w-fit bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-outline-variant/30 font-bold py-6 rounded-xl shadow-sm"
         >
           {isPending ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="size-5 animate-spin mr-2" />
           ) : (
-            <Sparkles className="size-4" />
+            <Sparkles className="size-5 text-primary mr-2" />
           )}
-          {isPending ? "Analyzing..." : "Get AI forecast explanation"}
+          {isPending ? "Analyzing market history..." : "Get AI forecast explanation"}
         </Button>
       )}
       {geminiError ? (
-        <p className="text-sm text-red-600">{geminiError}</p>
+        <p className="text-sm font-bold text-error bg-error-container/30 px-3 py-2 rounded break-words w-fit">{geminiError}</p>
       ) : null}
-    </section>
+    </div>
   );
 }

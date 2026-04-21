@@ -1,7 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useDeferredValue, useEffect, useState, useTransition } from "react";
+import { useDeferredValue, useState, useTransition } from "react";
 import {
   ArrowUpRight,
   BellRing,
@@ -12,17 +13,10 @@ import {
 } from "lucide-react";
 
 import { AiConfidenceBadge } from "@/components/dashboard/ai-confidence-badge";
-import { AlertsReportsPanel } from "@/components/dashboard/alerts-reports-panel";
-import { BestTimeToSell } from "@/components/dashboard/best-time-to-sell";
 import { DistrictHeatmap } from "@/components/dashboard/district-heatmap";
 import { ExplainabilityPanel } from "@/components/dashboard/explainability-panel";
-import { FpoDirectoryMap } from "@/components/dashboard/fpo-directory-map";
-import { ListingManager } from "@/components/dashboard/listing-manager";
-import { MarketPriceChart } from "@/components/dashboard/market-price-chart";
-import { MyEarnings } from "@/components/dashboard/my-earnings";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
-import { PageTransition } from "@/components/layout/page-transition";
-import { FarmerSettingsPanel } from "@/components/settings/farmer-settings-panel";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,6 +47,83 @@ const LANGUAGE_OPTIONS: Array<{ value: SupportedLanguage; label: string }> = [
   { value: "en", label: "English" },
 ];
 
+function DashboardPanelLoading({ label }: { label: string }) {
+  return (
+    <div className="rounded-[1.5rem] border border-border/70 bg-background/60 p-5 text-sm text-muted-foreground">
+      Loading {label}...
+    </div>
+  );
+}
+
+const AlertsReportsPanel = dynamic(
+  () =>
+    import("@/components/dashboard/alerts-reports-panel").then(
+      (mod) => mod.AlertsReportsPanel,
+    ),
+  { loading: () => <DashboardPanelLoading label="alerts" /> },
+);
+
+const BestTimeToSell = dynamic(
+  () =>
+    import("@/components/dashboard/best-time-to-sell").then(
+      (mod) => mod.BestTimeToSell,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="forecast" />,
+  },
+);
+
+const FpoDirectoryMap = dynamic(
+  () =>
+    import("@/components/dashboard/fpo-directory-map").then(
+      (mod) => mod.FpoDirectoryMap,
+    ),
+  { loading: () => <DashboardPanelLoading label="FPO directory" /> },
+);
+
+const ListingManager = dynamic(
+  () =>
+    import("@/components/dashboard/listing-manager").then(
+      (mod) => mod.ListingManager,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="listings" />,
+  },
+);
+
+const MarketPriceChart = dynamic(
+  () =>
+    import("@/components/dashboard/market-price-chart").then(
+      (mod) => mod.MarketPriceChart,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="market chart" />,
+  },
+);
+
+const MyEarnings = dynamic(
+  () =>
+    import("@/components/dashboard/my-earnings").then((mod) => mod.MyEarnings),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="earnings" />,
+  },
+);
+
+const FarmerSettingsPanel = dynamic(
+  () =>
+    import("@/components/settings/farmer-settings-panel").then(
+      (mod) => mod.FarmerSettingsPanel,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="profile settings" />,
+  },
+);
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -71,6 +142,7 @@ function formatGeneratedAt(value: string) {
 export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   const [isPending, startTransition] = useTransition();
   const [isActionPending, startActionTransition] = useTransition();
+  const [selectedTab, setSelectedTab] = useState("routes");
   const [selectedCropSlug, setSelectedCropSlug] = useState(data.defaultCropSlug);
   const [selectedDistrict, setSelectedDistrict] = useState(
     data.profile.district ??
@@ -85,9 +157,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   const [preferredLanguage, setPreferredLanguage] = useState(
     data.profile.preferredLanguage,
   );
-  const { dict, setLang } = useI18n();
-
-
+  const { dict } = useI18n();
 
   const deferredCropSlug = useDeferredValue(selectedCropSlug);
   const deferredDistrict = useDeferredValue(selectedDistrict);
@@ -114,153 +184,78 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
       ? activeCrop.routes.reduce((sum, route) => sum + route.priceGap, 0) /
         activeCrop.routes.length
       : 0;
-  const routeBoard =
-    activeCrop.routes.filter(
-      (route) =>
-        route.sourceDistrict === deferredDistrict ||
-        route.targetDistrict === deferredDistrict,
-    ).length > 0
-      ? activeCrop.routes.filter(
-          (route) =>
-            route.sourceDistrict === deferredDistrict ||
-            route.targetDistrict === deferredDistrict,
-        )
-      : activeCrop.routes;
+  const districtRoutes = activeCrop.routes.filter(
+    (route) =>
+      route.sourceDistrict === deferredDistrict ||
+      route.targetDistrict === deferredDistrict,
+  );
+  const routeBoard = districtRoutes.length > 0 ? districtRoutes : activeCrop.routes;
   const activeMatch =
     matches.find((match) => match.status === "CONTACTED" || match.status === "OPEN") ??
     null;
 
   return (
-    <PageTransition pageKey="farmer-dashboard">
-    <main
-      className={cn(
-        "mx-auto flex w-full max-w-[1500px] flex-col gap-6 px-4 py-5 pb-20 transition-opacity sm:px-6 sm:pb-5 lg:px-8",
-        isPending ? "opacity-95" : "opacity-100",
-      )}
-      aria-busy={isPending}
-    >
-      <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(33,79,56,0.97),rgba(51,104,70,0.95)_48%,rgba(204,161,57,0.82)_160%)] text-primary-foreground shadow-[0_45px_140px_-70px_rgba(19,52,34,0.8)]">
-        <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.18fr_0.82fr] lg:px-8">
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-white/15 bg-white/12 text-white hover:bg-white/12">
-                Live in AP & TS
-              </Badge>
-              <Badge className="border-white/15 bg-white/8 text-white/86 hover:bg-white/8">
-                Updated {formatGeneratedAt(data.generatedAt)}
-              </Badge>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-medium uppercase tracking-[0.22em] text-white/72">
-                {dict.farmer.dashboardTitle}
-              </p>
-              <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                {dict.farmer.heroHeadline}
-              </h1>
-              <p className="max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
-                {dict.farmer.heroSub}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
+    <DashboardShell role="farmer">
+      <div className="flex flex-col gap-6 max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+        
+        {/* Hero Section */}
+        <div className="w-full bg-gradient-to-br from-primary-container/60 to-tertiary-container/30 rounded-3xl p-6 lg:p-10 border border-outline-variant/20 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div>
+             <div className="flex flex-wrap items-center gap-2 mb-4">
+               <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded tracking-widest uppercase">Live in AP & TS</span>
+               <span className="bg-surface-container-high text-on-surface-variant text-[10px] font-bold px-2 py-1 rounded tracking-widest uppercase">
+                 Updated {formatGeneratedAt(data.generatedAt)}
+               </span>
+             </div>
+             <h1 className="text-3xl md:text-5xl font-headline font-black text-on-surface mb-3">{dict.farmer.heroHeadline}</h1>
+             <p className="text-on-surface-variant max-w-2xl">{dict.farmer.heroSub}</p>
+          </div>
+          <div className="flex gap-4 w-full lg:w-auto">
+             <Button
                 asChild
-                size="lg"
-                className="border-white/10 bg-white text-[rgb(33,79,56)] hover:bg-white/92"
+                className="bg-primary hover:bg-primary/90 text-on-primary rounded-xl font-bold px-6 py-6 w-full lg:w-auto"
               >
                 <Link href="/register/farmer">
-                  Update your profile
-                  <ChevronRight className="size-4" />
+                  Update Profile
+                  <ChevronRight className="size-4 ml-2" />
                 </Link>
               </Button>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                {dict.farmer.profile}
-              </p>
-              <p className="mt-3 text-2xl font-semibold">{data.profile.fullName}</p>
-              <p className="mt-2 text-sm text-white/70">
-                {data.profile.district ?? "District pending"}
-              </p>
-              <p className="mt-1 text-xs text-white/60">
-                WhatsApp language: {LANGUAGE_OPTIONS.find((option) => option.value === preferredLanguage)?.label ?? preferredLanguage}
-              </p>
-            </div>
-            <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                {dict.farmer.localQuote}
-              </p>
-              <p className="mt-3 text-2xl font-semibold">
-                {localPrice ? formatCurrency(localPrice.modalPrice) : dict.farmer.market.noQuote}
-              </p>
-              <p className="mt-2 text-sm text-white/70">
-                {dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ?? activeCrop.name}
-              </p>
-            </div>
-            <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                {dict.farmer.matchInbox}
-              </p>
-              <p className="mt-3 text-2xl font-semibold">{matches.length}</p>
-            </div>
           </div>
         </div>
-      </section>
 
-      {activeMatch ? (
-        <section className="rounded-[1.5rem] border border-emerald-300/40 bg-emerald-50/90 px-4 py-4 text-sm text-emerald-950">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3">
-              <BellRing className="mt-0.5 size-4 shrink-0" />
-              <div className="space-y-1">
-                <p className="font-medium">You have a match for {dict.crops?.[activeMatch.cropSlug as keyof typeof dict.crops] ?? activeMatch.cropName}.</p>
-                <p>
-                  Buyer interest is live for{" "}
-                  {activeMatch.quantityKg?.toLocaleString("en-IN") ?? "--"} kg. You can
-                  still confirm via WhatsApp by replying YES, or accept right here.
-                </p>
-              </div>
+        {/* Global Alerts */}
+        {activeMatch && (
+          <div className="bg-tertiary-container/50 border border-tertiary/20 rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex gap-3">
+               <div className="bg-tertiary/10 text-tertiary rounded-full p-2 h-fit">
+                 <BellRing className="size-5" />
+               </div>
+               <div>
+                  <h3 className="font-bold text-on-surface">You have a match for {dict.crops?.[activeMatch.cropSlug as keyof typeof dict.crops] ?? activeMatch.cropName}</h3>
+                  <p className="text-sm text-on-surface-variant">Buyer interest is live for {activeMatch.quantityKg?.toLocaleString("en-IN") ?? "--"} kg.</p>
+               </div>
             </div>
             <Button
-              type="button"
               disabled={isActionPending}
+              className="bg-tertiary text-on-tertiary whitespace-nowrap shrink-0"
               onClick={() =>
                 startActionTransition(async () => {
                   setActionError(null);
                   setAcceptanceMessage(null);
                   const response = await fetch("/api/matches/accept", {
                     method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      farmerUserId: data.profile.id,
-                      matchId: activeMatch.id,
-                    }),
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ farmerUserId: data.profile.id, matchId: activeMatch.id }),
                   });
                   const payload = (await response.json()) as MatchAcceptResponse;
 
                   if (!response.ok || !payload.ok) {
-                    setActionError(
-                      ("error" in payload ? payload.error : undefined) ??
-                        "Could not accept the match.",
-                    );
+                    setActionError(("error" in payload ? payload.error : undefined) ?? "Could not accept.");
                     return;
                   }
 
-                  setMatches((current) =>
-                    current.map((entry) =>
-                      entry.id === payload.match.id ? payload.match : entry,
-                    ),
-                  );
-                  setNotifications((current) => [
-                    payload.farmerNotification,
-                    ...current,
-                  ]);
+                  setMatches((current) => current.map((entry) => entry.id === payload.match.id ? payload.match : entry));
+                  setNotifications((current) => [payload.farmerNotification, ...current]);
                   setAcceptanceMessage(payload.farmerMessage);
                 })
               }
@@ -268,363 +263,265 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
               {isActionPending ? dict.farmer.accepting : dict.farmer.acceptMatch}
             </Button>
           </div>
-          {acceptanceMessage ? <p className="mt-3">{acceptanceMessage}</p> : null}
-          {actionError ? <p className="mt-3 text-red-700">{actionError}</p> : null}
-        </section>
-      ) : null}
+        )}
 
-      {data.warnings.length > 0 ? (
-        <section className="rounded-[1.5rem] border border-amber-300/40 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-            <div className="space-y-1">
-              {data.warnings.map((warning) => (
-                <p key={warning}>{warning}</p>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
+        {data.warnings.length > 0 && (
+         <div className="bg-error-container/50 border border-error/20 rounded-2xl p-4 flex gap-3">
+             <div className="bg-error/10 text-error rounded-full p-2 h-fit">
+               <ShieldAlert className="size-5" />
+             </div>
+             <div className="space-y-1">
+               {data.warnings.map(w => <p key={w} className="text-sm font-medium text-on-surface">{w}</p>)}
+             </div>
+         </div>
+        )}
 
-      <section className="overflow-x-auto rounded-[1.75rem] border border-border/70 bg-card/80 p-3 shadow-[0_20px_80px_-58px_rgba(26,76,49,0.55)]">
-        <div className="flex min-w-max gap-3">
-          {data.crops.map((crop) => {
-            const isActive = crop.slug === deferredCropSlug;
-            const topRoute = crop.routes[0];
+        {/* Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_380px] gap-6">
+          
+          {/* Left Column */}
+          <div className="flex flex-col gap-6">
+             {/* Crop Filter Horizontal Scroll */}
+             <div className="flex overflow-x-auto gap-3 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+               {data.crops.map((crop) => {
+                 const isActive = crop.slug === deferredCropSlug;
+                 return (
+                   <button
+                     key={crop.slug}
+                     onClick={() => startTransition(() => setSelectedCropSlug(crop.slug))}
+                     className={cn(
+                       "flex items-center gap-3 px-5 py-3 rounded-xl border transition-all shrink-0 font-medium",
+                       isActive 
+                         ? "bg-primary text-on-primary border-primary shadow-sm"
+                         : "bg-surface-container border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high"
+                     )}
+                   >
+                      {dict.crops?.[crop.slug as keyof typeof dict.crops] ?? crop.name}
+                   </button>
+                 );
+               })}
+             </div>
 
-            return (
-              <button
-                key={crop.slug}
-                type="button"
-                onClick={() =>
-                  startTransition(() => {
-                    setSelectedCropSlug(crop.slug);
-                  })
-                }
-                className={cn(
-                  "group min-w-[220px] rounded-[1.35rem] border px-4 py-4 text-left transition-all duration-300",
-                  isActive
-                    ? "border-primary/35 bg-[linear-gradient(180deg,rgba(247,252,247,0.98),rgba(236,247,239,0.95))] shadow-[0_24px_60px_-44px_rgba(36,92,60,0.75)]"
-                    : "border-border/60 bg-background/70 hover:border-primary/22 hover:bg-background/88",
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-lg font-semibold">{dict.crops?.[crop.slug as keyof typeof dict.crops] ?? crop.name}</p>
-                  <ArrowUpRight
-                    className={cn(
-                      "size-4 transition-transform duration-300",
-                      isActive ? "translate-x-0" : "group-hover:translate-x-0.5",
-                    )}
-                  />
-                </div>
-                <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-                  <p>{dict.common.average} {formatCurrency(crop.averageModalPrice)}</p>
-                  <p>
-                    {dict.common.bestCorridor}{" "}
-                    <span className="font-medium text-foreground">
-                      {topRoute ? formatCurrency(topRoute.priceGap) : dict.farmer.market.noSpread}
-                    </span>
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-        <DistrictHeatmap
-          cropName={activeCrop.name}
-          districts={data.districts}
-          prices={activeCrop.prices}
-          routes={activeCrop.routes}
-          selectedDistrict={deferredDistrict}
-          generatedAt={data.generatedAt}
-          source={data.source}
-          onSelectDistrict={(district) =>
-            startTransition(() => {
-              setSelectedDistrict(district);
-            })
-          }
-        />
-
-        <aside className="flex flex-col gap-4">
-          <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_28px_90px_-62px_rgba(30,78,50,0.55)]">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-                  {dict.farmer.decisionBoard}
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                  {deferredDistrict}
-                </h2>
-              </div>
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <LocateFixed className="size-5" />
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-4 text-sm">
-              <div className="border-b border-border/60 pb-4">
-                <p className="text-muted-foreground">{dict.farmer.market.currentQuote}</p>
-                <p className="mt-2 text-2xl font-semibold">
-                  {localPrice ? formatCurrency(localPrice.modalPrice) : dict.farmer.market.noQuote}
-                </p>
-              </div>
-
-              <div className="border-b border-border/60 pb-4">
-                <p className="text-muted-foreground">{dict.farmer.market.bestDestination}</p>
-                <p className="mt-2 text-xl font-semibold">
-                  {bestRoute ? bestRoute.targetDistrict : dict.farmer.market.noSpread}
-                </p>
-                <p className="mt-1 text-muted-foreground">
-                  {bestRoute
-                    ? `${bestRoute.targetState} at ${formatCurrency(bestRoute.targetModalPrice)}`
-                    : null}
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <div className="rounded-[1.35rem] border border-border/70 bg-background/65 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    {dict.farmer.market.highestQuote}
-                  </p>
-                  <p className="mt-2 text-lg font-semibold">
-                    {highestPrice
-                      ? `${highestPrice.district} ${formatCurrency(highestPrice.modalPrice)}`
-                      : dict.farmer.market.noQuote}
-                  </p>
-                </div>
-                <div className="rounded-[1.35rem] border border-border/70 bg-background/65 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    {dict.farmer.market.averageSpread}
-                  </p>
-                  <p className="mt-2 text-lg font-semibold">
-                    {activeCrop.routes.length > 0
-                      ? formatCurrency(averageGap)
-                      : "0"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-[2rem] border border-border/70 bg-green-50 p-5 text-green-950">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-green-600/10 text-green-700">
-                <Smartphone className="size-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Use AgriFlow on WhatsApp</p>
-                <p className="text-sm text-green-900/80">
-                  Instantly get prices and best markets.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <p className="text-sm">Try sending this message:</p>
-              <div className="rounded-[1.25rem] border border-green-200/60 bg-white/60 px-4 py-3 text-sm italic text-green-800">
-                &quot;నేడు టమాటా ధర ఎంత?&quot;
-              </div>
-              <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white">
-                <a href="https://wa.me/14155238886?text=Hi" target="_blank" rel="noreferrer">
-                  Open WhatsApp
-                </a>
-              </Button>
-            </div>
-          </section>
-
-          <FarmerSettingsPanel
-            userId={data.profile.id}
-            phone={data.profile.phone}
-            initialLanguage={data.profile.preferredLanguage}
-            initialAddress={data.profile.address}
-            initialDistrict={data.profile.district}
-            initialState={data.profile.state}
-            initialCropSlugs={data.cropPreferences.map((crop) => crop.cropSlug)}
-            onLanguageUpdated={(language) => {
-              setPreferredLanguage(language);
-            }}
-          />
-
-          <section className="rounded-[1.5rem] border border-border/70 bg-card/60 p-4 mt-2">
-            <p className="text-sm font-medium">Want to change your role?</p>
-            <p className="text-xs text-muted-foreground mt-1 mb-3">If you are a cooperative or aggregrator, switch to the FPO dashboard.</p>
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link href="/register">Change Role</Link>
-            </Button>
-          </section>
-
-        </aside>
-      </section>
-
-      <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_28px_90px_-62px_rgba(30,78,50,0.45)]">
-        <Tabs defaultValue="routes" className="gap-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-                {dict.farmer.decisionBoard}
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                {dict.farmer.cropDetail} {dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ?? activeCrop.name}
-              </h2>
-            </div>
-            <TabsList
-              variant="line"
-              className="bg-transparent p-0"
-              aria-label="Farmer dashboard sections"
-            >
-              <TabsTrigger value="routes">{dict.farmer.tabs.whereToSell}</TabsTrigger>
-              <TabsTrigger value="prices">{dict.farmer.tabs.marketPrices}</TabsTrigger>
-              <TabsTrigger value="forecast">{dict.farmer.tabs.forecast}</TabsTrigger>
-              <TabsTrigger value="listings">{dict.farmer.tabs.listings}</TabsTrigger>
-              <TabsTrigger value="earnings">{dict.farmer.tabs.earnings}</TabsTrigger>
-              <TabsTrigger value="fpos">{dict.farmer.tabs.findFpo}</TabsTrigger>
-              <TabsTrigger value="alerts">{dict.farmer.tabs.alerts}</TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="routes">
-            <div className="mt-4 grid gap-3">
-              {routeBoard.slice(0, 6).map((route) => (
-                <div
-                  key={`${route.sourceDistrict}:${route.targetDistrict}`}
-                  className={cn(
-                    "grid gap-3 rounded-[1.4rem] border px-4 py-4 text-sm lg:grid-cols-[1.5fr_1fr_0.8fr]",
-                    route.sourceDistrict === deferredDistrict
-                      ? "border-primary/30 bg-[linear-gradient(180deg,rgba(246,252,246,0.98),rgba(238,247,240,0.92))]"
-                      : "border-border/70 bg-background/60",
-                  )}
-                >
-                  <div className="space-y-1">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="font-medium">
-                        {route.sourceDistrict}
-                        {" -> "}
-                        {route.targetDistrict}
-                      </p>
-                      <AiConfidenceBadge confidence={route.opportunityScore / 100} />
-                    </div>
-                    <p className="text-muted-foreground">
-                      {route.sourceState} to {route.targetState}
-                    </p>
+             {/* Tabbed Board */}
+             <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-3xl overflow-hidden shadow-sm">
+                <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+                  <div className="bg-surface-container-low px-6 pt-6 border-b border-outline-variant/20">
+                     <h2 className="text-2xl font-headline font-bold text-on-surface mb-6">
+                       {dict.farmer.cropDetail} {dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ?? activeCrop.name}
+                     </h2>
+                     <TabsList className="bg-transparent h-auto p-0 w-full justify-start overflow-x-auto rounded-none border-b-0 space-x-6">
+                       <TabsTrigger value="routes" className="pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0">{dict.farmer.tabs.whereToSell}</TabsTrigger>
+                       <TabsTrigger value="prices" className="pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0">{dict.farmer.tabs.marketPrices}</TabsTrigger>
+                       <TabsTrigger value="forecast" className="pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0">{dict.farmer.tabs.forecast}</TabsTrigger>
+                       <TabsTrigger value="listings" className="pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0">{dict.farmer.tabs.listings}</TabsTrigger>
+                       <TabsTrigger value="earnings" className="pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0">{dict.farmer.tabs.earnings}</TabsTrigger>
+                       <TabsTrigger value="fpos" className="pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0">{dict.farmer.tabs.findFpo}</TabsTrigger>
+                       <TabsTrigger value="alerts" className="pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none px-0">{dict.farmer.tabs.alerts}</TabsTrigger>
+                     </TabsList>
                   </div>
-                  <div className="space-y-1 text-muted-foreground">
-                    <p>{dict.common.source} {formatCurrency(route.sourceModalPrice)}</p>
-                    <p>{dict.common.target} {formatCurrency(route.targetModalPrice)}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium">{formatCurrency(route.priceGap)} {dict.farmer.routes.spread}</p>
-                  </div>
-                  <div className="lg:col-span-3">
-                    <ExplainabilityPanel
-                      title={dict.farmer.routes.whyThisRoute}
-                      summary="The route score combines demand strength, transport feasibility, and the local price spread."
-                      reasons={[
-                        `Demand strength ${route.demandStrength.toFixed(2)} and transport feasibility ${route.transportFeasibility.toFixed(2)} support this corridor.`,
-                        `${route.targetDistrict} is currently paying ${formatCurrency(route.targetModalPrice)} versus ${formatCurrency(route.sourceModalPrice)} in ${route.sourceDistrict}.`,
-                      ]}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="prices">
-            <MarketPriceChart prices={activeCrop.prices} localDistrict={deferredDistrict} />
-            <div className="mt-4 grid gap-3 lg:grid-cols-2">
-              {activeCrop.prices.map((price) => {
-                const isLocal = price.district === deferredDistrict;
-
-                return (
-                  <div
-                    key={`${price.district}:${price.marketDate}`}
-                    className={cn(
-                      "rounded-[1.4rem] border px-4 py-4 text-sm",
-                      isLocal
-                        ? "border-primary/30 bg-[linear-gradient(180deg,rgba(246,252,246,0.98),rgba(238,247,240,0.92))]"
-                        : "border-border/70 bg-background/60",
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-medium">{price.district}</p>
-                        <p className="text-muted-foreground">{price.state}</p>
+                  
+                  <div className="p-6 overflow-hidden">
+                    {/* Routes Tab */}
+                    {selectedTab === "routes" && (
+                    <TabsContent value="routes" className="m-0 border-none outline-none">
+                      <div className="grid gap-4">
+                        {routeBoard.slice(0, 6).map((route) => (
+                          <div
+                            key={`${route.sourceDistrict}:${route.targetDistrict}`}
+                            className={cn(
+                              "grid gap-4 rounded-[1rem] border px-5 py-5 lg:grid-cols-[1.5fr_1fr_0.8fr]",
+                              route.sourceDistrict === deferredDistrict
+                                ? "border-primary/20 bg-primary/5"
+                                : "border-outline-variant/20 bg-surface-container"
+                            )}
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-3">
+                                <p className="font-bold text-on-surface">
+                                  {route.sourceDistrict} <span className="material-symbols-outlined align-middle text-[18px] text-on-surface-variant mx-1">arrow_forward</span> {route.targetDistrict}
+                                </p>
+                                <AiConfidenceBadge confidence={route.opportunityScore / 100} />
+                              </div>
+                              <p className="text-on-surface-variant text-sm">
+                                {route.sourceState} to {route.targetState}
+                              </p>
+                            </div>
+                            <div className="space-y-1 text-sm text-on-surface-variant">
+                              <p><span className="font-semibold text-on-surface">{dict.common.source}</span> {formatCurrency(route.sourceModalPrice)}/q</p>
+                              <p><span className="font-semibold text-on-surface">{dict.common.target}</span> {formatCurrency(route.targetModalPrice)}/q</p>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded text-sm font-bold block w-fit">
+                                +{formatCurrency(route.priceGap)}
+                              </span>
+                            </div>
+                            <div className="lg:col-span-3 mt-2">
+                              <ExplainabilityPanel
+                                title={dict.farmer.routes.whyThisRoute}
+                                summary="The route score combines demand strength, transport feasibility, and the local price spread."
+                                reasons={[
+                                  `Demand strength ${route.demandStrength.toFixed(2)} and transport feasibility ${route.transportFeasibility.toFixed(2)} support this corridor.`,
+                                  `${route.targetDistrict} is paying ${formatCurrency(route.targetModalPrice)} vs ${formatCurrency(route.sourceModalPrice)} locally.`,
+                                ]}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                        {routeBoard.length === 0 && (
+                          <div className="py-12 text-center text-on-surface-variant">No routes available right now.</div>
+                        )}
                       </div>
-                      <p className="text-lg font-semibold">
-                        {formatCurrency(price.modalPrice)}
-                      </p>
-                    </div>
-                    <div className="mt-3 text-muted-foreground">
-                      <p>Arrivals {price.arrivalsTonnes?.toFixed(1) ?? "--"} tonnes</p>
-                      <p>Date {price.marketDate}</p>
-                    </div>
+                    </TabsContent>
+                    )}
+
+                    {/* Prices Tab */}
+                    {selectedTab === "prices" && (
+                    <TabsContent value="prices" className="m-0 border-none outline-none">
+                      <MarketPriceChart prices={activeCrop.prices} localDistrict={deferredDistrict} />
+                      <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2">
+                        {activeCrop.prices.map((price) => {
+                          const isLocal = price.district === deferredDistrict;
+                          return (
+                            <div
+                              key={`${price.district}:${price.marketDate}`}
+                              className={cn(
+                                "rounded-xl border p-5 flex flex-col justify-between",
+                                isLocal ? "border-primary/20 bg-primary/5" : "border-outline-variant/20 bg-surface-container"
+                              )}
+                            >
+                              <div className="flex justify-between items-start mb-4">
+                                <div>
+                                  <p className="font-bold text-on-surface">{price.district}</p>
+                                  <p className="text-on-surface-variant text-sm">{price.state}</p>
+                                </div>
+                                <span className="font-black text-xl text-primary">{formatCurrency(price.modalPrice)}</span>
+                              </div>
+                              <div className="flex justify-between text-xs text-on-surface-variant font-medium">
+                                <span>Arrivals: {price.arrivalsTonnes?.toFixed(1) ?? "--"}T</span>
+                                <span>{price.marketDate}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </TabsContent>
+                    )}
+
+                    {/* Other Tabs (Forecast, Listings, Earnings, FPOs, Alerts) */}
+                    {selectedTab === "forecast" && (
+                       <TabsContent value="forecast" className="m-0 border-none outline-none">
+                          <BestTimeToSell cropName={activeCrop.name} cropSlug={activeCrop.slug} prices={activeCrop.prices} localDistrict={deferredDistrict} source={data.source} />
+                       </TabsContent>
+                    )}
+
+                    {selectedTab === "listings" && (
+                      <TabsContent value="listings" className="m-0 border-none outline-none">
+                         <ListingManager initialListings={data.listings} farmerUserId={data.profile.id} district={data.profile.district ?? deferredDistrict} state={data.profile.state ?? localState} />
+                      </TabsContent>
+                    )}
+
+                    {selectedTab === "earnings" && (
+                      <TabsContent value="earnings" className="m-0 border-none outline-none">
+                         <MyEarnings matches={matches} cropName={activeCrop.name} prices={activeCrop.prices} routes={activeCrop.routes} localDistrict={deferredDistrict} />
+                      </TabsContent>
+                    )}
+
+                    {selectedTab === "fpos" && (
+                      <TabsContent value="fpos" className="m-0 border-none outline-none">
+                        <FpoDirectoryMap fpos={data.fpos} farmerDistrict={data.profile.district ?? deferredDistrict} />
+                      </TabsContent>
+                    )}
+
+                    {selectedTab === "alerts" && (
+                      <TabsContent value="alerts" className="m-0 border-none outline-none">
+                         <AlertsReportsPanel notifications={notifications} matches={matches} title="Alerts and match inbox" description="Daily crop alerts, match interest, and push previews are all visible here." />
+                      </TabsContent>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          </TabsContent>
+                </Tabs>
+             </div>
+          </div>
 
-          <TabsContent value="forecast">
-            <div className="mt-4">
-              <BestTimeToSell
-                cropName={activeCrop.name}
-                cropSlug={activeCrop.slug}
-                prices={activeCrop.prices}
-                localDistrict={deferredDistrict}
-                source={data.source}
-              />
-            </div>
-          </TabsContent>
+          {/* Right Column / Asides */}
+          <div className="flex flex-col gap-6">
+             {/* Map Module (Top Right Bento) */}
+             <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-3xl overflow-hidden shadow-sm flex flex-col items-center justify-center p-0">
+               <DistrictHeatmap
+                  cropName={activeCrop.name}
+                  districts={data.districts}
+                  prices={activeCrop.prices}
+                  routes={activeCrop.routes}
+                  selectedDistrict={deferredDistrict}
+                  generatedAt={data.generatedAt}
+                  source={data.source}
+                  onSelectDistrict={(district) =>
+                    startTransition(() => {
+                      setSelectedDistrict(district);
+                    })
+                  }
+                />
+             </div>
 
-          <TabsContent value="listings">
-            <div className="mt-4">
-              <ListingManager
-                initialListings={data.listings}
-                farmerUserId={data.profile.id}
-                district={data.profile.district ?? deferredDistrict}
-                state={data.profile.state ?? localState}
-              />
-            </div>
-          </TabsContent>
+             {/* Decision Board Stats Card */}
+             <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-3xl p-6 shadow-sm">
+                 <div className="flex items-center gap-3 mb-6">
+                    <span className="material-symbols-outlined text-[24px] text-primary">location_on</span>
+                    <h3 className="font-headline font-bold text-xl text-on-surface">{deferredDistrict}</h3>
+                 </div>
+                 
+                 <div className="space-y-4">
+                   <div className="flex justify-between items-center border-b border-outline-variant/10 pb-4">
+                      <span className="text-on-surface-variant font-medium">Local Quote</span>
+                      <span className="font-bold text-xl">{localPrice ? formatCurrency(localPrice.modalPrice) : '--'}</span>
+                   </div>
+                   <div className="flex justify-between items-center border-b border-outline-variant/10 pb-4">
+                      <span className="text-on-surface-variant font-medium">Highest Quote</span>
+                      <span className="font-bold text-xl text-primary">{highestPrice ? formatCurrency(highestPrice.modalPrice) : '--'}</span>
+                   </div>
+                   <div className="flex justify-between items-center pb-2">
+                      <span className="text-on-surface-variant font-medium">Average Spread</span>
+                      <span className="font-bold text-xl text-tertiary">+{formatCurrency(averageGap)}</span>
+                   </div>
+                 </div>
+             </div>
 
-          <TabsContent value="earnings">
-            <div className="mt-4">
-              <MyEarnings
-                matches={matches}
-                cropName={activeCrop.name}
-                prices={activeCrop.prices}
-                routes={activeCrop.routes}
-                localDistrict={deferredDistrict}
-              />
-            </div>
-          </TabsContent>
+             {/* WhatsApp Card */}
+             <div className="bg-primary-container text-on-primary-container rounded-3xl p-6 border border-primary/20 shadow-sm relative overflow-hidden">
+                <div className="absolute -right-4 -top-4 opacity-10">
+                  <Smartphone className="size-32" />
+                </div>
+                <div className="relative z-10">
+                  <h3 className="text-xl font-headline font-bold mb-2">WhatsApp Bot</h3>
+                  <p className="text-sm opacity-90 mb-4 text-balance">Get live market prices instantly by texting us in {LANGUAGE_OPTIONS.find((option) => option.value === preferredLanguage)?.label ?? preferredLanguage}.</p>
+                  <Button asChild className="bg-primary hover:bg-primary/90 text-on-primary w-full">
+                    <a href="https://wa.me/14155238886?text=Hi" target="_blank" rel="noreferrer">
+                      Open WhatsApp <span className="material-symbols-outlined text-[18px] ml-2">open_in_new</span>
+                    </a>
+                  </Button>
+                </div>
+             </div>
 
-          <TabsContent value="fpos">
-            <div className="mt-4">
-              <FpoDirectoryMap
-                fpos={data.fpos}
-                farmerDistrict={data.profile.district ?? deferredDistrict}
-              />
-            </div>
-          </TabsContent>
+             {/* Farmer Settings */}
+             <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-3xl p-6 shadow-sm">
+                <FarmerSettingsPanel
+                  userId={data.profile.id}
+                  phone={data.profile.phone}
+                  initialLanguage={data.profile.preferredLanguage}
+                  initialAddress={data.profile.address}
+                  initialDistrict={data.profile.district}
+                  initialState={data.profile.state}
+                  initialCropSlugs={data.cropPreferences.map((crop) => crop.cropSlug)}
+                  onLanguageUpdated={(language) => {
+                    setPreferredLanguage(language);
+                  }}
+                />
+             </div>
+          </div>
 
-          <TabsContent value="alerts">
-            <div className="mt-4">
-              <AlertsReportsPanel
-                notifications={notifications}
-                matches={matches}
-                title="Alerts and match inbox"
-                description="Daily crop alerts, match interest, and push previews are all visible here."
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </section>
-    </main>
-    <MobileBottomNav variant="farmer" />
-    </PageTransition>
+        </div>
+
+      </div>
+      <MobileBottomNav variant="farmer" />
+    </DashboardShell>
   );
 }

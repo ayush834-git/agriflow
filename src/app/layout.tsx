@@ -1,21 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 
 import { AuthProvider } from "@/components/providers/auth-provider";
-import { MapProvider } from "@/components/providers/map-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { SiteNav } from "@/components/layout/site-nav";
 import { I18nProvider } from "@/lib/i18n/context";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
 });
 
@@ -46,17 +45,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="flex min-h-dvh flex-col relative overflow-x-hidden">
+    <html lang="en" className={`${inter.variable} ${plusJakartaSans.variable}`}>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+        <style dangerouslySetInnerHTML={{__html: `
+          .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+          }
+        `}} />
+      </head>
+      <body className="flex min-h-dvh flex-col relative overflow-x-hidden font-body bg-background text-on-surface antialiased">
         <I18nProvider>
           <AuthProvider>
-            <MapProvider>
-              <QueryProvider>
-                <SiteNav />
-                <div className="flex-1">{children}</div>
-                <WhatsAppWidget />
-              </QueryProvider>
-            </MapProvider>
+            <QueryProvider>
+              <SiteNav />
+              <div className="flex-1 min-w-0">{children}</div>
+              <WhatsAppWidget />
+            </QueryProvider>
           </AuthProvider>
         </I18nProvider>
       </body>

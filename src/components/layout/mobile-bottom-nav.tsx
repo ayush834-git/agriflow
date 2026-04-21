@@ -2,35 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Home,
-  MessageCircle,
-  UserCircle,
-} from "lucide-react";
 
 import { useI18n } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 const FARMER_NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/dashboard", label: "Home", icon: "home" },
+  { href: "/dashboard?tab=markets", label: "Markets", icon: "bar_chart" },
   {
     isAction: true,
     href: "https://wa.me/14155238886?text=Hi",
-    label: "Ask WhatsApp",
-    icon: MessageCircle,
+    icon: "add",
   },
-  { href: "/register/farmer", label: "Profile", icon: UserCircle },
+  { href: "/dashboard?tab=crops", label: "Crops", icon: "inventory" },
+  { href: "/register/farmer", label: "Account", icon: "person" },
 ] as const;
 
 const FPO_NAV_ITEMS = [
-  { href: "/dashboard/fpo", label: "Dashboard", icon: Home },
-  {
-    isAction: true,
-    href: "https://wa.me/14155238886?text=Hi",
-    label: "Chat Support",
-    icon: MessageCircle,
-  },
-  { href: "/register/fpo", label: "Profile", icon: UserCircle },
+  { href: "/dashboard/fpo", label: "Heatmap", icon: "map" },
+  { href: "/dashboard/fpo?tab=inventory", label: "Inventory", icon: "inventory_2" },
+  { href: "/dashboard/fpo?tab=directory", label: "Directory", icon: "groups" },
+  { href: "/dashboard/fpo?tab=alerts", label: "Alerts", icon: "notifications_active" },
 ] as const;
 
 type MobileBottomNavProps = {
@@ -44,29 +36,21 @@ export function MobileBottomNav({ variant = "farmer" }: MobileBottomNavProps) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-[60] border-t border-border/70 bg-background/95 backdrop-blur-xl sm:hidden"
+      className="md:hidden glass-effect border-t-0 fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-[0_-10px_20px_rgba(0,0,0,0.05)]"
       aria-label="Mobile navigation"
     >
-      <div className="flex items-center justify-around px-2 py-2">
-        {items.map((item) => {
+      <div className="flex items-center justify-around px-4 py-3">
+        {items.map((item, idx) => {
           const isActive = pathname === item.href;
-          const Icon = item.icon;
 
           if ("isAction" in item && item.isAction) {
             return (
-              <a
-                key={item.label}
+               <a
+                key={`action-${idx}`}
                 href={item.href}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="group relative -top-5 flex flex-col items-center justify-center gap-1"
+                className="bg-primary text-white -mt-12 w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-primary/40 border-4 border-background hover:scale-105 transition-transform"
               >
-                <div className="flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 active:scale-95">
-                  <Icon className="size-7" />
-                </div>
-                <span className="text-[11px] font-semibold text-[#25D366]">
-                  {item.label}
-                </span>
+                <span className="material-symbols-outlined text-3xl" data-icon={item.icon}>{item.icon}</span>
               </a>
             );
           }
@@ -74,30 +58,28 @@ export function MobileBottomNav({ variant = "farmer" }: MobileBottomNavProps) {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={item.href!}
               className={cn(
-                "flex flex-col items-center gap-1 px-4 py-2 text-[11px] font-medium transition-colors",
+                "flex flex-col items-center gap-1 transition-colors",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground",
+                  : "text-slate-400 hover:text-primary",
               )}
             >
-              <Icon
-                className={cn(
-                  "size-6 transition-all duration-200",
-                  isActive ? "scale-110 text-primary" : "",
-                )}
-              />
-              <span>
-                {item.label === "Dashboard"
-                  ? dict.nav[variant]
-                  : item.label}
+              <span 
+                className="material-symbols-outlined text-[24px]" 
+                style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+                data-icon={item.icon}
+              >
+                {item.icon}
+              </span>
+              <span className={cn("text-[10px] mt-1", isActive ? "font-bold" : "")}>
+                {item.label}
               </span>
             </Link>
           );
         })}
       </div>
-      {/* Safe area for phones with home indicators */}
       <div className="h-[env(safe-area-inset-bottom)]" />
     </nav>
   );

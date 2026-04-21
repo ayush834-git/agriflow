@@ -214,7 +214,7 @@ export default function Home() {
             We find the best price, you take the crop there
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            AgriFlow monitors the markets so you don't have to. When a buyer is paying more,
+            AgriFlow monitors the markets so you don&apos;t have to. When a buyer is paying more,
             we let you know immediately.
           </p>
         </div>

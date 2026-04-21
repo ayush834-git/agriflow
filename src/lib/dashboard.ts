@@ -1,18 +1,19 @@
-import { unstable_cache } from "next/cache";
 import { TARGET_CROPS, TARGET_REGIONS } from "@/lib/agmarknet/catalog";
+import type { PriceGapRecord, NormalizedMandiPriceRecord } from "@/lib/agmarknet/types";
 import { resolveAgmarknetFeed } from "@/lib/agmarknet/service";
-import type { PriceGapRecord } from "@/lib/agmarknet/types";
+import { listDemoMarketRecords } from "@/lib/demo/market";
+import { hasSupabaseWriteConfig } from "@/lib/env";
 import { listInventory } from "@/lib/inventory/store";
 import type { InventoryItem } from "@/lib/inventory/types";
 import { listListings } from "@/lib/listings/store";
 import type { ListingItem } from "@/lib/listings/types";
 import { computePriceGaps, latestPricesForCrop } from "@/lib/market/engine";
-import { loadStoredGapsForCrop } from "@/lib/market/repository";
+import { loadStoredGapsForCrop, loadStoredPricesForCrop } from "@/lib/market/repository";
 import { listMatchesForCounterparty, listMatchesForFarmer } from "@/lib/matches/store";
 import type { MarketMatch } from "@/lib/matches/types";
 import { listNotificationsForUser } from "@/lib/notifications/store";
 import type { AppNotification } from "@/lib/notifications/types";
-import { generateRecommendationsForOwner } from "@/lib/recommendations/engine";
+import { listRecommendationsForInventory } from "@/lib/recommendations/store";
 import type { MovementRecommendation } from "@/lib/recommendations/types";
 import {
   DEMO_FARMER_DEFAULT_ID,
@@ -135,20 +136,42 @@ function round(value: number) {
   return Number(value.toFixed(2));
 }
 
-async function _buildSharedDashboardData(): Promise<SharedDashboardData> {
-  const feed = await resolveAgmarknetFeed({
+export async function buildSharedDashboardData(selectedCropSlugs: string[]): Promise<SharedDashboardData> {
+  const hasPersistentPriceStore = hasSupabaseWriteConfig();
+  
+  if (!selectedCropSlugs || selectedCropSlugs.length === 0) {
+    selectedCropSlugs = [TARGET_CROPS[0].slug];
+  }
+
+  const requestedCrops = TARGET_CROPS.filter((c) => selectedCropSlugs.includes(c.slug));
+  const fallbackCrops = requestedCrops.length > 0 ? requestedCrops : [TARGET_CROPS[0]];
+
+  const feedResult = await resolveAgmarknetFeed({
+    cropSlugs: fallbackCrops.map(c => c.slug),
     historyDays: 7,
     mode: "auto",
   });
-  const computedRoutes = computePriceGaps(feed.records, {
+
+  const usedDemoFallback = feedResult.source === "mock";
+  const recordsByCrop = new Map<string, NormalizedMandiPriceRecord[]>();
+  
+  for (const record of feedResult.records) {
+    const arr = recordsByCrop.get(record.cropSlug) ?? [];
+    arr.push(record);
+    recordsByCrop.set(record.cropSlug, arr);
+  }
+
+  const allPriceRecords = feedResult.records;
+  const computedRoutes = computePriceGaps(allPriceRecords, {
     maxSourceDistricts: 5,
     maxTargetDistricts: 5,
     maxPairsPerCrop: 8,
   });
 
   const crops = (await Promise.all(
-    TARGET_CROPS.map(async (crop) => {
-      const prices = latestPricesForCrop(feed.records, crop.slug).map((record) => ({
+    fallbackCrops.map(async (crop) => {
+      const cropRecords = recordsByCrop.get(crop.slug) ?? [];
+      const prices = latestPricesForCrop(cropRecords, crop.slug).map((record) => ({
         district: record.district,
         state: record.state,
         modalPrice: record.modalPrice,
@@ -202,9 +225,16 @@ async function _buildSharedDashboardData(): Promise<SharedDashboardData> {
 
   return {
     generatedAt: new Date().toISOString(),
-    source: feed.source,
-    warnings: feed.warnings,
-    defaultCropSlug: crops[0]?.slug ?? TARGET_CROPS[0].slug,
+    source: usedDemoFallback ? "mock" : "live",
+    warnings: usedDemoFallback
+      ? [
+          hasPersistentPriceStore
+            ? "Some feed fetches missed, causing demo fallbacks for continuity."
+            : "Using seeded demo data because no persistent price store is configured.",
+          ...feedResult.warnings,
+        ]
+      : feedResult.warnings,
+    defaultCropSlug: crops[0]?.slug ?? fallbackCrops[0].slug,
     districts: TARGET_REGIONS.flatMap((region) =>
       region.districts.map((district) => ({
         district,
@@ -215,24 +245,17 @@ async function _buildSharedDashboardData(): Promise<SharedDashboardData> {
   };
 }
 
-const buildSharedDashboardData = unstable_cache(
-  async () => _buildSharedDashboardData(),
-  ["agriflow-shared-dashboard-v2"],
-  { revalidate: 300 }
-);
-
 export async function buildFarmerDashboardData(clerkUserId?: string | null): Promise<FarmerDashboardData> {
-  const baseData = await buildSharedDashboardData();
-  const farmerEntries = await listFarmersWithCrops();
+  const [farmerEntries, authenticated] = await Promise.all([
+    listFarmersWithCrops(),
+    clerkUserId ? findUserByClerkId(clerkUserId) : Promise.resolve(null),
+  ]);
   const fallbackFarmer = farmerEntries[0]?.user ?? DEMO_FARMER_USERS[0];
 
   let activeFarmer = fallbackFarmer;
 
-  if (clerkUserId) {
-    const authenticated = await findUserByClerkId(clerkUserId);
-    if (authenticated && authenticated.role === "FARMER") {
-      activeFarmer = authenticated;
-    }
+  if (authenticated && authenticated.role === "FARMER") {
+    activeFarmer = authenticated;
   }
 
   const activeFarmerEntry = farmerEntries.find(
@@ -240,6 +263,8 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
   );
   const cropPreferences =
     activeFarmerEntry?.crops ?? (await listFarmerCropsForUser(activeFarmer.id));
+
+  const baseData = await buildSharedDashboardData(cropPreferences.map(c => c.cropSlug));
 
   const profile: FarmerDashboardProfile = {
     id: activeFarmer.id ?? DEMO_FARMER_DEFAULT_ID,
@@ -255,18 +280,18 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
     isDemo: activeFarmer.id.startsWith("demo-"),
   };
 
-  const [notifications, matches, listings] = await Promise.all([
+  const [notifications, matches, listings, fpos] = await Promise.all([
     listNotificationsForUser(profile.id, 6),
     listMatchesForFarmer(profile.id, 6),
     listListings({
       farmerUserId: profile.id,
       statuses: ["ACTIVE", "MATCHED"],
     }),
+    listFposForDistrict({
+      district: profile.district,
+      cropSlug: baseData.defaultCropSlug,
+    }),
   ]);
-  const fpos = await listFposForDistrict({
-    district: profile.district,
-    cropSlug: baseData.defaultCropSlug,
-  });
 
   return {
     ...baseData,
@@ -280,18 +305,15 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
 }
 
 export async function buildFpoDashboardData(clerkUserId?: string | null): Promise<FpoDashboardData> {
-  const [baseData, fpoUsers] = await Promise.all([
-    buildSharedDashboardData(),
+  const [fpoUsers, authenticated] = await Promise.all([
     listUsersByRole("FPO"),
+    clerkUserId ? findUserByClerkId(clerkUserId) : Promise.resolve(null),
   ]);
   
   let registeredOwner = fpoUsers[0];
   
-  if (clerkUserId) {
-    const authenticated = await findUserByClerkId(clerkUserId);
-    if (authenticated && authenticated.role === "FPO") {
-      registeredOwner = authenticated;
-    }
+  if (authenticated && authenticated.role === "FPO") {
+    registeredOwner = authenticated;
   }
   const owner: FpoDashboardOwner = registeredOwner
     ? {
@@ -331,16 +353,28 @@ export async function buildFpoDashboardData(clerkUserId?: string | null): Promis
         state: "Andhra Pradesh",
         isDemo: true,
       };
-  const [inventory, recommendations, directoryListings, notifications, matches] =
+
+  const baseData = await buildSharedDashboardData(owner.cropsHandled);
+
+  const [inventory, directoryListings, notifications, matches] =
     await Promise.all([
       listInventory(owner.id),
-      generateRecommendationsForOwner(owner.id),
       listListings({
         statuses: ["ACTIVE", "MATCHED"],
       }),
       listNotificationsForUser(owner.id, 8),
       listMatchesForCounterparty(owner.id, 8),
     ]);
+  const recommendations = (
+    await Promise.all(
+      inventory.map((item) => listRecommendationsForInventory(item.id)),
+    )
+  )
+    .flat()
+    .sort(
+      (left, right) =>
+        (right.totalNetProfitInr ?? 0) - (left.totalNetProfitInr ?? 0),
+    );
 
   return {
     ...baseData,

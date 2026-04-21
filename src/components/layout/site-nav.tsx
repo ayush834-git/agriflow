@@ -39,7 +39,11 @@ export function SiteNav() {
   const pathname = usePathname();
   const { dict, lang, setLang } = useI18n();
 
-  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
+  if (
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/dashboard")
+  ) {
     return null;
   }
 

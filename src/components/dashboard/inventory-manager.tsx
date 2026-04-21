@@ -177,108 +177,88 @@ export function InventoryManager({
   }
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
-      <div className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_30px_90px_-64px_rgba(29,77,50,0.5)]">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-              {dict.fpo.inventoryBoard.title}
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-              {dict.fpo.inventoryBoard.subtitle}
-            </h2>
-          </div>
-          <div className="flex gap-3 text-sm text-muted-foreground">
-            <div className="rounded-[1.2rem] border border-border/70 bg-background/60 px-4 py-3">
-              {inventory.length} {dict.fpo.inventoryBoard.lots}
-            </div>
-            <div className="rounded-[1.2rem] border border-border/70 bg-background/60 px-4 py-3">
-              {formatQuantity(inventoryMetrics.totalQty)} kg
-            </div>
-            <div className="rounded-[1.2rem] border border-border/70 bg-background/60 px-4 py-3">
-              {inventoryMetrics.urgentLots} {dict.fpo.inventoryBoard.urgent}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{dict.fpo.inventoryBoard.headers.crop}</TableHead>
-                <TableHead>{dict.fpo.inventoryBoard.headers.quantity}</TableHead>
-                <TableHead>{dict.fpo.inventoryBoard.headers.location}</TableHead>
-                <TableHead>{dict.fpo.inventoryBoard.headers.deadline}</TableHead>
-                <TableHead>{dict.fpo.inventoryBoard.headers.risk}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {inventory.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{dict.crops?.[item.cropSlug as keyof typeof dict.crops] ?? item.cropName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.storageType === "cold storage" ? dict.fpo.inventoryBoard.coldStorageType
-                        : item.storageType === "ventilated warehouse" ? dict.fpo.inventoryBoard.ventilated
-                        : item.storageType === "ambient shed" ? dict.fpo.inventoryBoard.ambient
-                        : (item.storageType ?? "storage")}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatQuantity(item.quantityKg)} kg</TableCell>
-                  <TableCell>
-                    <div>
-                      <p>{item.district}</p>
-                      <p className="text-xs text-muted-foreground">{item.state}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{item.deadlineDate}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <Badge
-                        className={cn(
-                          "border",
-                          riskBadgeClasses(item.spoilageLevel),
-                        )}
-                      >
-                        {item.spoilageLevel === "CRITICAL" ? "🔴 " + dict.fpo.inventoryBoard.urgent
-                          : item.spoilageLevel === "HIGH" ? "🟠 " + dict.fpo.inventoryBoard.urgent
-                          : item.spoilageLevel}
-                      </Badge>
-                      <p className="text-xs text-muted-foreground">
-                        {dict.common.routeScore} {item.spoilageScore.toFixed(0)}
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+    <div className="flex flex-col">
+      <div className="p-6 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low/50">
+        <div>
+          <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary" data-icon="inventory_2">inventory_2</span>
+            {dict.fpo.inventoryBoard.title}
+          </h2>
+          <p className="text-sm text-on-surface-variant mt-1">
+            {inventory.length} {dict.fpo.inventoryBoard.lots} • {formatQuantity(inventoryMetrics.totalQty)} kg total • {inventoryMetrics.urgentLots} urgent
+          </p>
         </div>
       </div>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-surface-container-lowest border-b border-outline-variant/20 text-on-surface-variant font-medium">
+            <tr>
+              <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.crop}</th>
+              <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.quantity}</th>
+              <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.location}</th>
+              <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.deadline}</th>
+              <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.risk}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant/10 text-on-surface">
+            {inventory.map((item) => (
+              <tr key={item.id} className="hover:bg-surface-container-lowest/50 transition-colors">
+                <td className="px-6 py-4">
+                  <div className="font-bold flex items-center gap-2">
+                    <div className="w-8 h-8 rounded bg-primary-container/20 flex items-center justify-center text-primary-container">
+                      <span className="material-symbols-outlined text-[18px]" data-icon="grass">grass</span>
+                    </div>
+                    <div>
+                      {dict.crops?.[item.cropSlug as keyof typeof dict.crops] ?? item.cropName}
+                      <span className="block text-[11px] font-normal text-on-surface-variant mt-0.5">
+                        {item.storageType === "cold storage" ? dict.fpo.inventoryBoard.coldStorageType
+                          : item.storageType === "ventilated warehouse" ? dict.fpo.inventoryBoard.ventilated
+                          : item.storageType === "ambient shed" ? dict.fpo.inventoryBoard.ambient
+                          : (item.storageType ?? "storage")}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="font-semibold text-on-surface">{formatQuantity(item.quantityKg)} kg</span>
+                </td>
+                <td className="px-6 py-4 text-on-surface-variant font-medium">
+                  {item.district}, {item.state}
+                </td>
+                <td className="px-6 py-4 font-medium">
+                  {item.deadlineDate}
+                </td>
+                <td className="px-6 py-4">
+                  <span className={cn(
+                    "px-3 py-1 rounded-full text-[11px] font-bold border",
+                    item.spoilageLevel === "CRITICAL" ? "bg-error-container text-on-error-container border-error/20"
+                      : item.spoilageLevel === "HIGH" ? "bg-orange-100 text-orange-800 border-orange-200"
+                      : "bg-tertiary-container text-on-tertiary-container border-tertiary/20"
+                  )}>
+                    {item.spoilageLevel === "CRITICAL" ? "🔴 " + dict.fpo.inventoryBoard.urgent
+                          : item.spoilageLevel === "HIGH" ? "🟠 " + dict.fpo.inventoryBoard.urgent
+                          : item.spoilageLevel} ({item.spoilageScore.toFixed(0)})
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <div className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_30px_90px_-64px_rgba(29,77,50,0.45)]">
-        <div className="flex items-start gap-3">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <PackagePlus className="size-5" />
-          </div>
-          <div>
-            <p className="text-sm font-medium">{dict.fpo.inventoryBoard.addTitle}</p>
-            <p className="text-sm text-muted-foreground">
-              {dict.fpo.inventoryBoard.addDesc}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="inventory-crop">
-              {dict.fpo.inventoryBoard.headers.crop}
-            </label>
+      {/* Add Inventory Form inside Accordion or below */}
+      <div className="p-6 border-t border-outline-variant/20 bg-surface-container-lowest">
+        <h3 className="font-headline font-bold text-on-surface flex items-center gap-2 mb-4">
+          <span className="material-symbols-outlined text-primary" data-icon="add_circle">add_circle</span>
+          {dict.fpo.inventoryBoard.addTitle}
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-on-surface-variant uppercase">{dict.fpo.inventoryBoard.headers.crop}</label>
             <select
-              id="inventory-crop"
-              className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="w-full bg-surface-container-low border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
               value={cropSlug}
               onChange={(event) => setCropSlug(event.target.value)}
             >
@@ -289,187 +269,73 @@ export function InventoryManager({
               ))}
             </select>
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="inventory-quantity">
-                {dict.fpo.inventoryBoard.quantityKg}
-              </label>
-              <Input
-                id="inventory-quantity"
-                type="number"
-                value={quantityKg}
-                onChange={(event) => setQuantityKg(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="inventory-deadline">
-                {dict.fpo.inventoryBoard.headers.deadline}
-              </label>
-              <Input
-                id="inventory-deadline"
-                type="date"
-                value={deadlineDate}
-                onChange={(event) => setDeadlineDate(event.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="inventory-district">
-                {dict.fpo.inventoryBoard.district}
-              </label>
-              <select
-                id="inventory-district"
-                className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                value={district}
-                onChange={(event) => setDistrict(event.target.value)}
-              >
-                {DISTRICT_OPTIONS.map((option) => (
-                  <option key={option.district} value={option.district}>
-                    {option.district}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="inventory-storage">
-                {dict.fpo.inventoryBoard.storageType}
-              </label>
-              <select
-                id="inventory-storage"
-                className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                value={storageType}
-                onChange={(event) => setStorageType(event.target.value)}
-              >
-                {STORAGE_OPTIONS.map((option) => {
-                  let translatedOption = option;
-                  if (option === "cold storage") translatedOption = dict.fpo.inventoryBoard.coldStorageType;
-                  if (option === "ventilated warehouse") translatedOption = dict.fpo.inventoryBoard.ventilated;
-                  if (option === "ambient shed") translatedOption = dict.fpo.inventoryBoard.ambient;
-                  return (
-                    <option key={option} value={option}>
-                      {translatedOption}
-                    </option>
-                  )
-                })}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="inventory-location">
-              {dict.fpo.inventoryBoard.storageLocation}
-            </label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-on-surface-variant uppercase">{dict.fpo.inventoryBoard.quantityKg}</label>
             <Input
-              id="inventory-location"
-              value={storageLocationName}
-              onChange={(event) => setStorageLocationName(event.target.value)}
-              placeholder={dict.fpo.inventoryBoard.warehouseName}
+              type="number"
+              value={quantityKg}
+              onChange={(e) => setQuantityKg(e.target.value)}
+              className="bg-surface-container-low border-none rounded-lg"
             />
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="inventory-temperature">
-                Temperature (°C)
-              </label>
-              <Input
-                id="inventory-temperature"
-                type="number"
-                value={temperatureCelsius}
-                onChange={(event) => setTemperatureCelsius(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="inventory-humidity">
-                Humidity (%)
-              </label>
-              <Input
-                id="inventory-humidity"
-                type="number"
-                value={humidityPercent}
-                onChange={(event) => setHumidityPercent(event.target.value)}
-              />
-            </div>
-          </div>
-
-          {preview ? (
-            <div className="rounded-[1.35rem] border border-border/70 bg-background/60 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">Spoilage preview</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {preview.summary}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <Badge className={cn("border", riskBadgeClasses(preview.level))}>
-                    {preview.level}
-                  </Badge>
-                  <AiConfidenceBadge confidence={preview.confidence} />
-                </div>
-              </div>
-              <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-                <p>Score {preview.score.toFixed(0)}</p>
-                <p>
-                  Weather pressure {preview.weatherPressure}, deadline pressure{" "}
-                  {preview.deadlinePressure}
-                </p>
-              </div>
-              <ExplainabilityPanel
-                className="mt-4"
-                title="Why this risk"
-                summary="The spoilage score is driven by crop sensitivity, the time left before deadline, and the storage environment."
-                reasons={preview.reasoning}
-              />
-            </div>
-          ) : (
-            <div className="rounded-[1.35rem] border border-dashed border-border/70 bg-background/40 p-4 text-sm text-muted-foreground">
-              Preview spoilage risk before saving the lot.
-            </div>
-          )}
-
-          {error ? (
-            <div className="rounded-[1.35rem] border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </div>
-          ) : null}
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={previewPending}
-              onClick={() => startPreviewTransition(() => void previewRisk())}
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-on-surface-variant uppercase">{dict.fpo.inventoryBoard.district}</label>
+            <select
+              className="w-full bg-surface-container-low border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
             >
-              <ThermometerSun className="size-4" />
-              {previewPending ? dict.fpo.coldStorage.planning : dict.fpo.inventoryBoard.headers.risk}
-            </Button>
-            <Button
-              type="button"
-              disabled={savePending}
-              onClick={() => startSaveTransition(() => void saveInventory())}
-            >
-              <AlertTriangle className="size-4" />
-              {savePending ? dict.fpo.coldStorage.planning : dict.fpo.inventoryBoard.addTitle}
-            </Button>
+              {DISTRICT_OPTIONS.map((option) => (
+                <option key={option.district} value={option.district}>{option.district}</option>
+              ))}
+            </select>
           </div>
-
-          <div className="rounded-[1.25rem] border border-border/70 bg-background/55 p-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">
-              Selected crop: {getTargetCropOrThrow(cropSlug).name}
-            </p>
-            <p className="mt-2">
-              {district}, {selectedDistrictOption.state}
-            </p>
-            <p className="mt-1">
-              Storage mode: {storageType}
-            </p>
+          <div className="space-y-1">
+             <label className="text-xs font-bold text-on-surface-variant uppercase">{dict.fpo.inventoryBoard.storageType}</label>
+             <select
+              className="w-full bg-surface-container-low border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+              value={storageType}
+              onChange={(event) => setStorageType(event.target.value)}
+            >
+              {STORAGE_OPTIONS.map((option) => {
+                let translatedOption = option;
+                if (option === "cold storage") translatedOption = dict.fpo.inventoryBoard.coldStorageType;
+                if (option === "ventilated warehouse") translatedOption = dict.fpo.inventoryBoard.ventilated;
+                if (option === "ambient shed") translatedOption = dict.fpo.inventoryBoard.ambient;
+                return <option key={option} value={option}>{translatedOption}</option>
+              })}
+            </select>
           </div>
         </div>
+
+        {error && <div className="text-error bg-error-container p-3 mb-4 rounded-lg text-sm">{error}</div>}
+
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-outline-variant text-primary"
+            disabled={previewPending}
+            onClick={() => startPreviewTransition(() => void previewRisk())}
+          >
+            {previewPending ? dict.fpo.coldStorage.planning : dict.fpo.inventoryBoard.headers.risk}
+          </Button>
+          <Button
+            type="button"
+            className="bg-primary text-on-primary hover:opacity-90"
+            disabled={savePending}
+            onClick={() => startSaveTransition(() => void saveInventory())}
+          >
+            {savePending ? dict.fpo.coldStorage.planning : dict.fpo.inventoryBoard.addTitle}
+          </Button>
+
+          {preview && (
+            <span className="text-sm font-medium ml-4 text-on-surface">
+              Preview Score: {preview.score.toFixed(0)} ({preview.level})
+            </span>
+          )}
+        </div>
       </div>
-    </section>
+    </div>
   );
 }

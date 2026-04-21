@@ -1,19 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useDeferredValue, useEffect, useState, useTransition } from "react";
+import { useDeferredValue, useState, useTransition } from "react";
 import { ArrowUpRight, ChevronRight, ShieldAlert, Waves } from "lucide-react";
 
-import { AlertsReportsPanel } from "@/components/dashboard/alerts-reports-panel";
-import { BuyerDirectory } from "@/components/dashboard/buyer-directory";
-import { ColdStorageBoard } from "@/components/dashboard/cold-storage-board";
 import { FpoHeatmapHero } from "@/components/dashboard/fpo-heatmap-hero";
-import { InventoryManager } from "@/components/dashboard/inventory-manager";
-import { MovementRecommendationsBoard } from "@/components/dashboard/movement-recommendations-board";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FpoSettingsPanel } from "@/components/settings/fpo-settings-panel";
 import type { FpoDashboardData } from "@/lib/dashboard";
 import type { InventoryItem } from "@/lib/inventory/types";
 import type { MarketMatch } from "@/lib/matches/types";
@@ -27,6 +22,77 @@ import { PageTransition } from "@/components/layout/page-transition";
 type FpoDashboardClientProps = {
   data: FpoDashboardData;
 };
+
+function DashboardPanelLoading({ label }: { label: string }) {
+  return (
+    <div className="rounded-[1.5rem] border border-border/70 bg-background/60 p-5 text-sm text-muted-foreground">
+      Loading {label}...
+    </div>
+  );
+}
+
+const AlertsReportsPanel = dynamic(
+  () =>
+    import("@/components/dashboard/alerts-reports-panel").then(
+      (mod) => mod.AlertsReportsPanel,
+    ),
+  { loading: () => <DashboardPanelLoading label="alerts" /> },
+);
+
+const BuyerDirectory = dynamic(
+  () =>
+    import("@/components/dashboard/buyer-directory").then(
+      (mod) => mod.BuyerDirectory,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="buyer directory" />,
+  },
+);
+
+const ColdStorageBoard = dynamic(
+  () =>
+    import("@/components/dashboard/cold-storage-board").then(
+      (mod) => mod.ColdStorageBoard,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="cold storage board" />,
+  },
+);
+
+const FpoSettingsPanel = dynamic(
+  () =>
+    import("@/components/settings/fpo-settings-panel").then(
+      (mod) => mod.FpoSettingsPanel,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="workspace settings" />,
+  },
+);
+
+const InventoryManager = dynamic(
+  () =>
+    import("@/components/dashboard/inventory-manager").then(
+      (mod) => mod.InventoryManager,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="inventory" />,
+  },
+);
+
+const MovementRecommendationsBoard = dynamic(
+  () =>
+    import("@/components/dashboard/movement-recommendations-board").then(
+      (mod) => mod.MovementRecommendationsBoard,
+    ),
+  {
+    ssr: false,
+    loading: () => <DashboardPanelLoading label="recommendations" />,
+  },
+);
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -43,9 +109,11 @@ function formatGeneratedAt(value: string) {
   }).format(new Date(value));
 }
 
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+
 export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   const [isPending, startTransition] = useTransition();
-  const { dict, setLang } = useI18n();
+  const { dict } = useI18n();
   const [selectedTab, setSelectedTab] = useState("overview");
   const [selectedCropSlug, setSelectedCropSlug] = useState(data.defaultCropSlug);
   const [selectedDistrict, setSelectedDistrict] = useState(
@@ -72,24 +140,36 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   const activeCrop =
     data.crops.find((crop) => crop.slug === deferredCropSlug) ?? data.crops[0];
   const strongestRoute = activeCrop?.routes[0];
+  const inventoryMetrics = inventory.reduce(
+    (metrics, item) => {
+      if (item.status === "ACTIVE") {
+        metrics.activeInventoryCount += 1;
+      }
+      if (item.spoilageLevel === "HIGH" || item.spoilageLevel === "CRITICAL") {
+        metrics.urgentInventoryCount += 1;
+      }
+      if (item.spoilageLevel === "CRITICAL") {
+        metrics.criticalInventoryCount += 1;
+      }
+      if (item.spoilageLevel !== "LOW") {
+        metrics.atRiskQuantityKg += item.quantityKg;
+      }
+      return metrics;
+    },
+    {
+      activeInventoryCount: 0,
+      urgentInventoryCount: 0,
+      criticalInventoryCount: 0,
+      atRiskQuantityKg: 0,
+    },
+  );
   const derivedMetrics = {
-    activeInventoryCount: inventory.filter((item) => item.status === "ACTIVE").length,
-    urgentInventoryCount: inventory.filter(
-      (item) => item.spoilageLevel === "HIGH" || item.spoilageLevel === "CRITICAL",
-    ).length,
-    criticalInventoryCount: inventory.filter(
-      (item) => item.spoilageLevel === "CRITICAL",
-    ).length,
-    atRiskQuantityKg: inventory
-      .filter((item) => item.spoilageLevel !== "LOW")
-      .reduce((sum, item) => sum + item.quantityKg, 0),
+    ...inventoryMetrics,
     recommendationCount: recommendations.length,
     liveMatchCount: matches.filter(
       (match) => match.status === "CONTACTED" || match.status === "ACCEPTED",
     ).length,
   };
-
-
 
   if (!activeCrop) {
     return null;
@@ -124,320 +204,134 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   }
 
   return (
-    <PageTransition pageKey="fpo-dashboard">
-    <main
-      className={cn(
-        "mx-auto flex w-full max-w-[1540px] flex-col gap-6 px-4 py-5 pb-20 transition-opacity sm:px-6 sm:pb-5 lg:px-8",
-        isPending ? "opacity-95" : "opacity-100",
-      )}
-      aria-busy={isPending}
-    >
-      <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(33,79,56,0.97),rgba(49,106,69,0.95)_42%,rgba(146,44,31,0.88)_120%)] text-white shadow-[0_45px_150px_-78px_rgba(22,47,33,0.92)]">
-        <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-white/12 bg-white/10 text-white hover:bg-white/10">
-                Live operations
-              </Badge>
-              <Badge className="border-white/12 bg-white/8 text-white/82 hover:bg-white/8">
-                Updated {formatGeneratedAt(data.generatedAt)}
-              </Badge>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-medium uppercase tracking-[0.22em] text-white/68">
-                {dict.fpo.dashboardTitle}
-              </p>
-              <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                {dict.fpo.heroHeadline}
+    <DashboardShell role="fpo">
+      <PageTransition pageKey="fpo-dashboard">
+        <div
+          className={cn(
+            "flex flex-col gap-8 transition-opacity p-6 md:p-8",
+            isPending ? "opacity-95" : "opacity-100",
+          )}
+          aria-busy={isPending}
+        >
+          {/* Header Section with Asymmetric Layout from HTML */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-4">
+            <div className="lg:col-span-7">
+              <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-on-surface mb-4">
+                Inventory &amp; <span className="text-primary">Movement</span>
               </h1>
-              <p className="max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
-                {dict.fpo.heroSub}
+              <p className="text-on-surface-variant text-lg max-w-xl leading-relaxed">
+                Optimize your FPO supply chain. We analyze real-time market arrivals and spoilage risks to suggest the most profitable trade routes.
               </p>
             </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                asChild
-                size="lg"
-                className="border-white/10 bg-white text-[rgb(33,79,56)] hover:bg-white/92"
+            
+            <div className="lg:col-span-5 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10 self-center">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="material-symbols-outlined text-primary" data-icon="bolt">bolt</span>
+                <h3 className="font-headline font-bold text-on-surface">Top AI Opportunity</h3>
+              </div>
+              <div className="bg-tertiary-container/10 p-4 rounded-lg mb-4">
+                <p className="text-on-tertiary-container font-medium text-sm">
+                  Movement of <span className="font-bold">{(derivedMetrics.atRiskQuantityKg / 1000).toFixed(1)}T {activeCrop.name}</span> yields highest margin compared to local sales.
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedTab("recommendations")}
+                className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2"
               >
-                <Link href="/register/fpo">
-                  {dict.nav.register} FPO
-                  <ChevronRight className="size-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-white/18 bg-transparent text-white hover:bg-white/8 hover:text-white"
-              >
-                <Link href="/dashboard">{dict.nav.farmer}</Link>
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                {dict.fpo.metrics.workspace}
-              </p>
-              <p className="mt-3 text-2xl font-semibold">
-                {data.owner.organizationName}
-              </p>
-              <p className="mt-2 text-sm text-white/72">
-                {dict.fpo.badges.updated} {formatGeneratedAt(data.generatedAt)}
-              </p>
-            </div>
-            <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                {dict.fpo.inventory}
-              </p>
-              <p className="mt-3 text-2xl font-semibold">
-                {derivedMetrics.activeInventoryCount}
-              </p>
-              <p className="mt-2 text-sm text-white/72">
-                {derivedMetrics.atRiskQuantityKg.toLocaleString("en-IN")} {dict.fpo.metrics.kgAtRisk}
-              </p>
-            </div>
-            <div className="rounded-[1.6rem] border border-white/12 bg-white/8 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                {dict.fpo.metrics.strongestCorridor}
-              </p>
-              <p className="mt-3 text-2xl font-semibold">
-                {strongestRoute ? formatCurrency(strongestRoute.priceGap) : "No route"}
-              </p>
-              <p className="mt-2 text-sm text-white/72">
-                {strongestRoute
-                  ? `${strongestRoute.sourceDistrict} ➔ ${strongestRoute.targetDistrict}`
-                  : "Waiting for stronger cross-district spread"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {data.warnings.length > 0 ? (
-        <section className="rounded-[1.5rem] border border-amber-300/40 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-            <div className="space-y-1">
-              {data.warnings.map((warning) => (
-                <p key={warning}>{warning}</p>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="overflow-x-auto rounded-[1.75rem] border border-border/70 bg-card/80 p-3 shadow-[0_20px_80px_-58px_rgba(26,76,49,0.55)]">
-        <div className="flex min-w-max gap-3">
-          {data.crops.map((crop) => {
-            const isActive = crop.slug === deferredCropSlug;
-            const topRoute = crop.routes[0];
-
-            return (
-              <button
-                key={crop.slug}
-                type="button"
-                onClick={() =>
-                  startTransition(() => {
-                    setSelectedCropSlug(crop.slug);
-                    setSelectedDistrict(
-                      crop.routes[0]?.sourceDistrict ??
-                        data.owner.districtsServed[0] ??
-                        selectedDistrict,
-                    );
-                  })
-                }
-                className={cn(
-                  "group min-w-[240px] rounded-[1.35rem] border px-4 py-4 text-left transition-all duration-300",
-                  isActive
-                    ? "border-primary/35 bg-[linear-gradient(180deg,rgba(247,252,247,0.98),rgba(236,247,239,0.95))] shadow-[0_24px_60px_-44px_rgba(36,92,60,0.75)]"
-                    : "border-border/60 bg-background/70 hover:border-primary/22 hover:bg-background/88",
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-lg font-semibold">{dict.crops?.[crop.slug as keyof typeof dict.crops] ?? crop.name}</p>
-                  <ArrowUpRight
-                    className={cn(
-                      "size-4 transition-transform duration-300",
-                      isActive ? "translate-x-0" : "group-hover:translate-x-0.5",
-                    )}
-                  />
-                </div>
-                <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-                  <p>{dict.common.routeScore} {topRoute?.opportunityScore.toFixed(0) ?? "--"}</p>
-                  <p>
-                    {dict.common.bestGap}{" "}
-                    <span className="font-medium text-foreground">
-                      {topRoute ? formatCurrency(topRoute.priceGap) : dict.farmer.market.noSpread}
-                    </span>
-                  </p>
-                </div>
+                Execute All Recommendations <span className="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
               </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <FpoHeatmapHero
-        crop={activeCrop}
-        districts={data.districts}
-        selectedDistrict={deferredDistrict}
-        generatedAt={data.generatedAt}
-        source={data.source}
-        onSelectDistrict={(district) =>
-          startTransition(() => {
-            setSelectedDistrict(district);
-          })
-        }
-      />
-
-      <section className="grid gap-4 lg:grid-cols-4">
-        <div className="rounded-[1.7rem] border border-border/70 bg-card/88 p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Waves className="size-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">{dict.fpo.metrics.liveSignalShape}</p>
-              <p className="text-sm text-muted-foreground">
-                {dict.fpo.metrics.recommendationMargin}
-              </p>
             </div>
           </div>
-        </div>
-        <div className="rounded-[1.7rem] border border-border/70 bg-card/88 p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            {dict.fpo.metrics.urgentLots}
-          </p>
-          <p className="mt-2 text-3xl font-semibold">{derivedMetrics.urgentInventoryCount}</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {dict.fpo.metrics.urgentDesc}
-          </p>
-        </div>
-        <div className="rounded-[1.7rem] border border-border/70 bg-card/88 p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            {dict.fpo.metrics.routePlans}
-          </p>
-          <p className="mt-2 text-3xl font-semibold">{derivedMetrics.recommendationCount}</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {dict.fpo.metrics.routeDesc}
-          </p>
-        </div>
-        <div className="rounded-[1.7rem] border border-border/70 bg-card/88 p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            {dict.fpo.metrics.liveMatches}
-          </p>
-          <p className="mt-2 text-3xl font-semibold">{derivedMetrics.liveMatchCount}</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {dict.fpo.metrics.liveMatchesDesc}
-          </p>
-        </div>
-      </section>
+          {/* Dashboard Bento Grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* Main Column */}
+            <div className="xl:col-span-2 space-y-6">
+              <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10">
+                <InventoryManager
+                  initialInventory={inventory}
+                  ownerUserId={data.owner.id}
+                  onInventoryCreated={handleInventoryCreated}
+                />
+              </div>
 
-      <div className="grid lg:grid-cols-[1fr_0.3fr] gap-6">
-        <FpoSettingsPanel
-          userId={data.owner.id}
-          email={data.owner.email}
-          initialLanguage={data.owner.preferredLanguage}
-          initialAddress={data.owner.address}
-          initialState={data.owner.state}
-          initialOrganizationName={data.owner.organizationName}
-          initialDistrictsServed={data.owner.districtsServed}
-          initialCropsHandled={data.owner.cropsHandled}
-          initialServiceRadiusKm={data.owner.serviceRadiusKm}
-          initialServiceSummary={data.owner.serviceSummary}
-        />
-        <section className="rounded-[1.5rem] border border-border/70 bg-card/60 p-5 hidden lg:block">
-          <p className="text-sm font-medium">Want to change your role?</p>
-          <p className="text-xs text-muted-foreground mt-1 mb-3">If you are a farmer, switch to the Farmer dashboard.</p>
-          <Button asChild variant="outline" size="sm" className="w-full">
-            <Link href="/register">Change Role</Link>
-          </Button>
-        </section>
-      </div>
-
-      <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_28px_90px_-62px_rgba(30,78,50,0.45)]">
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="gap-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-                {dict.fpo.operations.board}
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                {dict.fpo.operations.subtitle}
-              </h2>
+              <div className="mt-4">
+                <MovementRecommendationsBoard
+                  inventory={inventory}
+                  recommendations={recommendations}
+                  onRecommendationsUpdated={handleRecommendationsUpdated}
+                  onOpenDirectory={(params) => {
+                    setDirectoryFilters(params);
+                    setSelectedTab("directory");
+                  }}
+                />
+              </div>
             </div>
-            <TabsList
-              variant="line"
-              className="bg-transparent p-0"
-              aria-label="FPO dashboard sections"
-            >
-              <TabsTrigger value="overview">{dict.fpo.tabs.inventory}</TabsTrigger>
-              <TabsTrigger value="recommendations">{dict.fpo.tabs.recommendations}</TabsTrigger>
-              <TabsTrigger value="directory">{dict.fpo.tabs.directory}</TabsTrigger>
-              <TabsTrigger value="alerts">{dict.fpo.tabs.alerts}</TabsTrigger>
-            </TabsList>
+
+            {/* Side Insights Column */}
+            <div className="space-y-6">
+              <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10">
+                <div className="p-6 pb-2">
+                  <h3 className="font-headline font-bold mb-2">Regional Supply Gap</h3>
+                  <p className="text-xs text-on-surface-variant mb-4">Real-time heatmap of arrival deficits</p>
+                </div>
+                <FpoHeatmapHero
+                  crop={activeCrop}
+                  districts={data.districts}
+                  selectedDistrict={deferredDistrict}
+                  generatedAt={data.generatedAt}
+                  source={data.source}
+                  onSelectDistrict={(district) =>
+                    startTransition(() => {
+                      setSelectedDistrict(district);
+                    })
+                  }
+                />
+              </div>
+
+               <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10">
+                <h3 className="font-headline font-bold mb-4">Logistics Ready</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-on-surface-variant" data-icon="local_shipping">local_shipping</span>
+                      <div>
+                        <span className="block text-sm font-bold">14-Wheeler (2)</span>
+                        <span className="text-[10px] text-on-surface-variant">AgriTrans Logistics</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-tertiary">AVAILABLE</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-on-surface-variant" data-icon="local_shipping">local_shipping</span>
+                      <div>
+                        <span className="block text-sm font-bold">Cold-Chain (1)</span>
+                        <span className="text-[10px] text-on-surface-variant">FreshRoute Inc.</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-on-surface-variant">IN TRANSIT</span>
+                  </div>
+                </div>
+                <button className="w-full mt-4 py-2 border-2 border-outline-variant text-on-surface font-bold text-sm rounded-lg hover:bg-surface-container-low transition-all">
+                  Manage Fleet
+                </button>
+              </div>
+            </div>
           </div>
-
-          <TabsContent value="overview">
-            <div className="mt-4 grid gap-6">
-              <InventoryManager
-                initialInventory={inventory}
-                ownerUserId={data.owner.id}
-                onInventoryCreated={handleInventoryCreated}
-              />
-              <ColdStorageBoard
-                inventory={inventory}
-                onRecommendationsUpdated={handleRecommendationsUpdated}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="recommendations">
-            <div className="mt-4">
-              <MovementRecommendationsBoard
-                inventory={inventory}
-                recommendations={recommendations}
-                onRecommendationsUpdated={handleRecommendationsUpdated}
-                onOpenDirectory={(params) => {
-                  setDirectoryFilters(params);
-                  setSelectedTab("directory");
-                }}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="directory">
-            <div className="mt-4">
-              <BuyerDirectory
-                key={`${directoryFilters.inventoryId ?? "inventory"}:${directoryFilters.district ?? "district"}:${directoryFilters.cropSlug ?? "crop"}`}
-                inventory={inventory}
-                listings={data.directoryListings}
-                ownerUserId={data.owner.id}
-                initialFilters={directoryFilters}
-                onMatchCreated={handleMatchCreated}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="alerts">
-            <div className="mt-4">
-              <AlertsReportsPanel
-                notifications={notifications}
-                matches={matches}
-                title="Alerts, reports, and match loop"
-                description="Cron-driven spoilage alerts, email report previews, and live farmer responses all land here."
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </section>
-    </main>
-    <MobileBottomNav variant="fpo" />
-    </PageTransition>
+          
+          <div className="mt-8">
+            <BuyerDirectory
+              key={`${directoryFilters.inventoryId ?? "inventory"}:${directoryFilters.district ?? "district"}:${directoryFilters.cropSlug ?? "crop"}`}
+              inventory={inventory}
+              listings={data.directoryListings}
+              ownerUserId={data.owner.id}
+              initialFilters={directoryFilters}
+              onMatchCreated={handleMatchCreated}
+            />
+          </div>
+        </div>
+      </PageTransition>
+      <MobileBottomNav variant="fpo" />
+    </DashboardShell>
   );
 }

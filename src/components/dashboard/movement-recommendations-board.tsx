@@ -69,23 +69,15 @@ export function MovementRecommendationsBoard({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_30px_90px_-64px_rgba(29,77,50,0.45)]">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-            Phase 10 explainability layer
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            AI route recommendations for live inventory
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Each route combines price spread, storage pressure, transport estimate,
-            and a local-engine reasoning block until Gemini wiring is turned on.
-          </p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-xl font-headline font-bold text-on-surface flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary" data-icon="insights">insights</span>
+          AI Route Recommendations
+        </h2>
         <Button
           type="button"
-          variant="outline"
+          className="bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/20 rounded-lg"
           disabled={isPending || !activeInventoryId}
           onClick={() =>
             startTransition(async () => {
@@ -120,56 +112,35 @@ export function MovementRecommendationsBoard({
         >
           {isPending ? (
             <>
-              <LoaderCircle className="size-4 animate-spin" />
-              Recomputing
+              <LoaderCircle className="size-4 animate-spin mr-2" />
+              Recomputing...
             </>
           ) : (
             <>
-              <Sparkles className="size-4" />
-              Refresh recommendation
+              <Sparkles className="size-4 mr-2 text-primary" />
+              Refresh
             </>
           )}
         </Button>
       </div>
 
-      {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="text-sm text-error bg-error-container p-3 rounded-lg">{error}</p> : null}
 
-      <div className="mt-5 grid gap-4">
+      <div className="grid gap-6">
         {inventory.map((item) => {
           const itemRecommendations = recommendations.filter(
             (recommendation) => recommendation.inventoryId === item.id,
           );
+          
+          if (activeInventoryId !== item.id && itemRecommendations.length === 0) {
+              return null; // hide empty unselected
+          }
 
           return (
-            <div
-              key={item.id}
-              className={cn(
-                "rounded-[1.5rem] border px-4 py-4",
-                activeInventoryId === item.id
-                  ? "border-primary/30 bg-[linear-gradient(180deg,rgba(247,252,247,0.98),rgba(236,247,239,0.92))]"
-                  : "border-border/70 bg-background/60",
-              )}
-            >
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <button
-                    type="button"
-                    className="text-left"
-                    onClick={() => setActiveInventoryId(item.id)}
-                  >
-                    <p className="text-lg font-semibold">{item.cropName}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {item.district} · {item.quantityKg.toLocaleString("en-IN")} kg · deadline{" "}
-                      {item.deadlineDate}
-                    </p>
-                  </button>
-                </div>
-                <Badge className={cn("border", urgencyBadgeClass(item.spoilageLevel))}>
-                  {item.spoilageLevel}
-                </Badge>
-              </div>
-
-              <div className="mt-4 grid gap-3 xl:grid-cols-3">
+            <div key={item.id} className="space-y-4">
+               {/* Inventory selector pills could go here if we wanted, but we'll show the top one. */}
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <AnimatePresence mode="popLayout" initial={false}>
                   {itemRecommendations.map((recommendation) => {
                     const signalArray = Array.isArray(recommendation.signals.reasoningLines)
@@ -184,79 +155,82 @@ export function MovementRecommendationsBoard({
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                         key={recommendation.id}
-                        className="rounded-[1.35rem] border border-border/70 bg-card/90 p-4"
+                        className="bg-gradient-to-br from-primary-container to-tertiary-container p-[1px] rounded-xl shadow-sm"
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-medium">
-                              {recommendation.targetDistrict}, {recommendation.targetState}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Target price{" "}
-                              {formatCurrency(
-                                Number(recommendation.signals.targetModalPrice ?? 0),
-                              )}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <Badge
-                              className={cn("border", urgencyBadgeClass(recommendation.urgency))}
-                            >
-                              {recommendation.urgency}
-                            </Badge>
-                            <AiConfidenceBadge confidence={recommendation.confidence} />
-                          </div>
-                        </div>
+                         <div className="bg-surface-container-lowest rounded-[10px] p-6 h-full flex flex-col justify-between">
+                            <div>
+                              <div className="flex justify-between items-start mb-4">
+                                <div>
+                                  <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded">AI SUGGESTION</span>
+                                  <h3 className="text-lg font-headline font-bold text-on-surface mt-2 flex items-center gap-2">
+                                    Move {(item.quantityKg / 1000).toFixed(1)}T {item.cropName} <span className="material-symbols-outlined shrink-0 text-on-surface-variant text-[18px]">arrow_forward</span> {recommendation.targetDistrict}
+                                  </h3>
+                                </div>
+                                <div className="bg-surface-container border border-outline-variant/30 rounded-lg p-2 text-center min-w-[80px]">
+                                  <span className="block text-[10px] text-on-surface-variant font-bold">EST MARGIN</span>
+                                  <span className="block text-lg font-black text-tertiary">{formatCurrency(recommendation.totalNetProfitInr)}</span>
+                                </div>
+                              </div>
+                              
+                              <p className="text-sm text-on-surface-variant mb-6 hidden sm:block">
+                                {recommendation.reasoning}
+                              </p>
 
-                        <div className="mt-4 space-y-1 text-sm text-muted-foreground">
-                          <p>Transport {formatCurrency(recommendation.transportCostInr)}</p>
-                          <p>
-                            Storage per kg{" "}
-                            {formatCurrency(
-                              Number(recommendation.signals.storageCostPerKgInr ?? 0),
-                            )}
-                          </p>
-                          <p>Net per kg {formatCurrency(recommendation.netProfitPerKgInr)}</p>
-                          <p>Total margin {formatCurrency(recommendation.totalNetProfitInr)}</p>
-                        </div>
-
-                        <ExplainabilityPanel
-                          className="mt-4"
-                          title="Why this route"
-                          summary={recommendation.reasoning}
-                          reasons={signalArray.map((line) => String(line))}
-                        />
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="mt-4 w-full"
-                          onClick={() =>
-                            onOpenDirectory({
-                              district: recommendation.targetDistrict,
-                              cropSlug: item.cropSlug,
-                              inventoryId: item.id,
-                            })
-                          }
-                        >
-                          Find buyers in {recommendation.targetDistrict}
-                          <ChevronRight className="size-4" />
-                        </Button>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+                                <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
+                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">LOCAL PRICE</span>
+                                  <span className="font-bold text-sm text-on-surface">{formatCurrency(Number(recommendation.signals.sourceModalPrice ?? 0))}/q</span>
+                                </div>
+                                <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
+                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">TARGET PRICE</span>
+                                  <span className="font-bold text-sm text-tertiary underline decoration-tertiary/30 decoration-2 underline-offset-2">{formatCurrency(Number(recommendation.signals.targetModalPrice ?? 0))}/q</span>
+                                </div>
+                                <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
+                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">TRANSPORT</span>
+                                  <span className="font-bold text-sm text-error">-{formatCurrency(recommendation.transportCostInr)}</span>
+                                </div>
+                                <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
+                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">CONFIDENCE</span>
+                                  <span className="font-bold text-sm text-primary flex justify-center items-center gap-1">
+                                    {(recommendation.confidence * 100).toFixed(0)}% <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mt-auto">
+                              <button 
+                                onClick={() =>
+                                  onOpenDirectory({
+                                    district: recommendation.targetDistrict,
+                                    cropSlug: item.cropSlug,
+                                    inventoryId: item.id,
+                                  })
+                                }
+                                className="flex-1 bg-primary text-on-primary py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                              >
+                                Find Buyers in {recommendation.targetDistrict} <span className="material-symbols-outlined text-[18px]">group_add</span>
+                              </button>
+                            </div>
+                         </div>
                       </motion.div>
                     );
                   })}
                 </AnimatePresence>
 
-                {itemRecommendations.length === 0 ? (
+                {itemRecommendations.length === 0 && activeInventoryId === item.id ? (
                   <motion.div
                     layout
                     key="empty"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="rounded-[1.35rem] border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground"
+                    className="bg-surface-container-lowest rounded-[10px] border border-dashed border-outline-variant/50 p-6 flex items-center justify-center text-center col-span-full h-full min-h-[200px]"
                   >
-                    No route recommendation generated yet for this inventory.
+                   <div>
+                     <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2">hourglass_empty</span>
+                     <p className="text-sm font-medium text-on-surface-variant">Click Refresh to generate routes for {item.cropName}</p>
+                   </div>
                   </motion.div>
                 ) : null}
               </div>
@@ -264,6 +238,6 @@ export function MovementRecommendationsBoard({
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }

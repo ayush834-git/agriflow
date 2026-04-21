@@ -117,100 +117,104 @@ export function MyEarnings({
   const isDemo = completedMatches.length === 0;
 
   return (
-    <section className="space-y-5 rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_28px_90px_-62px_rgba(30,78,50,0.45)]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Trophy className="size-5" />
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border border-outline-variant/30 bg-surface-container-lowest p-6 rounded-[1.25rem] shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-primary-container/30 text-primary">
+            <Trophy className="size-6" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">My Earnings</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-xl font-headline font-bold text-on-surface">My Earnings</h3>
+            <p className="text-sm text-on-surface-variant font-medium mt-1">
               {cropName} profit tracker ·{" "}
               {isDemo ? "Illustrative projections" : `${completedMatches.length} completed trades`}
             </p>
           </div>
         </div>
         {isDemo ? (
-          <Badge variant="outline" className="w-fit text-amber-700 border-amber-200">
+          <span className="bg-tertiary-container/50 text-on-tertiary-container border border-tertiary/20 px-3 py-1.5 rounded-lg text-sm font-bold w-fit mt-4 sm:mt-0">
             Projected savings
-          </Badge>
+          </span>
         ) : (
-          <Badge className="border-emerald-200 bg-emerald-100 text-emerald-900 w-fit">
+          <span className="bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-sm font-bold w-fit mt-4 sm:mt-0">
             Verified trades
-          </Badge>
+          </span>
         )}
       </div>
 
       {/* Hero stat */}
-      <div className="rounded-[1.6rem] border border-primary/20 bg-[linear-gradient(135deg,rgba(33,79,56,0.06),rgba(212,154,34,0.04))] p-5">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary/70">
+      <div className="rounded-[1.25rem] border border-primary/20 bg-primary-container/20 p-6 shadow-sm">
+        <p className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
           {isDemo ? "Projected extra earnings" : "You saved with AgriFlow"}
         </p>
-        <p className="mt-2 flex items-center gap-2 text-4xl font-bold tracking-tight text-primary">
-          <IndianRupee className="size-7" />
+        <p className="mt-3 flex items-center gap-2 text-5xl font-black tracking-tight text-primary font-headline">
+          <IndianRupee className="size-10" />
           {formatCurrency(totalSaved).replace("₹", "")}
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <ArrowUpRight className="size-3.5 text-emerald-600" />
-            <span>{percentImprovement}% improvement over local mandi</span>
+        <div className="mt-5 flex flex-wrap items-center gap-6 text-sm">
+          <div className="flex items-center gap-2 text-on-surface font-medium bg-surface-container/50 px-3 py-1.5 rounded-lg border border-outline-variant/20">
+            <ArrowUpRight className="size-4 text-tertiary" />
+            <span><strong className="text-tertiary">{percentImprovement}% improvement</strong> over local mandi</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <TrendingUp className="size-3.5 text-primary" />
+          <div className="flex items-center gap-2 text-on-surface-variant font-medium">
+            <TrendingUp className="size-4 text-primary" />
             <span>
-              {isDemo ? "Based on current gap" : "From completed transactions"}
+              {isDemo ? "Based on current price gap" : "From completed transactions"}
             </span>
           </div>
         </div>
       </div>
 
       {/* Comparison stats */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[1.3rem] border border-border/70 bg-background/60 p-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            AgriFlow revenue
+      <div className="grid gap-6 sm:grid-cols-3">
+        <div className="rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-5 shadow-sm">
+          <p className="text-xs uppercase font-bold tracking-wider text-on-surface-variant">
+            AgriFlow Revenue
           </p>
-          <p className="mt-1 text-lg font-semibold text-primary">
+          <p className="mt-2 text-2xl font-black text-on-surface font-headline">
             {formatCurrency(totalActual)}
           </p>
         </div>
-        <div className="rounded-[1.3rem] border border-border/70 bg-background/60 p-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Local mandi baseline
+        <div className="rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-5 shadow-sm">
+          <p className="text-xs uppercase font-bold tracking-wider text-on-surface-variant">
+            Local Mandi Baseline
           </p>
-          <p className="mt-1 text-lg font-semibold text-muted-foreground">
+          <p className="mt-2 text-2xl font-black text-on-surface-variant font-headline">
             {formatCurrency(totalBaseline)}
           </p>
         </div>
-        <div className="rounded-[1.3rem] border border-emerald-200/60 bg-emerald-50/50 p-3">
-          <p className="text-xs uppercase tracking-wider text-emerald-700/70">
+        <div className="rounded-[1.25rem] border border-tertiary/20 bg-tertiary-container/30 p-5 shadow-sm relative overflow-hidden">
+          <div className="absolute -right-4 -bottom-4 opacity-5">
+             <Trophy className="size-24" />
+          </div>
+          <p className="text-xs uppercase font-bold tracking-wider text-on-tertiary-container">
             Extra earned
           </p>
-          <p className="mt-1 text-lg font-semibold text-emerald-800">
-            {formatCurrency(totalSaved)}
+          <p className="mt-2 text-2xl font-black text-tertiary font-headline relative z-10">
+            +{formatCurrency(totalSaved)}
           </p>
         </div>
       </div>
 
       {/* Bar chart */}
-      <div className="h-[240px] w-full rounded-[1.4rem] border border-border/60 bg-background/60 p-4">
+      <div className="h-[280px] w-full rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-6 shadow-sm">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={entries}
-            margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+            margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline-variant)" opacity={0.3} />
             <XAxis
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: "rgba(33,79,56,0.6)" }}
+              tick={{ fontSize: 12, fill: "var(--color-on-surface-variant)", fontWeight: 500 }}
+              dy={10}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: "rgba(33,79,56,0.6)" }}
+              tick={{ fontSize: 12, fill: "var(--color-on-surface-variant)", fontWeight: 500 }}
               tickFormatter={(v: number) =>
                 new Intl.NumberFormat("en-IN", {
                   notation: "compact",
@@ -223,40 +227,46 @@ export function MyEarnings({
                 if (!active || !payload?.length) return null;
                 const data = payload[0]?.payload as EarningsEntry;
                 return (
-                  <div className="rounded-xl border border-border bg-background p-3 shadow-md">
-                    <p className="font-semibold text-foreground">{data.label}</p>
-                    <p className="mt-1 text-sm text-primary">
-                      AgriFlow: {formatCurrency(data.actual)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Local mandi: {formatCurrency(data.baseline)}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-emerald-700">
-                      Saved: {formatCurrency(data.saved)}
-                    </p>
+                  <div className="rounded-xl border border-outline-variant/30 bg-surface-container-high p-4 shadow-xl">
+                    <p className="font-bold text-on-surface mb-2">{data.label}</p>
+                    <div className="space-y-1 text-sm font-medium">
+                      <p className="flex justify-between gap-4">
+                        <span className="text-on-surface-variant">AgriFlow:</span>
+                        <span className="font-bold text-primary">{formatCurrency(data.actual)}</span>
+                      </p>
+                      <p className="flex justify-between gap-4">
+                        <span className="text-on-surface-variant">Local mandi:</span>
+                        <span className="font-bold text-on-surface">{formatCurrency(data.baseline)}</span>
+                      </p>
+                      <div className="h-px bg-outline-variant/20 my-2" />
+                      <p className="flex justify-between gap-4 text-tertiary">
+                        <span>Saved:</span>
+                        <span className="font-bold text-tertiary">+{formatCurrency(data.saved)}</span>
+                      </p>
+                    </div>
                   </div>
                 );
               }}
             />
-            <Bar dataKey="baseline" radius={[4, 4, 0, 0]} barSize={28} name="Local Mandi">
+            <Bar dataKey="baseline" radius={[4, 4, 0, 0]} barSize={24} name="Local Mandi">
               {entries.map((_, index) => (
-                <Cell key={`baseline-${index}`} fill="rgba(33,79,56,0.12)" />
+                <Cell key={`baseline-${index}`} fill="var(--color-surface-container-highest)" />
               ))}
             </Bar>
-            <Bar dataKey="actual" radius={[4, 4, 0, 0]} barSize={28} name="AgriFlow">
+            <Bar dataKey="actual" radius={[4, 4, 0, 0]} barSize={24} name="AgriFlow">
               {entries.map((_, index) => (
-                <Cell key={`actual-${index}`} fill="rgba(33,79,56,0.8)" />
+                <Cell key={`actual-${index}`} fill="var(--color-primary)" />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs font-medium text-on-surface-variant px-4">
         {isDemo
           ? "These are projected savings based on the current price gap. Complete transactions via WhatsApp or the listing flow to see real earnings."
           : `Based on ${completedMatches.length} completed trades this season.`}
       </p>
-    </section>
+    </div>
   );
 }

@@ -67,185 +67,173 @@ export function ListingManager({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-      <div className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_30px_90px_-64px_rgba(29,77,50,0.5)]">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Store className="size-5" />
-          </div>
+    <div className="flex flex-col xl:flex-row gap-6 items-start">
+      {/* Active Listings Table */}
+      <div className="flex-1 w-full flex flex-col gap-0 border border-outline-variant/30 rounded-[1.25rem] bg-surface-container-lowest overflow-hidden">
+        <div className="p-6 border-b border-outline-variant/30 flex items-center gap-3 bg-surface-container-low/50">
+          <span className="material-symbols-outlined text-primary text-[28px]" data-icon="store">store</span>
           <div>
-            <p className="text-sm font-medium">My crop listings</p>
-            <p className="text-sm text-muted-foreground">
-              These listings feed the FPO buyer directory and match loop.
-            </p>
+            <h3 className="font-headline font-bold text-lg text-on-surface">My crop listings</h3>
+            <p className="text-sm text-on-surface-variant font-medium">These listings feed the FPO buyer directory and match loop.</p>
           </div>
         </div>
 
-        <div className="mt-5">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Crop</TableHead>
-                <TableHead>Qty</TableHead>
-                <TableHead>Ask</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {listings.map((listing) => (
-                <TableRow key={listing.id}>
-                  <TableCell>
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-surface-container-lowest border-b border-outline-variant/20 text-on-surface-variant font-bold text-[11px] uppercase tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Crop</th>
+                <th className="px-6 py-4">Qty</th>
+                <th className="px-6 py-4">Ask</th>
+                <th className="px-6 py-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant/10 text-on-surface">
+              {listings.length > 0 ? listings.map((listing) => (
+                <tr key={listing.id} className="hover:bg-surface-container-lowest/50 transition-colors">
+                  <td className="px-6 py-4">
                     <div>
-                      <p className="font-medium">{listing.cropName}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-bold flex items-center gap-2">
+                        <span className="w-6 h-6 rounded bg-primary-container/30 flex items-center justify-center text-primary-container">
+                           <span className="material-symbols-outlined text-[14px]">grass</span>
+                        </span>
+                        {listing.cropName}
+                      </p>
+                      <p className="text-xs text-on-surface-variant font-medium mt-1 ml-8">
                         until {listing.availableUntil ?? "--"}
                       </p>
                     </div>
-                  </TableCell>
-                  <TableCell>{formatQuantity(listing.quantityKg)} kg</TableCell>
-                  <TableCell>
-                    {listing.askingPricePerKg ? `₹${listing.askingPricePerKg}/kg` : "--"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={cn("border", badgeClass(listing.status))}>
+                  </td>
+                  <td className="px-6 py-4 font-semibold">{formatQuantity(listing.quantityKg)} kg</td>
+                  <td className="px-6 py-4">
+                    {listing.askingPricePerKg ? <span className="font-bold text-tertiary">₹{listing.askingPricePerKg}/kg</span> : "--"}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap",
+                      listing.status === "MATCHED" ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                        : listing.status === "SOLD" ? "bg-tertiary-container text-on-tertiary-container border-tertiary/20"
+                        : listing.status === "ACTIVE" ? "bg-primary-container text-on-primary-container border-primary/20"
+                        : "bg-surface-container-highest text-on-surface border-outline-variant/20"
+                    )}>
                       {listing.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </span>
+                  </td>
+                </tr>
+              )) : (
+                 <tr>
+                   <td colSpan={4} className="px-6 py-12 text-center text-on-surface-variant font-medium">No active listings.</td>
+                 </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_30px_90px_-64px_rgba(29,77,50,0.45)]">
-        <div className="flex items-start gap-3">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <PackagePlus className="size-5" />
-          </div>
+      {/* Create Listing Form */}
+      <div className="w-full xl:w-[400px] border border-outline-variant/30 rounded-[1.25rem] bg-surface-container-lowest p-6 shrink-0 shadow-sm">
+        <div className="flex items-center gap-3 border-b border-outline-variant/20 pb-4 mb-6">
+          <span className="material-symbols-outlined text-primary text-[28px]" data-icon="add_business">add_business</span>
           <div>
-            <p className="text-sm font-medium">Create listing</p>
-            <p className="text-sm text-muted-foreground">
-              Publish a lot so FPOs can discover it and contact you.
-            </p>
+            <h3 className="font-headline font-bold text-lg text-on-surface">Publish lot</h3>
+            <p className="text-xs text-on-surface-variant font-medium">Allow buyers to contact you directly.</p>
           </div>
         </div>
 
-        <div className="mt-5 space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="listing-crop">
-              Crop
-            </label>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-crop">Crop</label>
             <select
               id="listing-crop"
-              className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="w-full bg-surface-container-low border-none rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none text-on-surface font-medium"
               value={cropSlug}
               onChange={(event) => setCropSlug(event.target.value)}
             >
               {TARGET_CROPS.map((crop) => (
-                <option key={crop.slug} value={crop.slug}>
-                  {crop.name}
-                </option>
+                <option key={crop.slug} value={crop.slug}>{crop.name}</option>
               ))}
             </select>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="listing-quantity">
-                Quantity (kg)
-              </label>
+          <div className="grid gap-4 grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-quantity">Quantity (kg)</label>
               <Input
                 id="listing-quantity"
                 type="number"
                 value={quantityKg}
                 onChange={(event) => setQuantityKg(event.target.value)}
+                className="bg-surface-container-low border-none rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="listing-price">
-                Asking price
-              </label>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-price">Ask Price (/kg)</label>
               <Input
                 id="listing-price"
                 type="number"
                 value={askingPricePerKg}
                 onChange={(event) => setAskingPricePerKg(event.target.value)}
+                className="bg-surface-container-low border-none rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium"
               />
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="listing-grade">
-                Grade
-              </label>
-              <Input
+          <div className="grid gap-4 grid-cols-2">
+            <div className="space-y-1">
+               <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-grade">Grade</label>
+               <Input
                 id="listing-grade"
                 value={qualityGrade}
                 onChange={(event) => setQualityGrade(event.target.value)}
+                className="bg-surface-container-low border-none rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium uppercase"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="listing-date">
-                Available until
-              </label>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-date">Available until</label>
               <Input
                 id="listing-date"
                 type="date"
                 value={availableUntil}
                 onChange={(event) => setAvailableUntil(event.target.value)}
+                className="bg-surface-container-low border-none rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium min-h-[40px]"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="listing-notes">
-              Notes
-            </label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-notes">Notes</label>
             <Textarea
               id="listing-notes"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="Pickup timing, bagging, freshness notes"
+              className="bg-surface-container-low border-none rounded-lg px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium resize-none"
+              rows={3}
             />
           </div>
 
-          {error ? (
-            <p className="text-sm text-red-700">{error}</p>
-          ) : null}
+          {error && <p className="text-sm font-bold text-error bg-error-container/30 px-3 py-2 rounded break-words">{error}</p>}
 
           <Button
             type="button"
-            className="w-full"
+            className="w-full bg-primary hover:bg-primary/90 text-on-primary font-bold rounded-lg py-6 mt-2 shadow-sm transition-opacity"
             disabled={isPending}
             onClick={() =>
               startTransition(async () => {
                 setError(null);
                 const response = await fetch("/api/listings", {
                   method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
+                  headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    farmerUserId,
-                    cropSlug,
-                    quantityKg: Number(quantityKg),
-                    askingPricePerKg: Number(askingPricePerKg),
-                    qualityGrade,
-                    district,
-                    state,
-                    availableUntil,
-                    notes,
+                    farmerUserId, cropSlug, quantityKg: Number(quantityKg),
+                    askingPricePerKg: Number(askingPricePerKg), qualityGrade,
+                    district, state, availableUntil, notes,
                   }),
                 });
                 const payload = (await response.json()) as ListingResponse;
 
                 if (!response.ok || !payload.ok) {
-                  setError(
-                    ("error" in payload ? payload.error : undefined) ??
-                      "Could not create listing.",
-                  );
+                  setError(("error" in payload ? payload.error : undefined) ?? "Could not create listing.");
                   return;
                 }
 
@@ -255,10 +243,11 @@ export function ListingManager({
               })
             }
           >
-            {isPending ? "Saving listing..." : "Publish listing"}
+            {isPending ? "Publishing..." : "Publish Listing"}
+            {!isPending && <span className="material-symbols-outlined ml-2 text-[18px]">publish</span>}
           </Button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
