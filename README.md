@@ -1,199 +1,232 @@
-# AgriFlow
+# AgriFlow: The Definitive Technical & Product Guide
 
-AgriFlow is a multilingual agricultural intelligence platform built for the Google Solution Challenge 2026. Designed to bridge the information and logistical gap between farmers and Farmer Producer Organizations (FPOs), AgriFlow combines live mandi prices, real-time spatial heatmaps, and a powerful AI-driven multilingual WhatsApp/Voice bot to stabilize market prices and drastically reduce post-harvest food waste.
+AgriFlow is a robust, highly sophisticated agricultural intelligence platform engineered for the **Google Solution Challenge 2026**. It sits at the intersection of AI-driven conversational agents, real-time spatial geospatial mapping, and agricultural supply chain logistics. 
 
-**SDG 2** (Zero Hunger) & **SDG 12** (Responsible Consumption and Production)
+By aggressively targeting **SDG 2 (Zero Hunger)** and **SDG 12 (Responsible Consumption and Production)**, AgriFlow operates on a simple promise: eliminate post-harvest crop spoilage and stabilize volatile mandi prices by facilitating real-time digital handshakes between independent Farmers and bulk buyers (Farmer Producer Organizations - FPOs).
 
 ---
 
-## 📡 Live End-to-End Architecture
+## 🧭 Table of Contents
+1. [High-Level Architecture](#1-high-level-architecture)
+2. [Database Schema & Data Models](#2-database-schema--data-models)
+3. [The AI Omnichannel Engine](#3-the-ai-omnichannel-engine)
+4. [Farmer Application Layer](#4-farmer-application-layer)
+5. [FPO Application Layer & Geospatial Intelligence](#5-fpo-application-layer--geospatial-intelligence)
+6. [Algorithmic Core (Spoilage & Prediction)](#6-algorithmic-core-spoilage--prediction)
+7. [Comprehensive Project Structure](#7-comprehensive-project-structure)
+8. [Environment Configurations](#8-environment-configurations)
+9. [Local Development & Webhooks](#9-local-development--webhooks)
+
+---
+
+## 1. High-Level Architecture
+
+AgriFlow is built on a serverless, edge-optimized stack.
 
 ```mermaid
 graph TD
     %% External Data & AI
-    Agmarknet["Agmarknet Mandi Prices"] -->|Cron 30m| NextJS["Next.js Server"]
-    Gemini["Gemini 1.5 / 2.0"] <-->|Reasoning & NLP| NextJS
-    Maps["Google Maps Matrix API"] <-->|Logistics| NextJS
+    Agmarknet["Agmarknet (Govt API)"] -->|Cron 30m / Serverless| NextJS["Next.js 16 (App Router)"]
+    Gemini["Google Gemini 1.5 / 2.0"] <-->|Intent, NLP, Multimodal| NextJS
+    Maps["Google Maps APIs (Matrix, Vis.gl)"] <-->|Geospatial Logistics| NextJS
 
     %% User Channels
-    WhatsApp["WhatsApp / SMS via Twilio"] <-->|Webhook / Intent| NextJS
-    FarmerDash["Farmer Web Dashboard"] <--> NextJS
-    FPODash["FPO Web Dashboard"] <--> NextJS
+    WhatsApp["Twilio (WhatsApp & SMS)"] <-->|Webhooks| NextJS
+    Voice["Twilio (Voice Calls)"] <-->|Webhooks| NextJS
+    FarmerDash["Farmer Next.js Client"] <--> NextJS
+    FPODash["FPO Next.js Client"] <--> NextJS
 
     %% Persistence
-    NextJS -->|PostgreSQL Schema| Supabase[("Supabase DB")]
-    NextJS -->|Upstash Redis| Cache[("Redis Cache & Session")]
-    NextJS -->|Authentication| Clerk[("Clerk Auth")]
-
-    style WhatsApp fill:#25D366,stroke:#fff,stroke-width:2px,color:#fff
-    style Supabase fill:#3ECF8E,stroke:#fff,stroke-width:2px,color:#000
-    style Gemini fill:#4285F4,stroke:#fff,stroke-width:2px,color:#fff
-    style Maps fill:#FBBC05,stroke:#fff,stroke-width:2px,color:#000
-    style NextJS fill:#000000,stroke:#fff,stroke-width:2px,color:#fff
+    NextJS -->|PostgreSQL via Prisma/Supabase-js| Supabase[("Supabase DB (RLS Enabled)")]
+    NextJS -->|Upstash Serverless Redis| Cache[("Redis (Rate Limits & API Cache)")]
+    NextJS -->|Clerk SDK| Clerk[("Clerk (Auth & Sessions)")]
 ```
 
----
-
-## 🧠 Comprehensive Feature List & Flows
-
-### 1. User Onboarding & Identity Flow
-- **Clerk Authentication**: Secure sign-up/sign-in via OTP or OAuth.
-- **Role Selection**: During onboarding (`/register`), users split into two distinct tracks: **Farmer** or **FPO**.
-- **Localization Preferences**: Users set their preferred language (English, Hindi, Telugu, Kannada) which governs both web UI strings (`/lib/i18n`) and outbound AI communication.
-
-### 2. The Omnichannel Bot (WhatsApp, Voice & SMS)
-Located primarily in `/api/whatsapp` and `/api/voice`, powered by `/lib/twilio.ts` and `/lib/gemini-audio.ts`.
-- **Inbound Text (WhatsApp)**: 
-  - Twilio POSTs to `/api/whatsapp/webhook`.
-  - The Gemini Intent Classifier determines the user's need (e.g., *Check Prices*, *Add Listing*, *Ask Advice*).
-  - The system queries Supabase/Redis and responds conversationally in the user's native language.
-- **Inbound Audio (WhatsApp Voice Notes)**: 
-  - The bot extracts the `.ogg` buffer from the Twilio Media URL.
-  - Passed directly to `gemini-audio.ts` utilizing Gemini's multimodal capabilities to perform direct speech-to-text and translation simultaneously.
-  - The bot replies with contextually accurate text or audio.
-- **Twilio Voice Phone Calls**: 
-  - Similar to voice notes, farmers call a Twilio number which records their query and pipes it to Gemini, returning a synthesized spoken TwiML response in their regional language.
-- **SMS Fallback**: Triggered by critical alerts or cron jobs, sending standard SMS to feature phones.
-
-### 3. Core Farmer Journey & Features
-- **Listing Manager (`listing-manager.tsx`)**: Farmers post their harvested crops, specifying quantity (quintals), quality grade, and expected price. Data is written to Supabase `listings` table.
-- **Best Time To Sell Predictor (`best-time-to-sell.tsx`)**: Uses predictive algorithms evaluating cached Agmarknet price trends against historical data vectors to explicitly advise farmers whether to *Hold* or *Sell*.
-- **Live Market Price Chart (`market-price-chart.tsx`)**: Renders interactive graphs of local Mandi price fluctuations.
-- **Earnings Tracker (`my-earnings.tsx`)**: Calculates historical accepted matches and computes projected payouts.
-- **Alerts & Reports Panel**: A centralized inbox displaying SMS/WhatsApp notifications and weather warnings.
-
-### 4. Core FPO Journey & Features
-- **District Supply-Demand Heatmaps (`district-heatmap-google.tsx`)**: 
-  - The crown jewel for FPOs. Aggregates all active farmer listings versus FPO demands.
-  - Overlays a dynamic visual representation on Google Maps: Red zones indicate severe crop shortages, Green zones indicate high surplus.
-- **Inventory & Bulk Manager (`inventory-manager.tsx`)**: Tracks current cold-storage stock, logged by harvest date and quality.
-- **Spoilage Engine (`cold-storage-board.tsx`)**: 
-  - An algorithmic matrix that monitors perishable goods in storage.
-  - Computes degradation curves (e.g., Tomatoes decay faster than Onions) and flags inventory entering the "Red Zone" to prioritize emergency dispatch and eliminate waste.
-- **Movement Recommendations Board (`movement-recommendations-board.tsx`)**: 
-  - Uses the Google Maps Distance Matrix API.
-  - Automatically recommends dispatching trucks from Surplus District A to Deficit District B, calculating exact transit times and logistical costs.
-- **Buyer/FPO Directory Map (`fpo-directory-map.tsx`)**: Allows FPOs to see neighboring buyer networks for bulk B2B trading.
-
-### 5. AI Agentic Matching Flow
-- **The Matchmaker (`/api/matches`)**: 
-  - FPOs register a demand requirement (e.g., "Need 50 quintals of Rice").
-  - A background cron/trigger scans the `listings` table for local farmers matching that exact criteria.
-  - If confidence > 80%, the bot proactively messages the Farmer via WhatsApp: *"FPO X is offering ₹2,100/qtl for your Rice. Reply YES to accept."*
-  - Farmer replies "Yes", the webhook processes the intent, updates Supabase, and finalizes the digital handshake.
-
-### 6. Automated Background Services (Cron)
-- **Agmarknet Price Fetcher (`/api/cron/fetch-prices`)**: 
-  - Runs continuously on a cron schedule (every 30 mins).
-  - Parses live Mandi data via `agmarknet` lib.
-  - Populates Upstash Redis ensuring the dashboard reads are lightning fast and immune to rate-limiting.
-- **Daily Alerts Dispatcher**: Scans local weather anomalies and sudden price drops, issuing Twilio notifications.
+### Tech Stack Drilldown
+- **Core Framework**: Next.js 16, React 19, TypeScript (Strict Mode).
+- **Styling Engine**: Tailwind CSS v4 alongside `shadcn/ui` primitives and Framer Motion.
+- **Database**: Supabase PostgreSQL.
+- **Caching**: Upstash Redis (used for rate-limiting webhooks and caching massive Agmarknet JSON payloads).
+- **Authentication**: Clerk (with role-based access control and multi-factor capabilities).
+- **AI Integration**: `@google/generative-ai` Native SDK.
 
 ---
 
-## 📂 Exhaustive Project Structure
+## 2. Database Schema & Data Models
+
+AgriFlow relies on 10 interconnected core domain tables housed within Supabase:
+
+1. **`users`**: Extended profile data attached to Clerk IDs. Fields: `role` (farmer/fpo), `phone_number`, `preferred_language`, `district_id`.
+2. **`districts`**: Geospatial master table. Fields: `name`, `state`, `lat`, `lng`.
+3. **`crops`**: Master crop list. Fields: `id`, `name`, `baseline_shelf_life_days`, `decay_coefficient`.
+4. **`listings`**: Active farmer crops for sale. Fields: `farmer_id`, `crop_id`, `quantity_quintals`, `quality_grade`, `expected_price`, `created_at`, `status` (active/sold).
+5. **`inventory`**: FPO cold storage stock. Fields: `fpo_id`, `crop_id`, `quantity_quintals`, `harvest_date`, `location_id`.
+6. **`matches`**: Digital handshakes. Fields: `listing_id`, `fpo_id`, `confidence_score`, `status` (pending/accepted/rejected).
+7. **`daily_prices`**: Time-series table caching Agmarknet responses. Fields: `crop_id`, `district_id`, `date`, `min_price`, `max_price`, `modal_price`.
+8. **`spoilage_logs`**: Time-series log tracking decay metrics for FPO dashboards.
+9. **`alerts`**: Push notification and SMS history logs.
+10. **`fpo_demands`**: Active FPO purchasing requirements. Fields: `fpo_id`, `crop_id`, `required_quantity`, `target_price`.
+
+---
+
+## 3. The AI Omnichannel Engine
+
+AgriFlow is engineered for low-literacy users through its Twilio/Gemini integration. 
+
+### WhatsApp Webhook Flow (`/api/whatsapp/webhook`)
+1. **Payload Reception**: Twilio sends a POST request containing `Body` (text) or `MediaUrl0` (audio).
+2. **Agentic Routing**: 
+   - The backend passes the input to a Gemini Prompt tuned as an Intent Classifier.
+   - It outputs a strictly typed JSON: `{ "intent": "ADD_LISTING" | "CHECK_PRICE" | "GENERAL_ADVICE", "entities": { ... } }`.
+3. **Multimodal Audio Handling**: 
+   - If audio is detected, `/lib/gemini-audio.ts` downloads the `.ogg` buffer.
+   - Gemini 1.5 Flash natively digests the audio bytes (no separate speech-to-text layer needed) and translates it to English internally for data extraction.
+4. **Action Execution**: Next.js interacts with Supabase based on the intent.
+5. **Localized Response**: The response payload is generated by Gemini back into the user's `preferred_language` and fired off via Twilio SDK.
+
+### The Automated Matchmaker (`/api/matches`)
+When an FPO posts a demand, the Matchmaker script:
+1. Runs a geospatial bounding-box query in Supabase.
+2. Identifies matching `listings`.
+3. Triggers an active outbound WhatsApp message to the farmer with interactive buttons: *"FPO Agritech wants 50qtl of Tomatoes at ₹1500. Accept?"*
+
+---
+
+## 4. Farmer Application Layer
+
+The Farmer interface is built for high visibility and simple interactions.
+
+- **`farmer-dashboard-client.tsx`**: The core shell. Mounts all sub-widgets based on URL search parameters (`?tab=inventory`).
+- **`listing-manager.tsx`**: A strictly typed React Hook Form allowing farmers to upload available yields.
+- **`best-time-to-sell.tsx`**: 
+  - **Logic**: Reads the last 7 days of `daily_prices`. Passes vectors to Gemini.
+  - **Output**: Generates a hold/sell recommendation along with an `ai-confidence-badge.tsx` (Explainable AI widget explaining *why* the suggestion was made).
+- **`market-price-chart.tsx`**: Uses `recharts` to render a 14-day trailing moving average of local Mandi prices.
+- **`my-earnings.tsx`**: Aggregates `matches` where status is 'accepted' to calculate expected payouts versus actual realized revenue.
+
+---
+
+## 5. FPO Application Layer & Geospatial Intelligence
+
+The FPO (Buyer) side is heavily analytical and logistical.
+
+- **`district-heatmap-google.tsx`**:
+  - Uses `@vis.gl/react-google-maps`.
+  - Aggregates active `listings` (Supply) and active `fpo_demands` (Demand) per district.
+  - Calculates the Gap Delta. If Gap < 0 (Demand > Supply), the district renders Red. If Gap > 0, it renders Green.
+- **`movement-recommendations.tsx`**:
+  - Identifies adjacent districts (Green vs Red).
+  - Pings the Google Maps Distance Matrix API.
+  - Generates exact logistical routes (e.g., *"Move 200qtl from District A to District B. Est Transit: 4h 12m. Freight Cost Impact: Low."*)
+- **`buyer-directory.tsx`**: A contact registry linking FPOs together to form B2B trading consortiums when bulk orders exceed a single FPO's capacity.
+
+---
+
+## 6. Algorithmic Core (Spoilage & Prediction)
+
+### The Spoilage Engine (`cold-storage-board.tsx`)
+This mathematical model prevents food waste. When inventory is logged, it evaluates:
+$$ \text{Decay Rate} = \left( \frac{\text{Current Date} - \text{Harvest Date}}{\text{Baseline Shelf Life}} \right) \times \text{Crop Decay Coefficient} $$
+- If `Decay Rate` > 0.75, the UI flashes red, and an SMS alert is fired to the FPO manager to dispatch immediately.
+- Tomatoes have a high decay coefficient (e.g., 1.5), whereas Onions have a low one (e.g., 0.3).
+
+### Data Freshness & Caching
+Agmarknet API requests are heavy. To prevent 429 Rate Limits:
+- `fetch-prices` Cron job pulls bulk data.
+- Stores localized district slices in **Upstash Redis** (`SETEX district:5:prices 1800 payload`).
+- The `data-freshness-badge.tsx` reads the Redis TTL and displays *"Updated 12 mins ago"*.
+
+---
+
+## 7. Comprehensive Project Structure
 
 ```text
 agriflow/
-├── package.json                   # Dependencies, Tailwind v4, React 19, Next 16
-├── .env.local                     # Secrets: Clerk, Supabase, Twilio, Gemini, Google Maps
+├── package.json                   # React 19, Next 16, Tailwind v4
+├── .env.local                     # Core Secrets
 ├── src/
-│   ├── app/                       # Next.js App Router Pages & Layouts
-│   │   ├── api/                   # Serverless Endpoints
-│   │   │   ├── cron/              # fetch-prices logic
-│   │   │   ├── demo/              # Mock generation scripts
-│   │   │   ├── gaps/              # Supply/Demand algorithm computation
-│   │   │   ├── health/            # Uptime diagnostics
-│   │   │   ├── inventory/         # FPO Inventory CRUD
-│   │   │   ├── listings/          # Farmer Listing CRUD
-│   │   │   ├── matches/           # AI matching triggers & accept routes
-│   │   │   ├── onboarding/        # User role setup endpoints
-│   │   │   ├── prices/            # Redis-cached price fetchers
-│   │   │   ├── recommendations/   # Google Maps routing algorithms
-│   │   │   ├── sms/               # Outbound Twilio SMS triggers
-│   │   │   ├── users/             # Profile management
-│   │   │   ├── voice/             # Twilio Voice Call Webhooks
-│   │   │   └── whatsapp/          # Twilio WhatsApp Inbound Webhooks
-│   │   ├── dashboard/             # Farmer Dashboard Base Layout
-│   │   ├── fpos/                  # FPO Dashboard Base Layout
-│   │   ├── register/              # Role Selection views
-│   │   ├── sign-in/               # Clerk Auth
-│   │   └── sign-up/               # Clerk Auth
-│   ├── components/                # Modular React Components
-│   │   ├── dashboard/             
-│   │   │   ├── ai-confidence-badge.tsx         # Explainability UI
-│   │   │   ├── alerts-reports-panel.tsx        # Inbox UI
-│   │   │   ├── best-time-to-sell.tsx           # Prediction UI
-│   │   │   ├── buyer-directory.tsx             # FPO B2B UI
-│   │   │   ├── cold-storage-board.tsx          # Spoilage Engine UI
-│   │   │   ├── district-heatmap-google.tsx     # Google Maps Overlay UI
-│   │   │   ├── farmer-dashboard-client.tsx     # Core Farmer Base
-│   │   │   ├── fpo-dashboard-client.tsx        # Core FPO Base
-│   │   │   ├── inventory-manager.tsx           # FPO Stock UI
-│   │   │   ├── listing-manager.tsx             # Farmer Form UI
-│   │   │   ├── market-price-chart.tsx          # Recharts Mandi Graphs
-│   │   │   ├── movement-recommendations.tsx    # Logistics Routes UI
-│   │   │   └── my-earnings.tsx                 # Payment Tracker
-│   │   ├── layout/                # Shells (sidebar, header, mobile-nav)
-│   │   ├── providers/             # i18n, Theme, Auth Context Wrappers
-│   │   └── ui/                    # shadcn/ui library primitives
-│   └── lib/                       # Domain Logic & Services
-│       ├── agmarknet/             # Parsing logic for govt data
-│       ├── i18n/                  # Dictionaries: EN, HI, TE, KN
-│       ├── supabase/              # DB config and raw queries
-│       ├── whatsapp/              # WhatsApp formatting logic
-│       ├── gemini-audio.ts        # Multimodal speech-to-text bridge
-│       ├── gemini.ts              # Core conversational prompt engineering
-│       ├── redis.ts               # Upstash configuration
-│       ├── twilio.ts              # Global Twilio client instance
-│       └── regions-map.ts         # Lat/Lng geospatial constants
-└── supabase/                      # PostgreSQL Schema Migrations
+│   ├── app/                       # Next.js App Router
+│   │   ├── api/                   # Serverless APIs
+│   │   │   ├── cron/fetch-prices/ # Vercel Cron handler for Agmarknet
+│   │   │   ├── health/            # Prometheus/Datadog scraping endpoint
+│   │   │   ├── inventory/         # FPO Inventory CRUD routes
+│   │   │   ├── listings/          # Farmer Listing CRUD routes
+│   │   │   ├── matches/           # Matchmaker execution scripts
+│   │   │   ├── prices/            # Redis-backed GET routes for UI charts
+│   │   │   ├── sms/               # Twilio Outbound SMS executor
+│   │   │   ├── voice/webhook/     # Inbound Twilio TwiML Voice handler
+│   │   │   └── whatsapp/webhook/  # Inbound Twilio Messaging handler
+│   │   ├── dashboard/             # Private Farmer Routes (Clerk Protected)
+│   │   ├── fpos/                  # Private FPO Routes (Clerk Protected)
+│   │   ├── register/              # Role Assignment UI
+│   │   └── sign-in/               # Clerk Pre-built UI
+│   ├── components/
+│   │   ├── dashboard/             # Domain UI Blocks
+│   │   │   ├── ai-confidence-badge.tsx    
+│   │   │   ├── best-time-to-sell.tsx      
+│   │   │   ├── cold-storage-board.tsx     
+│   │   │   ├── district-heatmap.tsx       
+│   │   │   ├── movement-recommendations.tsx
+│   │   │   └── ... (20+ domain components)
+│   │   ├── layout/                # Navbars, Sidebars (`dashboard-shell.tsx`)
+│   │   ├── providers/             # React Context (`I18nProvider`, `ClerkProvider`)
+│   │   └── ui/                    # shadcn/ui generic components
+│   └── lib/                       # Business Logic
+│       ├── agmarknet/             # Scraping/Parsing govt tables
+│       ├── i18n/dictionaries.ts   # JSON trees for EN, HI, TE, KN
+│       ├── supabase/client.ts     # Supabase instantiation
+│       ├── twilio.ts              # Twilio SDK global instance
+│       ├── gemini.ts              # Intent classification prompts
+│       ├── gemini-audio.ts        # Audio buffer array processing
+│       └── redis.ts               # Upstash client
+└── supabase/
+    └── migrations/                # SQL definitions for the 10 domain tables
 ```
 
 ---
 
-## 🛠 Tech Stack Details
+## 8. Environment Configurations
 
-- **Frontend Environment**: Next.js 16 (App Router), React 19, TypeScript
-- **Styling & UI**: Tailwind CSS v4, shadcn/ui primitives, Framer Motion for micro-interactions
-- **AI Brain**: `@google/generative-ai` (Gemini 2.5 Flash / Gemini 1.5 Pro)
-- **Geospatial Processing**: `@vis.gl/react-google-maps`, Google Maps Distance Matrix API
-- **Authentication**: Clerk (with localized components)
-- **Database Layer**: Supabase (PostgreSQL with RLS)
-- **Caching & Rate-limiting**: Upstash Redis Serverless
-- **Omnichannel Communications**: Twilio API (WhatsApp Business API, Programmable Voice, Programmable SMS)
+To run the application, `.env.local` requires strict adherence to these variables:
+
+| Variable | Purpose | Location |
+|----------|---------|----------|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Frontend Auth | Clerk Dashboard |
+| `CLERK_SECRET_KEY` | Backend Auth Verification | Clerk Dashboard |
+| `NEXT_PUBLIC_SUPABASE_URL` | DB Connection String | Supabase Dashboard |
+| `SUPABASE_SERVICE_ROLE_KEY` | DB Admin bypass for Webhooks | Supabase Dashboard |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | React Vis.gl Map rendering | Google Cloud Console |
+| `GOOGLE_MAPS_SERVER_KEY` | Distance Matrix Logistics | Google Cloud Console |
+| `GEMINI_API_KEY` | AI Prompting and Multimodal | Google AI Studio |
+| `TWILIO_ACCOUNT_SID` | Communications Gateway | Twilio Console |
+| `TWILIO_AUTH_TOKEN` | Communications Gateway | Twilio Console |
+| `TWILIO_WHATSAPP_NUMBER` | The bot's active number | Twilio Console |
+| `UPSTASH_REDIS_REST_URL` | Fast API Caching | Upstash Console |
 
 ---
 
-## 💻 Running Locally
+## 9. Local Development & Webhooks
 
-1. **Install dependencies**:
+1. **Install and Run**:
 ```bash
 npm install
-```
-
-2. **Environment Configuration**:
-Copy `.env.example` to `.env.local` and provide standard keys:
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` & `CLERK_SECRET_KEY`
-- `NEXT_PUBLIC_SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-- `GEMINI_API_KEY`
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER`
-- `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN`
-
-3. **Start the server**:
-```bash
 npm run dev
 ```
 
-4. **Webhooks Setup (Crucial for WhatsApp/Voice)**:
-Use `ngrok` or `localtunnel` to tunnel your localhost:3000 port and point your Twilio Console to:
-- `https://<YOUR_NGROK_URL>/api/whatsapp/webhook` (For WhatsApp Inbound)
-- `https://<YOUR_NGROK_URL>/api/voice/webhook` (For Voice Call Inbound)
-
-### Demo & Testing Endpoints
-```text
-GET  /api/health                                    # Health and metrics
-GET  /api/cron/fetch-prices?mode=mock&historyDays=7 # Mock Agmarknet updates
-POST /api/matches/simulate-accept                   # Demo the farmer 'YES' WhatsApp loop
+2. **Exposing Webhooks**:
+Because Twilio needs a public URL to POST data to when a farmer sends a WhatsApp message, you *must* use `ngrok`.
+```bash
+ngrok http 3000
 ```
+Take the generated URL (e.g., `https://abc-123.ngrok.app`) and configure it in Twilio:
+- **WhatsApp Sandbox**: Set incoming messages webhook to `https://abc-123.ngrok.app/api/whatsapp/webhook`
+- **Voice Phone Number**: Set incoming call webhook to `https://abc-123.ngrok.app/api/voice/webhook`
+
+3. **Running the Cron Jobs locally**:
+Vercel handles cron jobs in production via `vercel.json`. Locally, you can manually trigger them:
+```bash
+curl "http://localhost:3000/api/cron/fetch-prices?mode=mock&historyDays=7"
+```
+
+### Production Deployment
+The application is optimized for Vercel. Connect the GitHub repo to Vercel, populate the environment variables, and Next.js 16 will handle the automatic edge-caching and serverless function deployment. Supabase migrations should be pushed via the Supabase CLI before deploying the Vercel branch.
