@@ -75,6 +75,13 @@ const LISTING_STATES = new Set([
   "LISTING_CONFIRM",
 ]);
 
+const INVENTORY_STATES = new Set([
+  "INVENTORY_AWAITING_CROP",
+  "INVENTORY_AWAITING_QUANTITY",
+  "INVENTORY_AWAITING_DATE",
+  "INVENTORY_CONFIRM",
+]);
+
 const HELP_TEXT: Record<SupportedLanguage, string> = {
   te: "నేను ధరలు, ఉత్తమమైన మార్కెట్, అమ్మకపు సలహా, FPO తో కనెక్ట్ కావడం, 7 రోజుల అంచనా, మరియు లిస్టింగ్ సెటప్ చేయడంలో సహాయం చేస్తాను.\nఉదాహరణలు:\ntomato price\nbest market for onion",
   hi: "मैं आपको फसलों के दाम, बेहतरीन बाज़ार, बेचने की सलाह, FPO से जुड़ने, 7 दिन का अनुमान लगाने और लिस्टिंग सेटअप में मदद कर सकता हूँ।\nउदाहरण:\ntomato price\nbest market for onion",
@@ -294,6 +301,10 @@ function supportsGuestIntent(intent: WhatsAppIntent) {
 
 function isListingFlowActive(session: WhatsAppSession, intent: WhatsAppIntent) {
   return LISTING_STATES.has(session.state) || intent === "REGISTER_LISTING";
+}
+
+function isInventoryFlowActive(session: WhatsAppSession, intent: WhatsAppIntent) {
+  return INVENTORY_STATES.has(session.state) || intent === "REGISTER_INVENTORY";
 }
 
 function buildFpoProfileUrl(fpoId: string) {
@@ -974,6 +985,223 @@ async function handleListingConversation({
   }
 }
 
+import { createInventory } from "@/lib/inventory/store";
+
+async function handleInventoryConversation({
+  message,
+  session,
+  intentResult,
+  registeredUser,
+}: ListingConversationInput): Promise<BotResult> {
+  const language = intentResult.language;
+  const existingDraft = session.context.listingDraft ?? {};
+  const text = message.body.trim();
+
+  if (isCancelCommand(text)) {
+    return {
+      body: "Inventory setup cancelled.",
+      session: touchSession(session, {
+        state: "IDLE",
+        context: {
+          listingDraft: undefined,
+        },
+      }),
+    };
+  }
+
+  if (!INVENTORY_STATES.has(session.state)) {
+    if (intentResult.cropSlug) {
+      return {
+        body: formatListingQuantityPrompt(
+          getTargetCropOrThrow(intentResult.cropSlug).name,
+          language,
+        ),
+        session: touchSession(session, {
+          state: "INVENTORY_AWAITING_QUANTITY",
+          context: {
+            listingDraft: {
+              cropSlug: intentResult.cropSlug,
+            },
+          },
+        }),
+      };
+    }
+
+    return {
+      body: formatListingCropPrompt(language),
+      session: touchSession(session, {
+        state: "INVENTORY_AWAITING_CROP",
+        context: {
+          listingDraft: {},
+        },
+      }),
+    };
+  }
+
+  switch (session.state) {
+    case "INVENTORY_AWAITING_CROP": {
+      if (!intentResult.cropSlug) {
+        return {
+          body: NEED_CROP_TEXT[language],
+          session,
+        };
+      }
+
+      return {
+        body: formatListingQuantityPrompt(
+          getTargetCropOrThrow(intentResult.cropSlug).name,
+          language,
+        ),
+        session: touchSession(session, {
+          state: "INVENTORY_AWAITING_QUANTITY",
+          context: {
+            listingDraft: {
+              ...existingDraft,
+              cropSlug: intentResult.cropSlug,
+            },
+            lastCropSlug: intentResult.cropSlug,
+          },
+        }),
+      };
+    }
+
+    case "INVENTORY_AWAITING_QUANTITY": {
+      const quantityKg = parseQuantityKg(text);
+      if (!quantityKg) {
+        return {
+          body: formatListingQuantityPrompt(
+            getTargetCropOrThrow(existingDraft.cropSlug ?? "tomato").name,
+            language,
+          ),
+          session,
+        };
+      }
+
+      return {
+        body: formatListingDatePrompt(language),
+        session: touchSession(session, {
+          state: "INVENTORY_AWAITING_DATE",
+          context: {
+            listingDraft: {
+              ...existingDraft,
+              quantityKg,
+            },
+          },
+        }),
+      };
+    }
+
+    case "INVENTORY_AWAITING_DATE": {
+      const availableUntil = parseAvailabilityDate(text);
+      if (!availableUntil) {
+        return {
+          body: formatListingDatePrompt(language),
+          session,
+        };
+      }
+
+      const draft: ListingDraft = {
+        ...existingDraft,
+        availableUntil,
+      };
+
+      return {
+        body: `Inventory ready: ${formatListingSummary(draft)}\nReply YES to confirm or NO to cancel.`,
+        session: touchSession(session, {
+          state: "INVENTORY_CONFIRM",
+          context: {
+            listingDraft: draft,
+          },
+        }),
+      };
+    }
+
+    case "INVENTORY_CONFIRM": {
+      if (isNegativeConfirmation(text)) {
+        return {
+          body: "Cancelled. Send 'add inventory' to start again.",
+          session: touchSession(session, {
+            state: "IDLE",
+            context: {
+              listingDraft: undefined,
+            },
+          }),
+        };
+      }
+
+      if (!isPositiveConfirmation(text)) {
+        return {
+          body: `Please confirm. Reply YES or NO.`,
+          session,
+        };
+      }
+
+      if (!registeredUser.district || !registeredUser.state) {
+        return {
+          body: "Your profile needs a district and state before I can add inventory.",
+          session: touchSession(session, {
+            state: "IDLE",
+            context: {
+              listingDraft: undefined,
+            },
+          }),
+        };
+      }
+
+      if (registeredUser.role !== "fpo") {
+        return {
+          body: "Only FPOs can add inventory. Try 'create listing' instead.",
+          session: touchSession(session, {
+            state: "IDLE",
+            context: {
+              listingDraft: undefined,
+            },
+          }),
+        };
+      }
+
+      const item = await createInventory({
+        ownerUserId: registeredUser.id,
+        cropSlug: existingDraft.cropSlug ?? session.context.lastCropSlug ?? "tomato",
+        quantityKg: existingDraft.quantityKg ?? 0,
+        district: registeredUser.district,
+        state: registeredUser.state,
+        deadlineDate: existingDraft.availableUntil ?? new Date().toISOString().slice(0, 10),
+        storageLocationName: "Added via WhatsApp",
+      });
+
+      return {
+        body: [
+          `Inventory added: ${formatListingSummary({
+            cropSlug: item.cropSlug,
+            quantityKg: item.quantityKg,
+            availableUntil: item.deadlineDate,
+          })}`,
+          "You can manage it from the web dashboard.",
+        ].join("\n"),
+        session: touchSession(session, {
+          state: "IDLE",
+          context: {
+            listingDraft: undefined,
+            lastCropSlug: item.cropSlug,
+          },
+        }),
+      };
+    }
+
+    default:
+      return {
+        body: formatListingCropPrompt(language),
+        session: touchSession(session, {
+          state: "INVENTORY_AWAITING_CROP",
+          context: {
+            listingDraft: {},
+          },
+        }),
+      };
+  }
+}
+
 export function buildTwimlMessage(body: string) {
   return `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeTwiml(body)}</Message></Response>`;
 }
@@ -1109,6 +1337,17 @@ export async function processWhatsAppMessage(
     });
     await saveWhatsAppSession(listingResult.session);
     return listingResult;
+  }
+
+  if (isInventoryFlowActive(nextSession, enrichedIntent.intent)) {
+    const inventoryResult = await handleInventoryConversation({
+      message: normalizedIncomingMessage,
+      session: nextSession,
+      intentResult: enrichedIntent,
+      registeredUser: activeUser,
+    });
+    await saveWhatsAppSession(inventoryResult.session);
+    return inventoryResult;
   }
 
   if (looksLikeMatchAcceptance(normalizedIncomingMessage.body)) {

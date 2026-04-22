@@ -99,6 +99,9 @@ export function InventoryManager({
   const [deadlineDate, setDeadlineDate] = useState(createDefaultDeadlineDate);
   const [temperatureCelsius, setTemperatureCelsius] = useState("10");
   const [humidityPercent, setHumidityPercent] = useState("72");
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletePendingId, setDeletePendingId] = useState<string | null>(null);
 
   const selectedDistrictOption =
     DISTRICT_OPTIONS.find((option) => option.district === district) ?? DISTRICT_OPTIONS[0];
@@ -137,11 +140,51 @@ export function InventoryManager({
     setPreview(payload.result);
   }
 
+  function startEdit(item: InventoryItem) {
+    setEditingId(item.id);
+    setCropSlug(item.cropSlug);
+    setDistrict(item.district);
+    setQuantityKg(String(item.quantityKg));
+    setStorageLocationName(item.storageLocationName ?? "");
+    setStorageType(item.storageType ?? "ambient shed");
+    setDeadlineDate(item.deadlineDate);
+    setTemperatureCelsius(String(item.temperatureCelsius ?? "10"));
+    setHumidityPercent(String(item.humidityPercent ?? "72"));
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setQuantityKg("10000");
+    setStorageLocationName("");
+  }
+
+  async function deleteInventoryItem(id: string) {
+    if (!window.confirm(dict.fpo.inventoryBoard.confirmDelete)) return;
+    setDeletePendingId(id);
+    try {
+      const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setInventory((cur) => cur.filter((i) => i.id !== id));
+      } else {
+        setError("Delete failed.");
+      }
+    } catch {
+      setError("Delete failed.");
+    } finally {
+      setDeletePendingId(null);
+    }
+  }
+
   async function saveInventory() {
     setError(null);
 
-    const response = await fetch("/api/inventory", {
-      method: "POST",
+    const isEdit = !!editingId;
+    const url = isEdit ? `/api/inventory/${editingId}` : "/api/inventory";
+    const method = isEdit ? "PUT" : "POST";
+
+    const response = await fetch(url, {
+      method,
       headers: {
         "Content-Type": "application/json",
       },
@@ -165,15 +208,20 @@ export function InventoryManager({
       return;
     }
 
-    setInventory((current) =>
-      [...current, payload.inventory].sort((left, right) =>
+    setInventory((current) => {
+      const list = isEdit ? current.filter((i) => i.id !== editingId) : current;
+      return [...list, payload.inventory].sort((left, right) =>
         left.deadlineDate.localeCompare(right.deadlineDate),
-      ),
-    );
+      );
+    });
     onInventoryCreated?.(payload.inventory);
     setPreview((payload.inventory.metadata?.spoilage as SpoilageScoreResult) ?? null);
-    setStorageLocationName("");
-    setQuantityKg("10000");
+    if (!isEdit) {
+      setStorageLocationName("");
+      setQuantityKg("10000");
+    } else {
+      setEditingId(null);
+    }
   }
 
   return (
@@ -199,6 +247,7 @@ export function InventoryManager({
               <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.location}</th>
               <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.deadline}</th>
               <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.risk}</th>
+              <th className="px-6 py-4">{dict.fpo.inventoryBoard.headers.actions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant/10 text-on-surface">
@@ -241,17 +290,38 @@ export function InventoryManager({
                           : item.spoilageLevel} ({item.spoilageScore.toFixed(0)})
                   </span>
                 </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(item)}
+                      className="text-primary hover:underline text-sm font-semibold"
+                    >
+                      {dict.fpo.inventoryBoard.editItem}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deletePendingId === item.id}
+                      onClick={() => deleteInventoryItem(item.id)}
+                      className="text-error hover:underline text-sm font-semibold disabled:opacity-50"
+                    >
+                      {deletePendingId === item.id ? dict.fpo.inventoryBoard.updating : dict.fpo.inventoryBoard.deleteItem}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Add Inventory Form inside Accordion or below */}
+      {/* Add / Edit Inventory Form inside Accordion or below */}
       <div className="p-6 border-t border-outline-variant/20 bg-surface-container-lowest">
         <h3 className="font-headline font-bold text-on-surface flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-primary" data-icon="add_circle">add_circle</span>
-          {dict.fpo.inventoryBoard.addTitle}
+          <span className="material-symbols-outlined text-primary" data-icon="add_circle">
+            {editingId ? "edit" : "add_circle"}
+          </span>
+          {editingId ? dict.fpo.inventoryBoard.editTitle : dict.fpo.inventoryBoard.addTitle}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -326,8 +396,18 @@ export function InventoryManager({
             disabled={savePending}
             onClick={() => startSaveTransition(() => void saveInventory())}
           >
-            {savePending ? dict.fpo.coldStorage.planning : dict.fpo.inventoryBoard.addTitle}
+            {savePending ? dict.fpo.inventoryBoard.updating : (editingId ? dict.fpo.inventoryBoard.updateItem : dict.fpo.inventoryBoard.addTitle)}
           </Button>
+
+          {editingId && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={cancelEdit}
+            >
+              {dict.fpo.inventoryBoard.cancel}
+            </Button>
+          )}
 
           {preview && (
             <span className="text-sm font-medium ml-4 text-on-surface">

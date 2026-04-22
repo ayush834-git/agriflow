@@ -61,6 +61,13 @@ const REGISTER_LISTING_HINTS = [
   "sell lot",
   "new listing",
 ];
+const REGISTER_INVENTORY_HINTS = [
+  "add inventory",
+  "new inventory",
+  "add stock",
+  "store crop",
+  "fpo stock",
+];
 const FORECAST_HINTS = [
   "forecast",
   "next 7 days",
@@ -195,6 +202,7 @@ Determine the user's intent. Possible values:
 - SETUP_ALERT (wants price alert)
 - CONNECT_FPO (connect to buyer/fpo)
 - REGISTER_LISTING (want to sell inventory)
+- REGISTER_INVENTORY (FPO wants to add stock)
 - FORECAST (future prediction)
 - OTHER
 
@@ -203,7 +211,7 @@ Output JSON: { "intent": "INTENT_NAME" }
       const result = await model.generateContent(prompt);
       const parsed = JSON.parse(result.response.text());
       
-      const validIntents = ["PRICE_CHECK", "BEST_MARKET", "SELL_ADVICE", "SETUP_ALERT", "CONNECT_FPO", "REGISTER_LISTING", "FORECAST", "OTHER"];
+      const validIntents = ["PRICE_CHECK", "BEST_MARKET", "SELL_ADVICE", "SETUP_ALERT", "CONNECT_FPO", "REGISTER_LISTING", "REGISTER_INVENTORY", "FORECAST", "OTHER"];
       
       if (parsed.intent && validIntents.includes(parsed.intent)) {
         return {
@@ -234,6 +242,15 @@ Output JSON: { "intent": "INTENT_NAME" }
   if (includesAny(normalized, REGISTER_LISTING_HINTS)) {
     return {
       intent: "REGISTER_LISTING",
+      cropSlug,
+      district,
+      language,
+    };
+  }
+
+  if (includesAny(normalized, REGISTER_INVENTORY_HINTS)) {
+    return {
+      intent: "REGISTER_INVENTORY",
       cropSlug,
       district,
       language,

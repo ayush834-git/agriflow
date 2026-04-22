@@ -13,6 +13,7 @@ import type { SupportedLanguage } from "@/lib/whatsapp/types";
 type FpoSettingsPanelProps = {
   userId: string;
   email?: string | null;
+  phone?: string | null;
   initialLanguage: SupportedLanguage;
   initialAddress?: string | null;
   initialState?: string | null;
@@ -46,6 +47,7 @@ const LANGUAGE_OPTIONS: Array<{ value: SupportedLanguage; label: string }> = [
 export function FpoSettingsPanel({
   userId,
   email,
+  phone,
   initialLanguage,
   initialAddress,
   initialState,
@@ -158,10 +160,14 @@ export function FpoSettingsPanel({
         <CardTitle className="text-xl">Settings</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <label className="space-y-2 text-sm font-medium">
-            <span>Login account</span>
+            <span>Login email</span>
             <Input value={email ?? "Email not available"} readOnly />
+          </label>
+          <label className="space-y-2 text-sm font-medium">
+            <span>Phone</span>
+            <Input value={phone ?? "Phone not available"} readOnly />
           </label>
           <label className="space-y-2 text-sm font-medium">
             <span>App + WhatsApp bot language</span>
@@ -285,6 +291,14 @@ export function FpoSettingsPanel({
         <Button type="button" disabled={isPending} onClick={saveSettings}>
           {isPending ? "Saving settings..." : "Save settings"}
         </Button>
+
+        <div className="pt-6 border-t border-border/50 mt-4">
+          <h4 className="text-sm font-bold text-on-surface mb-2">Change your role</h4>
+          <p className="text-sm text-on-surface-variant mb-4">Are you a farmer looking to list your own crops instead of trading?</p>
+          <Button variant="outline" asChild>
+            <a href="/register/farmer">Switch to Farmer mode</a>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

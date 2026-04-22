@@ -221,6 +221,14 @@ export function FarmerSettingsPanel({
         <Button type="button" disabled={isPending} onClick={saveSettings}>
           {isPending ? "Saving settings..." : "Save settings"}
         </Button>
+
+        <div className="pt-6 border-t border-border/50 mt-4">
+          <h4 className="text-sm font-bold text-on-surface mb-2">Change your role</h4>
+          <p className="text-sm text-on-surface-variant mb-4">Are you an aggregator or trader looking to buy and transport crops?</p>
+          <Button variant="outline" asChild>
+            <a href="/register/fpo">Switch to FPO / Trader mode</a>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

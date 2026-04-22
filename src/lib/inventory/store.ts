@@ -351,3 +351,91 @@ export async function refreshInventoryRiskAssessment(
 
   return mapInventoryRow(data as PersistedInventoryRow);
 }
+
+export async function updateInventory(inventoryId: string, payload: Partial<AddInventoryPayload>) {
+  const current = await findInventoryById(inventoryId);
+  if (!current) {
+    throw new Error(`Inventory item ${inventoryId} was not found.`);
+  }
+
+  // Recalculate spoilage if relevant fields changed
+  let spoilageScore = current.spoilageScore;
+  let spoilageLevel = current.spoilageLevel;
+  let metadata = current.metadata;
+  
+  if (payload.district || payload.deadlineDate || payload.storageType || payload.temperatureCelsius || payload.humidityPercent) {
+    const spoilage = scoreSpoilageRisk({
+      cropSlug: payload.cropSlug ?? current.cropSlug,
+      district: payload.district ?? current.district,
+      state: payload.state ?? current.state,
+      deadlineDate: payload.deadlineDate ?? current.deadlineDate,
+      storageType: payload.storageType ?? current.storageType ?? "ambient shed",
+      temperatureCelsius: payload.temperatureCelsius ?? current.temperatureCelsius ?? null,
+      humidityPercent: payload.humidityPercent ?? current.humidityPercent ?? null,
+    });
+    spoilageScore = spoilage.score;
+    spoilageLevel = spoilage.level;
+    metadata = { ...metadata, spoilage };
+  }
+
+  const nextItem: InventoryItem = {
+    ...current,
+    ...payload,
+    quantityKg: payload.quantityKg ?? current.quantityKg,
+    spoilageScore,
+    spoilageLevel,
+    metadata,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (!hasSupabaseWriteConfig() || inventoryId.startsWith("demo-")) {
+    getInventoryStore().set(nextItem.id, nextItem);
+    return nextItem;
+  }
+
+  const admin = getSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("inventory")
+    .update({
+      quantity_kg: nextItem.quantityKg,
+      storage_location_name: nextItem.storageLocationName,
+      district: nextItem.district,
+      state: nextItem.state,
+      storage_type: nextItem.storageType,
+      deadline_date: nextItem.deadlineDate,
+      temperature_celsius: nextItem.temperatureCelsius,
+      humidity_percent: nextItem.humidityPercent,
+      spoilage_score: nextItem.spoilageScore,
+      spoilage_level: nextItem.spoilageLevel,
+      metadata: nextItem.metadata,
+      updated_at: nextItem.updatedAt,
+    } as never)
+    .eq("id", inventoryId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update inventory: ${error.message}`);
+  }
+
+  return mapInventoryRow(data as PersistedInventoryRow);
+}
+
+export async function deleteInventory(inventoryId: string) {
+  if (!hasSupabaseWriteConfig() || inventoryId.startsWith("demo-")) {
+    getInventoryStore().delete(inventoryId);
+    return true;
+  }
+
+  const admin = getSupabaseAdminClient();
+  const { error } = await admin
+    .from("inventory")
+    .delete()
+    .eq("id", inventoryId);
+
+  if (error) {
+    throw new Error(`Failed to delete inventory: ${error.message}`);
+  }
+
+  return true;
+}

@@ -66,9 +66,9 @@ const ListingManager = dynamic(
   { ssr: false, loading: () => <PanelLoading label="listings" /> },
 );
 
-const MarketPriceChart = dynamic(
-  () => import("@/components/dashboard/market-price-chart").then((m) => m.MarketPriceChart),
-  { ssr: false, loading: () => <PanelLoading label="price chart" /> },
+const FpoHeatmapHero = dynamic(
+  () => import("@/components/dashboard/fpo-heatmap-hero").then((m) => m.FpoHeatmapHero),
+  { ssr: false, loading: () => <PanelLoading label="heatmap" /> },
 );
 
 const MyEarnings = dynamic(
@@ -115,7 +115,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   const [, startTransition] = useTransition();
   const [isActionPending, startActionTransition] = useTransition();
   const [selectedCropSlug, setSelectedCropSlug] = useState(data.defaultCropSlug);
-  const [selectedDistrict] = useState(
+  const [selectedDistrict, setSelectedDistrict] = useState(
     data.profile.district ?? data.districts[0]?.district ?? "",
   );
   const [matches, setMatches] = useState(data.matches);
@@ -155,8 +155,33 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
     return (
       <DashboardShell role="farmer" districtLabel={deferredDistrict}>
         <div className="p-6 md:p-8">
-          <TabHeader title="Price Gap Heatmap" subtitle="Live district-level price comparison across your crops" />
-          <MarketPriceChart prices={activeCrop.prices} localDistrict={deferredDistrict} />
+          <TabHeader title={dict.farmer.pageHeaders.heatmapTitle} subtitle={dict.farmer.pageHeaders.heatmapSub} />
+          <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10 mb-6">
+            <FpoHeatmapHero
+              crop={activeCrop}
+              availableCrops={data.crops}
+              districts={data.districts}
+              selectedDistrict={deferredDistrict}
+              generatedAt={data.generatedAt}
+              source={data.source}
+              onSelectDistrict={(d) => startTransition(() => setSelectedDistrict(d))}
+              onSelectCrop={(c) => startTransition(() => setSelectedCropSlug(c))}
+            />
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant/10 grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <span className="block text-xs text-on-surface-variant">Market Demand</span>
+                <span className="text-lg font-bold text-tertiary">
+                  {activeCrop.topOpportunityScore > 0 ? (activeCrop.topOpportunityScore / 10).toFixed(1) : "—"}/10
+                </span>
+              </div>
+              <div className="text-center border-l border-outline-variant/10">
+                <span className="block text-xs text-on-surface-variant">Price Changes</span>
+                <span className="text-lg font-bold text-on-surface">
+                  {activeCrop.routes.length > 3 ? "High" : "Low"}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
         <MobileBottomNav variant="farmer" />
       </DashboardShell>
@@ -168,7 +193,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
     return (
       <DashboardShell role="farmer" districtLabel={deferredDistrict}>
         <div className="p-6 md:p-8">
-          <TabHeader title="My Listings" subtitle="Manage your active crop listings and track interest" />
+          <TabHeader title={dict.farmer.pageHeaders.listingsTitle} subtitle={dict.farmer.pageHeaders.listingsSub} />
           <ListingManager
             initialListings={data.listings}
             farmerUserId={data.profile.id}
@@ -186,7 +211,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
     return (
       <DashboardShell role="farmer" districtLabel={deferredDistrict}>
         <div className="p-6 md:p-8">
-          <TabHeader title="Where to Sell" subtitle="AI-ranked trade routes — highest margin first" />
+          <TabHeader title={dict.farmer.pageHeaders.whereToSellTitle} subtitle={dict.farmer.pageHeaders.whereToSellSub} />
           <div className="grid gap-4">
             {activeCrop.routes.slice(0, 8).map((route) => (
               <div
@@ -247,8 +272,8 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
         <div className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface">Find FPOs</h1>
-              <p className="text-on-surface-variant mt-1 italic">Connect with aggregators who buy from your region</p>
+              <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface">{dict.farmer.pageHeaders.findFpoTitle}</h1>
+              <p className="text-on-surface-variant mt-1 italic">{dict.farmer.pageHeaders.findFpoSub}</p>
             </div>
             <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10">
               <span className="text-xs font-semibold text-primary uppercase tracking-wider block">Near You</span>
@@ -267,7 +292,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
     return (
       <DashboardShell role="farmer" districtLabel={deferredDistrict}>
         <div className="p-6 md:p-8">
-          <TabHeader title="My Earnings" subtitle="Track sales, matches, and profit history" />
+          <TabHeader title={dict.farmer.pageHeaders.earningsTitle} subtitle={dict.farmer.pageHeaders.earningsSub} />
           <MyEarnings
             matches={matches}
             cropName={activeCrop.name}
@@ -286,7 +311,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
     return (
       <DashboardShell role="farmer" districtLabel={deferredDistrict}>
         <div className="p-6 md:p-8">
-          <TabHeader title="Alerts & Inbox" subtitle="Match interest, price alerts, and system notifications" />
+          <TabHeader title={dict.farmer.pageHeaders.alertsTitle} subtitle={dict.farmer.pageHeaders.alertsSub} />
           <AlertsReportsPanel
             notifications={notifications}
             matches={matches}
@@ -304,7 +329,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
     return (
       <DashboardShell role="farmer" districtLabel={deferredDistrict}>
         <div className="p-6 md:p-8">
-          <TabHeader title="Settings" subtitle="Update your crop preferences, language, and contact details" />
+          <TabHeader title={dict.farmer.pageHeaders.settingsTitle} subtitle={dict.farmer.pageHeaders.settingsSub} />
           <FarmerSettingsPanel
             userId={data.profile.id}
             phone={data.profile.phone}

@@ -201,3 +201,18 @@
     animation: routeFlow 16s linear infinite;
   }
 }
+
+/* NProgress styling */
+#nprogress .bar {
+  background: var(--primary) !important;
+  height: 4px !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px var(--primary), 0 0 5px var(--primary) !important;
+}
+
+#nprogress .spinner-icon {
+  border-top-color: var(--primary) !important;
+  border-left-color: var(--primary) !important;
+}

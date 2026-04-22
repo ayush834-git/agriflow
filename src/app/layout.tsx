@@ -38,6 +38,7 @@ export const viewport: Viewport = {
 };
 
 import { WhatsAppWidget } from "@/components/ui/whatsapp-widget";
+import { PageTransitionLoader } from "@/components/ui/page-transition-loader";
 
 export default function RootLayout({
   children,
@@ -59,6 +60,7 @@ export default function RootLayout({
         <I18nProvider>
           <AuthProvider>
             <QueryProvider>
+              <PageTransitionLoader />
               <SiteNav />
               <div className="flex-1 min-w-0">{children}</div>
               <WhatsAppWidget />

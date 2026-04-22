@@ -7,6 +7,7 @@ export type WhatsAppIntent =
   | "SETUP_ALERT"
   | "CONNECT_FPO"
   | "REGISTER_LISTING"
+  | "REGISTER_INVENTORY"
   | "FORECAST"
   | "OTHER";
 
@@ -15,6 +16,7 @@ export type ListingDraft = {
   quantityKg?: number;
   askingPricePerKg?: number;
   availableUntil?: string;
+  storageType?: string;
 };
 
 export type SessionContext = {

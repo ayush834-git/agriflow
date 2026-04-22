@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth, UserButton, SignInButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -11,33 +12,38 @@ type DashboardShellProps = {
   districtLabel?: string;
 };
 
-const FARMER_LINKS = [
-  { tab: null,              icon: "dashboard",             label: "Dashboard" },
-  { tab: "heatmap",         icon: "map",                   label: "Heatmap" },
-  { tab: "inventory",       icon: "inventory_2",            label: "My Listings" },
-  { tab: "recommendations", icon: "insights",              label: "Where to Sell" },
-  { tab: "directory",       icon: "groups",                label: "Find FPOs" },
-  { tab: "earnings",        icon: "payments",              label: "My Earnings" },
-  { tab: "alerts",          icon: "notifications_active",  label: "Alerts" },
-];
 
-const FPO_LINKS = [
-  { tab: null,              icon: "map",                   label: "Heatmap" },
-  { tab: "inventory",       icon: "inventory_2",            label: "Inventory" },
-  { tab: "recommendations", icon: "insights",              label: "Recommendations" },
-  { tab: "directory",       icon: "groups",                label: "Directory" },
-  { tab: "alerts",          icon: "notifications_active",  label: "Alerts" },
-];
 
 export function DashboardShell({ children, role, districtLabel }: DashboardShellProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { isSignedIn, isLoaded } = useAuth();
 
+  const { dict } = useI18n();
+
   const currentTab = searchParams.get("tab");
-  const links = role === "fpo" ? FPO_LINKS : FARMER_LINKS;
   const basePath = role === "fpo" ? "/dashboard/fpo" : "/dashboard";
-  const hubTitle = role === "fpo" ? "FPO Hub" : "Farmer Hub";
+  const hubTitle = role === "fpo" ? dict.fpo.dashboardTitle : dict.farmer.dashboardTitle;
+
+  const FARMER_LINKS = [
+    { tab: null,              icon: "dashboard",             label: dict.farmer.dashboardTitle },
+    { tab: "heatmap",         icon: "map",                   label: dict.farmer.heatmap.title },
+    { tab: "inventory",       icon: "inventory_2",            label: dict.farmer.tabs.listings },
+    { tab: "recommendations", icon: "insights",              label: dict.farmer.tabs.whereToSell },
+    { tab: "directory",       icon: "groups",                label: dict.farmer.tabs.findFpo },
+    { tab: "earnings",        icon: "payments",              label: dict.farmer.tabs.earnings },
+    { tab: "alerts",          icon: "notifications_active",  label: dict.farmer.tabs.alerts },
+  ];
+
+  const FPO_LINKS = [
+    { tab: null,              icon: "map",                   label: dict.fpo.heatmap.title || "Heatmap" },
+    { tab: "inventory",       icon: "inventory_2",            label: dict.fpo.tabs.inventory },
+    { tab: "recommendations", icon: "insights",              label: dict.fpo.tabs.recommendations },
+    { tab: "directory",       icon: "groups",                label: dict.fpo.tabs.directory },
+    { tab: "alerts",          icon: "notifications_active",  label: dict.fpo.tabs.alerts },
+  ];
+
+  const links = role === "fpo" ? FPO_LINKS : FARMER_LINKS;
 
   function isActive(tab: string | null) {
     if (tab === null) return pathname === basePath && !currentTab;
@@ -98,14 +104,14 @@ export function DashboardShell({ children, role, districtLabel }: DashboardShell
             )}
           >
             <span className="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
-            Settings
+            {dict.common.settings || "Settings"}
           </Link>
           <a
             href="mailto:support@agriflow.in"
             className="flex items-center gap-3 text-slate-600 px-4 py-2.5 hover:bg-slate-100 rounded-lg text-sm font-medium"
           >
             <span className="material-symbols-outlined text-[20px]" data-icon="help">help</span>
-            Support
+            {dict.common.support || "Support"}
           </a>
         </div>
       </aside>

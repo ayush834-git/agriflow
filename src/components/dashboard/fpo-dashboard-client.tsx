@@ -46,6 +46,11 @@ const AlertsReportsPanel = dynamic(
   { loading: () => <PanelLoading label="alerts" /> },
 );
 
+const FpoSettingsPanel = dynamic(
+  () => import("@/components/settings/fpo-settings-panel").then((m) => m.FpoSettingsPanel),
+  { loading: () => <PanelLoading label="settings" /> },
+);
+
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(v);
 }
@@ -70,7 +75,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   function setSelectedTab(tab: string) {
     router.push(tab === "overview" ? "/dashboard/fpo" : `/dashboard/fpo?tab=${tab}`);
   }
-  const [selectedCropSlug] = useState(data.defaultCropSlug);
+  const [selectedCropSlug, setSelectedCropSlug] = useState(data.defaultCropSlug);
   const [selectedDistrict, setSelectedDistrict] = useState(
     data.owner.districtsServed[0] ?? data.districts[0]?.district ?? "",
   );
@@ -119,10 +124,10 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
             <div className="lg:col-span-7">
               <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-on-surface mb-4">
-                Inventory &amp; <span className="text-primary">Movement</span>
+                {dict.fpo.pageHeaders.overviewTitle}
               </h1>
               <p className="text-on-surface-variant text-lg max-w-xl leading-relaxed">
-                Optimize your FPO supply chain. We analyze real-time market arrivals and spoilage risks to suggest the most profitable trade routes.
+                {dict.fpo.pageHeaders.overviewSub}
               </p>
             </div>
 
@@ -281,26 +286,28 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
               {/* Regional supply gap (heatmap widget) */}
               <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10">
                 <div className="p-6 pb-2">
-                  <h3 className="font-headline font-bold mb-1">Regional Supply Gap</h3>
+                  <h3 className="font-headline font-bold mb-1">Market Shortage Map</h3>
                   <p className="text-xs text-on-surface-variant mb-4">Real-time heatmap of arrival deficits</p>
                 </div>
                 <FpoHeatmapHero
                   crop={activeCrop}
+                  availableCrops={data.crops}
                   districts={data.districts}
                   selectedDistrict={deferredDistrict}
                   generatedAt={data.generatedAt}
                   source={data.source}
                   onSelectDistrict={(d) => startTransition(() => setSelectedDistrict(d))}
+                  onSelectCrop={(c) => startTransition(() => setSelectedCropSlug(c))}
                 />
                 <div className="p-4 bg-surface-container-low border-t border-outline-variant/10 grid grid-cols-2 gap-4">
                   <div className="text-center">
-                    <span className="block text-xs text-on-surface-variant">Demand Index</span>
+                    <span className="block text-xs text-on-surface-variant">Market Demand</span>
                     <span className="text-lg font-bold text-tertiary">
                       {activeCrop.topOpportunityScore > 0 ? (activeCrop.topOpportunityScore / 10).toFixed(1) : "—"}/10
                     </span>
                   </div>
                   <div className="text-center border-l border-outline-variant/10">
-                    <span className="block text-xs text-on-surface-variant">Price Volatility</span>
+                    <span className="block text-xs text-on-surface-variant">Price Changes</span>
                     <span className="text-lg font-bold text-on-surface">
                       {activeCrop.routes.length > 3 ? "High" : "Low"}
                     </span>
@@ -351,7 +358,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
       {/* ── INVENTORY TAB ── */}
       {selectedTab === "inventory" && (
         <div className="p-6 md:p-8">
-          <h1 className="text-3xl font-extrabold font-headline mb-6">Active Inventory</h1>
+          <h1 className="text-3xl font-extrabold font-headline mb-6">{dict.fpo.pageHeaders.inventoryTitle}</h1>
           <InventoryManager
             initialInventory={inventory}
             ownerUserId={data.owner.id}
@@ -363,7 +370,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
       {/* ── RECOMMENDATIONS TAB ── */}
       {selectedTab === "recommendations" && (
         <div className="p-6 md:p-8">
-          <h1 className="text-3xl font-extrabold font-headline mb-6">AI Movement Recommendations</h1>
+          <h1 className="text-3xl font-extrabold font-headline mb-6">{dict.fpo.pageHeaders.recommendationsTitle}</h1>
           <MovementRecommendationsBoard
             inventory={inventory}
             recommendations={recommendations}
@@ -381,8 +388,8 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
         <div className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface">Directory &amp; Matching</h1>
-              <p className="text-on-surface-variant italic mt-1">Bridging the gap between harvest and demand through editorial-grade supply chain intelligence.</p>
+              <h1 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface">{dict.fpo.pageHeaders.directoryTitle}</h1>
+              <p className="text-on-surface-variant italic mt-1">{dict.fpo.pageHeaders.directorySub}</p>
             </div>
             <div className="flex gap-4">
               <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 flex flex-col min-w-[140px]">
@@ -409,12 +416,33 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
       {/* ── ALERTS TAB ── */}
       {selectedTab === "alerts" && (
         <div className="p-6 md:p-8">
-          <h1 className="text-3xl font-extrabold font-headline mb-6">Alerts &amp; Notifications</h1>
+          <h1 className="text-3xl font-extrabold font-headline mb-6">{dict.fpo.pageHeaders.alertsTitle}</h1>
           <AlertsReportsPanel
             notifications={notifications}
             matches={matches}
             title="FPO Alerts & Inbox"
             description="Supply alerts, match interest requests, and system notifications."
+          />
+        </div>
+      )}
+
+      {/* ── SETTINGS TAB ── */}
+      {selectedTab === "settings" && (
+        <div className="p-6 md:p-8">
+          <h1 className="text-3xl font-extrabold font-headline mb-6">{dict.fpo.pageHeaders.settingsTitle}</h1>
+          <FpoSettingsPanel
+            userId={data.owner.id}
+            email={data.owner.email}
+            phone={data.owner.phone}
+            initialLanguage={data.owner.preferredLanguage}
+            initialAddress={data.owner.address}
+            initialState={data.owner.state}
+            initialOrganizationName={data.owner.organizationName}
+            initialDistrictsServed={data.owner.districtsServed}
+            initialCropsHandled={data.owner.cropsHandled}
+            initialServiceRadiusKm={data.owner.serviceRadiusKm}
+            initialServiceSummary={data.owner.serviceSummary}
+            onLanguageUpdated={() => {}}
           />
         </div>
       )}
