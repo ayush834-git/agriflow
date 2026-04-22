@@ -36,7 +36,7 @@ export function DashboardShell({ children, role, districtLabel }: DashboardShell
   ];
 
   const FPO_LINKS = [
-    { tab: null,              icon: "map",                   label: dict.fpo.heatmap.title || "Heatmap" },
+    { tab: null,              icon: "map",                   label: dict.fpo.heatmap.monitor || "Heatmap" },
     { tab: "inventory",       icon: "inventory_2",            label: dict.fpo.tabs.inventory },
     { tab: "recommendations", icon: "insights",              label: dict.fpo.tabs.recommendations },
     { tab: "directory",       icon: "groups",                label: dict.fpo.tabs.directory },

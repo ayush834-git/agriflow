@@ -764,6 +764,7 @@ export const DICTIONARIES = {
       tabs: {
         inventory: "ನನ್ನ ಸ್ಟಾಕ್",
         directory: "ಡೈರೆಕ್ಟರಿ",
+        recommendations: "ಬೆಳೆ ಕಳುಹಿಸಿ",
         alerts: "ಎಚ್ಚರಿಕೆಗಳು",
       },
       pageHeaders: {

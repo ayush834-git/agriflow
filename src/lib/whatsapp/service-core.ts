@@ -1148,7 +1148,7 @@ async function handleInventoryConversation({
         };
       }
 
-      if (registeredUser.role !== "fpo") {
+      if (registeredUser.role !== "FPO") {
         return {
           body: "Only FPOs can add inventory. Try 'create listing' instead.",
           session: touchSession(session, {

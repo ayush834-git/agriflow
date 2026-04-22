@@ -370,8 +370,8 @@ export async function updateInventory(inventoryId: string, payload: Partial<AddI
       state: payload.state ?? current.state,
       deadlineDate: payload.deadlineDate ?? current.deadlineDate,
       storageType: payload.storageType ?? current.storageType ?? "ambient shed",
-      temperatureCelsius: payload.temperatureCelsius ?? current.temperatureCelsius ?? null,
-      humidityPercent: payload.humidityPercent ?? current.humidityPercent ?? null,
+      temperatureCelsius: payload.temperatureCelsius ?? current.temperatureCelsius ?? undefined,
+      humidityPercent: payload.humidityPercent ?? current.humidityPercent ?? undefined,
     });
     spoilageScore = spoilage.score;
     spoilageLevel = spoilage.level;
