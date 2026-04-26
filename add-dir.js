@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 let content = fs.readFileSync('src/lib/i18n/dictionaries.ts', 'utf-8');
 
 const keysToAdd = {
