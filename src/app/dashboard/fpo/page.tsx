@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { unstable_cache } from "next/cache";
