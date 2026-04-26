@@ -204,7 +204,7 @@ export function resetFallbackInventory() {
 }
 
 export async function listInventory(ownerUserId = DEMO_FPO_OWNER_ID) {
-  if (!hasSupabaseWriteConfig() || ownerUserId === DEMO_FPO_OWNER_ID) {
+  if (!hasSupabaseWriteConfig()) {
     return Array.from(getInventoryStore().values())
       .filter((item) => item.ownerUserId === ownerUserId)
       .sort((left, right) => left.deadlineDate.localeCompare(right.deadlineDate));
@@ -245,7 +245,7 @@ export async function listAllInventory() {
 }
 
 export async function findInventoryById(inventoryId: string) {
-  if (!hasSupabaseWriteConfig() || inventoryId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     return getInventoryStore().get(inventoryId) ?? null;
   }
 
@@ -270,7 +270,7 @@ export async function findInventoryById(inventoryId: string) {
 export async function createInventory(payload: AddInventoryPayload) {
   const item = buildInventoryItem(payload);
 
-  if (!hasSupabaseWriteConfig() || item.ownerUserId === DEMO_FPO_OWNER_ID) {
+  if (!hasSupabaseWriteConfig()) {
     getInventoryStore().set(item.id, item);
     return item;
   }
@@ -328,7 +328,7 @@ export async function refreshInventoryRiskAssessment(
     updatedAt: new Date().toISOString(),
   };
 
-  if (!hasSupabaseWriteConfig() || inventoryId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     getInventoryStore().set(nextItem.id, nextItem);
     return nextItem;
   }
@@ -388,7 +388,7 @@ export async function updateInventory(inventoryId: string, payload: Partial<AddI
     updatedAt: new Date().toISOString(),
   };
 
-  if (!hasSupabaseWriteConfig() || inventoryId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     getInventoryStore().set(nextItem.id, nextItem);
     return nextItem;
   }
@@ -422,7 +422,7 @@ export async function updateInventory(inventoryId: string, payload: Partial<AddI
 }
 
 export async function deleteInventory(inventoryId: string) {
-  if (!hasSupabaseWriteConfig() || inventoryId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     getInventoryStore().delete(inventoryId);
     return true;
   }

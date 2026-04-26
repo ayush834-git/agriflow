@@ -12,7 +12,7 @@ type ExplainabilityPanelProps = {
 };
 
 export function ExplainabilityPanel({
-  title = "Why?",
+  title,
   summary,
   reasons,
   className,
@@ -30,7 +30,7 @@ export function ExplainabilityPanel({
     >
       <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-foreground">
         <BadgeHelp className="size-4 text-primary" />
-        {title}
+        {title ?? "Why?"}
       </summary>
       <div className="mt-3 space-y-2 text-muted-foreground">
         {summary ? <p>{summary}</p> : null}

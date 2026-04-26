@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, LoaderCircle, Sparkles } from "lucide-react";
 
@@ -10,6 +10,8 @@ import type { InventoryItem } from "@/lib/inventory/types";
 import type { MovementRecommendation } from "@/lib/recommendations/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { translateDynamicText } from "@/lib/i18n/dictionaries";
+import { useI18n } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 type MovementRecommendationsBoardProps = {
@@ -62,18 +64,43 @@ export function MovementRecommendationsBoard({
   onRecommendationsUpdated,
   onOpenDirectory,
 }: MovementRecommendationsBoardProps) {
+  const { dict, lang } = useI18n();
   const [error, setError] = useState<string | null>(null);
+  const [translatedReasoning, setTranslatedReasoning] = useState<Record<string, string>>({});
   const [activeInventoryId, setActiveInventoryId] = useState<string | null>(
     inventory[0]?.id ?? null,
   );
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function translateReasoning() {
+      const nextEntries = await Promise.all(
+        recommendations.map(async (recommendation) => [
+          recommendation.id,
+          await translateDynamicText(recommendation.reasoning ?? "", lang),
+        ] as const),
+      );
+
+      if (!cancelled) {
+        setTranslatedReasoning(Object.fromEntries(nextEntries));
+      }
+    }
+
+    void translateReasoning();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang, recommendations]);
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-xl font-headline font-bold text-on-surface flex items-center gap-2">
           <span className="material-symbols-outlined text-primary" data-icon="insights">insights</span>
-          AI Route Recommendations
+          {dict.recommendations.aiRouteRecommendations}
         </h2>
         <Button
           type="button"
@@ -101,7 +128,7 @@ export function MovementRecommendationsBoard({
               if (!response.ok || !payload.ok) {
                 setError(
                   ("error" in payload ? payload.error : undefined) ??
-                    "Could not refresh recommendations.",
+                    dict.recommendations.couldNotRefresh,
                 );
                 return;
               }
@@ -113,12 +140,12 @@ export function MovementRecommendationsBoard({
           {isPending ? (
             <>
               <LoaderCircle className="size-4 animate-spin mr-2" />
-              Recomputing...
+              {dict.recommendations.recomputing}
             </>
           ) : (
             <>
               <Sparkles className="size-4 mr-2 text-primary" />
-              Refresh
+              {dict.recommendations.refresh}
             </>
           )}
         </Button>
@@ -161,36 +188,38 @@ export function MovementRecommendationsBoard({
                             <div>
                               <div className="flex justify-between items-start mb-4">
                                 <div>
-                                  <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded">AI SUGGESTION</span>
+                                  <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded">{dict.recommendations.aiSuggestion}</span>
                                   <h3 className="text-lg font-headline font-bold text-on-surface mt-2 flex items-center gap-2">
-                                    Move {(item.quantityKg / 1000).toFixed(1)}T {item.cropName} <span className="material-symbols-outlined shrink-0 text-on-surface-variant text-[18px]">arrow_forward</span> {recommendation.targetDistrict}
+                                    {dict.recommendations.moveWeightCropToTarget
+                                      .replace("{weight}", (item.quantityKg / 1000).toFixed(1))
+                                      .replace("{cropName}", item.cropName)} <span className="material-symbols-outlined shrink-0 text-on-surface-variant text-[18px]">arrow_forward</span> {recommendation.targetDistrict}
                                   </h3>
                                 </div>
                                 <div className="bg-surface-container border border-outline-variant/30 rounded-lg p-2 text-center min-w-[80px]">
-                                  <span className="block text-[10px] text-on-surface-variant font-bold">EST MARGIN</span>
+                                  <span className="block text-[10px] text-on-surface-variant font-bold">{dict.recommendations.estMargin}</span>
                                   <span className="block text-lg font-black text-tertiary">{formatCurrency(recommendation.totalNetProfitInr)}</span>
                                 </div>
                               </div>
                               
                               <p className="text-sm text-on-surface-variant mb-6 hidden sm:block">
-                                {recommendation.reasoning}
+                                {translatedReasoning[recommendation.id] ?? recommendation.reasoning}
                               </p>
 
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
                                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
-                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">LOCAL PRICE</span>
+                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">{dict.recommendations.localPrice}</span>
                                   <span className="font-bold text-sm text-on-surface">{formatCurrency(Number(recommendation.signals.sourceModalPrice ?? 0))}/q</span>
                                 </div>
                                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
-                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">TARGET PRICE</span>
+                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">{dict.recommendations.targetPrice}</span>
                                   <span className="font-bold text-sm text-tertiary underline decoration-tertiary/30 decoration-2 underline-offset-2">{formatCurrency(Number(recommendation.signals.targetModalPrice ?? 0))}/q</span>
                                 </div>
                                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
-                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">TRANSPORT</span>
+                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">{dict.recommendations.transport}</span>
                                   <span className="font-bold text-sm text-error">-{formatCurrency(recommendation.transportCostInr)}</span>
                                 </div>
                                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/10 text-center">
-                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">CONFIDENCE</span>
+                                  <span className="block text-[10px] text-on-surface-variant font-bold mb-1">{dict.recommendations.confidence}</span>
                                   <span className="font-bold text-sm text-primary flex justify-center items-center gap-1">
                                     {((recommendation.confidence ?? 0) * 100).toFixed(0)}% <span className="material-symbols-outlined text-[14px]">check_circle</span>
                                   </span>
@@ -209,7 +238,7 @@ export function MovementRecommendationsBoard({
                                 }
                                 className="flex-1 bg-primary text-on-primary py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                               >
-                                Find Buyers in {recommendation.targetDistrict} <span className="material-symbols-outlined text-[18px]">group_add</span>
+                                {dict.recommendations.findBuyersIn.replace("{district}", recommendation.targetDistrict)} <span className="material-symbols-outlined text-[18px]">group_add</span>
                               </button>
                             </div>
                          </div>
@@ -229,7 +258,7 @@ export function MovementRecommendationsBoard({
                   >
                    <div>
                      <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2">hourglass_empty</span>
-                     <p className="text-sm font-medium text-on-surface-variant">Click Refresh to generate routes for {item.cropName}</p>
+                     <p className="text-sm font-medium text-on-surface-variant">{dict.recommendations.clickRefreshToGenerate.replace("{cropName}", item.cropName)}</p>
                    </div>
                   </motion.div>
                 ) : null}

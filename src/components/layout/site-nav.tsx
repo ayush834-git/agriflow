@@ -17,7 +17,7 @@ const NAV_LINKS = [
 
 const hasClerkKey = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
-function AuthControls() {
+function AuthControls({ signInLabel }: { signInLabel: string }) {
   const { isSignedIn, isLoaded } = useAuth();
 
   if (!isLoaded) return null;
@@ -29,7 +29,7 @@ function AuthControls() {
   return (
     <SignInButton mode="redirect">
       <Button variant="outline" size="sm">
-        Sign in
+        {signInLabel}
       </Button>
     </SignInButton>
   );
@@ -55,7 +55,7 @@ export function SiteNav() {
           className="flex items-center gap-2 font-semibold tracking-tight text-primary"
         >
           <Wheat className="size-5" />
-          <span>AgriFlow</span>
+          <span>{dict.common.brandName}</span>
         </Link>
 
         <nav className="hidden items-center gap-1 sm:flex">
@@ -80,17 +80,18 @@ export function SiteNav() {
             value={lang}
             onChange={(e) => setLang(e.target.value as "en" | "hi" | "te" | "kn")}
             className="rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground outline-none cursor-pointer hover:bg-accent"
+            aria-label={dict.common.language}
           >
-            <option value="en">EN</option>
-            <option value="hi">HI</option>
-            <option value="te">TE</option>
-            <option value="kn">KN</option>
+            <option value="en">{dict.common.languageNames.en}</option>
+            <option value="hi">{dict.common.languageNames.hi}</option>
+            <option value="te">{dict.common.languageNames.te}</option>
+            <option value="kn">{dict.common.languageNames.kn}</option>
           </select>
           {hasClerkKey ? (
-            <AuthControls />
+            <AuthControls signInLabel={dict.nav.signIn} />
           ) : (
             <Button asChild variant="outline" size="sm">
-              <Link href="/sign-in">Sign in</Link>
+              <Link href="/sign-in">{dict.nav.signIn}</Link>
             </Button>
           )}
         </div>

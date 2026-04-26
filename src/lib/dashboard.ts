@@ -3,6 +3,7 @@ import type { PriceGapRecord, NormalizedMandiPriceRecord } from "@/lib/agmarknet
 import { resolveAgmarknetFeed } from "@/lib/agmarknet/service";
 import { listDemoMarketRecords } from "@/lib/demo/market";
 import { hasSupabaseWriteConfig } from "@/lib/env";
+import { getDistrictsWithinKm } from "@/lib/geo/distance";
 import { listInventory } from "@/lib/inventory/store";
 import type { InventoryItem } from "@/lib/inventory/types";
 import { listListings } from "@/lib/listings/store";
@@ -73,6 +74,7 @@ export type SharedDashboardData = {
   warnings: string[];
   defaultCropSlug: string;
   districts: DashboardDistrict[];
+  nearbyDistricts: string[];
   crops: DashboardCropView[];
 };
 
@@ -136,8 +138,12 @@ function round(value: number) {
   return Number(value.toFixed(2));
 }
 
-export async function buildSharedDashboardData(selectedCropSlugs: string[]): Promise<SharedDashboardData> {
+export async function buildSharedDashboardData(
+  selectedCropSlugs: string[],
+  options?: { nearbyDistricts?: string[] },
+): Promise<SharedDashboardData> {
   const hasPersistentPriceStore = hasSupabaseWriteConfig();
+  const nearbyDistricts = options?.nearbyDistricts ?? [];
   
   if (!selectedCropSlugs || selectedCropSlugs.length === 0) {
     selectedCropSlugs = [TARGET_CROPS[0].slug];
@@ -171,7 +177,14 @@ export async function buildSharedDashboardData(selectedCropSlugs: string[]): Pro
   const crops = (await Promise.all(
     fallbackCrops.map(async (crop) => {
       const cropRecords = recordsByCrop.get(crop.slug) ?? [];
-      const prices = latestPricesForCrop(cropRecords, crop.slug).map((record) => ({
+      // Filter to nearby districts if we have them, fallback to all records
+      const scopedRecords =
+        nearbyDistricts.length > 0
+          ? cropRecords.filter((r) => nearbyDistricts.includes(r.district))
+          : cropRecords;
+      const recordsToUse = scopedRecords.length > 0 ? scopedRecords : cropRecords;
+
+      const prices = latestPricesForCrop(recordsToUse, crop.slug).map((record) => ({
         district: record.district,
         state: record.state,
         modalPrice: record.modalPrice,
@@ -183,7 +196,13 @@ export async function buildSharedDashboardData(selectedCropSlugs: string[]): Pro
         storedRoutes.length > 0
           ? storedRoutes
           : computedRoutes.filter((route) => route.cropSlug === crop.slug);
-      const routes = routeSource.map((route) => ({
+      // Filter routes whose source is in nearby districts when available
+      const filteredRoutes =
+        nearbyDistricts.length > 0
+          ? routeSource.filter((route) => nearbyDistricts.includes(route.sourceDistrict))
+          : routeSource;
+      const routesToUse = filteredRoutes.length > 0 ? filteredRoutes : routeSource;
+      const routes = routesToUse.map((route) => ({
         sourceDistrict: route.sourceDistrict,
         sourceState: route.sourceState,
         sourceModalPrice: route.sourceModalPrice,
@@ -235,6 +254,7 @@ export async function buildSharedDashboardData(selectedCropSlugs: string[]): Pro
         ]
       : feedResult.warnings,
     defaultCropSlug: crops[0]?.slug ?? fallbackCrops[0].slug,
+    nearbyDistricts,
     districts: TARGET_REGIONS.flatMap((region) =>
       region.districts.map((district) => ({
         district,
@@ -264,7 +284,14 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
   const cropPreferences =
     activeFarmerEntry?.crops ?? (await listFarmerCropsForUser(activeFarmer.id));
 
-  const baseData = await buildSharedDashboardData(cropPreferences.map(c => c.cropSlug));
+  const baseData = await buildSharedDashboardData(
+    cropPreferences.map(c => c.cropSlug),
+    {
+      nearbyDistricts: activeFarmer.district
+        ? getDistrictsWithinKm(activeFarmer.district, 100)
+        : [],
+    },
+  );
 
   const profile: FarmerDashboardProfile = {
     id: activeFarmer.id ?? DEMO_FARMER_DEFAULT_ID,
@@ -354,7 +381,16 @@ export async function buildFpoDashboardData(clerkUserId?: string | null): Promis
         isDemo: true,
       };
 
-  const baseData = await buildSharedDashboardData(owner.cropsHandled);
+  const baseData = await buildSharedDashboardData(
+    owner.cropsHandled,
+    {
+      nearbyDistricts: owner.districtsServed.length > 0
+        ? owner.districtsServed.flatMap((d) =>
+            getDistrictsWithinKm(d, owner.serviceRadiusKm ?? 200)
+          ).filter((v, i, a) => a.indexOf(v) === i)
+        : [],
+    },
+  );
 
   const [inventory, directoryListings, notifications, matches] =
     await Promise.all([

@@ -77,6 +77,22 @@ const FORECAST_HINTS = [
   "price outlook",
 ];
 
+const INVENTORY_QUERY_HINTS = [
+  "my inventory",
+  "my stock",
+  "how much do i have",
+  "how much stock",
+  "mera stock",
+  "meri inventory",
+  "నా నిల్వ",
+  "నా స్టాక్",
+  "ನನ್ನ ದಾಸ್ತಾನು",
+  "my lot",
+  "my tomato",
+  "my onion",
+  "current stock",
+];
+
 const CROP_ALIASES: Record<string, string> = {
   tomato: "tomato",
   tomatoes: "tomato",
@@ -204,6 +220,7 @@ Determine the user's intent. Possible values:
 - REGISTER_LISTING (want to sell inventory)
 - REGISTER_INVENTORY (FPO wants to add stock)
 - FORECAST (future prediction)
+- INVENTORY_QUERY (asking about their own stored stock, "my inventory", "how much do I have")
 - OTHER
 
 Output JSON: { "intent": "INTENT_NAME" }
@@ -211,7 +228,7 @@ Output JSON: { "intent": "INTENT_NAME" }
       const result = await model.generateContent(prompt);
       const parsed = JSON.parse(result.response.text());
       
-      const validIntents = ["PRICE_CHECK", "BEST_MARKET", "SELL_ADVICE", "SETUP_ALERT", "CONNECT_FPO", "REGISTER_LISTING", "REGISTER_INVENTORY", "FORECAST", "OTHER"];
+      const validIntents = ["PRICE_CHECK", "BEST_MARKET", "SELL_ADVICE", "SETUP_ALERT", "CONNECT_FPO", "REGISTER_LISTING", "REGISTER_INVENTORY", "FORECAST", "INVENTORY_QUERY", "OTHER"];
       
       if (parsed.intent && validIntents.includes(parsed.intent)) {
         return {
@@ -228,6 +245,15 @@ Output JSON: { "intent": "INTENT_NAME" }
   }
 
   const normalized = text.toLowerCase();
+
+  if (includesAny(normalized, INVENTORY_QUERY_HINTS)) {
+    return {
+      intent: "INVENTORY_QUERY",
+      cropSlug,
+      district,
+      language,
+    };
+  }
 
   if (includesAny(normalized, ALERT_HINTS)) {
     return {

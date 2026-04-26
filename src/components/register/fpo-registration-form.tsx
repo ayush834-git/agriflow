@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { TARGET_CROPS } from "@/lib/agmarknet/catalog";
 import { Textarea } from "@/components/ui/textarea";
 import { supportedLanguageOptions } from "@/lib/users/registration";
+import { useI18n } from "@/lib/i18n/context";
 
 type FpoResult = {
   user: {
@@ -21,6 +22,7 @@ type FpoResult = {
 
 export function FpoRegistrationForm() {
   const searchParams = useSearchParams();
+  const { dict } = useI18n();
   const [isPending, startTransition] = useTransition();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,7 +30,7 @@ export function FpoRegistrationForm() {
   const [organizationName, setOrganizationName] = useState("");
   const [districtsServed, setDistrictsServed] = useState("");
   const [selectedCropSlugs, setSelectedCropSlugs] = useState<string[]>([]);
-  const [stateName, setStateName] = useState("Andhra Pradesh");
+  const [stateName, setStateName] = useState(dict.register.statePlaceholder);
   const [serviceRadiusKm, setServiceRadiusKm] = useState("150");
   const [serviceSummary, setServiceSummary] = useState("");
   const [preferredLanguage, setPreferredLanguage] = useState(
@@ -36,6 +38,10 @@ export function FpoRegistrationForm() {
   );
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FpoResult | null>(null);
+  const translatedLanguageOptions = supportedLanguageOptions.map((option) => ({
+    ...option,
+    label: dict.common.languageNames[option.value],
+  }));
 
   function toggleCrop(cropSlug: string) {
     setSelectedCropSlugs((current) =>
@@ -48,61 +54,74 @@ export function FpoRegistrationForm() {
   async function submitRegistration() {
     setError(null);
 
-    const response = await fetch("/api/onboarding/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        role: "FPO",
-        fullName,
-        email,
-        phone,
-        organizationName,
-        districtsServed: districtsServed
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
-        cropsHandled: selectedCropSlugs,
-        preferredLanguage,
-        state: stateName,
-        serviceRadiusKm: Number(serviceRadiusKm),
-        serviceSummary,
-      }),
-    });
+    try {
+      const response = await fetch("/api/onboarding/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: "FPO",
+          fullName,
+          email,
+          phone,
+          organizationName,
+          districtsServed: districtsServed
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+          cropsHandled: selectedCropSlugs,
+          preferredLanguage,
+          state: stateName,
+          serviceRadiusKm: Number(serviceRadiusKm),
+          serviceSummary,
+        }),
+      });
 
-    const payload = (await response.json()) as
-      | (FpoResult & { ok: true })
-      | { ok: false; error?: string };
+      const payload = (await response.json()) as
+        | (FpoResult & { ok: true })
+        | { ok: false; error?: string };
 
-    if (!response.ok || !("ok" in payload) || !payload.ok) {
-      setError(("error" in payload ? payload.error : undefined) ?? "Registration failed.");
-      return;
+      if (!response.ok || !("ok" in payload) || !payload.ok) {
+        setError(
+          ("error" in payload ? payload.error : undefined) ??
+            dict.register.registrationFailed,
+        );
+        return;
+      }
+
+      setResult({
+        user: payload.user,
+      });
+    } catch {
+      setError(dict.register.couldNotSubmitRegistration);
     }
-
-    setResult({
-      user: payload.user,
-    });
   }
 
   if (result) {
     return (
       <Card className="border border-border/70 bg-card/90">
         <CardHeader>
-          <CardTitle>FPO profile saved</CardTitle>
+          <CardTitle>{dict.register.fpoProfileSaved}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
           <p>
-            {result.user.organizationName ?? "Organization"} is now registered with{" "}
-            <span className="font-medium text-foreground">{result.user.email}</span>{" "}
-            as the primary contact.
+            {dict.register.fpoReady
+              .replace(
+                "{organization}",
+                result.user.organizationName ?? dict.register.organizationFallback,
+              )
+              .replace(
+                "{email}",
+                result.user.email ?? dict.register.emailFallback,
+              )}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild>
-              <Link href="/dashboard/fpo">Open FPO dashboard</Link>
+              <Link href="/dashboard/fpo">{dict.register.openFpoDashboard}</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/register">Register another team</Link>
+              <Link href="/register">{dict.register.registerAnotherTeam}</Link>
             </Button>
           </div>
         </CardContent>
@@ -113,69 +132,69 @@ export function FpoRegistrationForm() {
   return (
     <Card className="border border-border/70 bg-card/90">
       <CardHeader>
-        <CardTitle>FPO onboarding</CardTitle>
+        <CardTitle>{dict.register.fpoOnboarding}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="contact-name">
-              Contact person
+              {dict.register.contactName}
             </label>
             <Input
               id="contact-name"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              placeholder="Sowmya Reddy"
+              placeholder={dict.register.contactNamePlaceholder}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="organization-name">
-              Organization
+              {dict.register.organizationName}
             </label>
             <Input
               id="organization-name"
               value={organizationName}
               onChange={(event) => setOrganizationName(event.target.value)}
-              placeholder="Rayalaseema Farmers Collective"
+              placeholder={dict.register.organizationPlaceholder}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="email">
-              Email
+              {dict.register.email}
             </label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="team@example.com"
+              placeholder={dict.register.emailPlaceholder}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="phone">
-              Phone
+              {dict.register.phone}
             </label>
             <Input
               id="phone"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              placeholder="+91 9876543210"
+              placeholder={dict.register.phonePlaceholder}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="state">
-              State
+              {dict.register.state}
             </label>
             <Input
               id="state"
               value={stateName}
               onChange={(event) => setStateName(event.target.value)}
-              placeholder="Andhra Pradesh"
+              placeholder={dict.register.statePlaceholder}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="language">
-              Preferred language
+              {dict.register.preferredLanguage}
             </label>
             <select
               id="language"
@@ -183,7 +202,7 @@ export function FpoRegistrationForm() {
               value={preferredLanguage}
               onChange={(event) => setPreferredLanguage(event.target.value)}
             >
-              {supportedLanguageOptions.map((option) => (
+              {translatedLanguageOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -194,21 +213,24 @@ export function FpoRegistrationForm() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="districts-served">
-            Districts served
+            {dict.register.districtsYouOperateIn}
           </label>
           <Textarea
             id="districts-served"
             value={districtsServed}
             onChange={(event) => setDistrictsServed(event.target.value)}
-            placeholder="Kurnool, Guntur, Hyderabad"
+            placeholder={dict.register.districtsPlaceholder}
           />
         </div>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">Crops handled</p>
+            <p className="text-sm font-medium">{dict.register.cropsHandled}</p>
             <p className="text-xs text-muted-foreground">
-              {selectedCropSlugs.length} selected
+              {dict.register.selectedCount.replace(
+                "{count}",
+                String(selectedCropSlugs.length),
+              )}
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -230,7 +252,9 @@ export function FpoRegistrationForm() {
                     checked={checked}
                     onChange={() => toggleCrop(crop.slug)}
                   />
-                  <span>{crop.name}</span>
+                  <span>
+                    {dict.crops[crop.slug as keyof typeof dict.crops] ?? crop.name}
+                  </span>
                 </label>
               );
             })}
@@ -240,25 +264,25 @@ export function FpoRegistrationForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="service-radius">
-              Service radius (km)
+              {dict.register.capacity}
             </label>
             <Input
               id="service-radius"
               type="number"
               value={serviceRadiusKm}
               onChange={(event) => setServiceRadiusKm(event.target.value)}
-              placeholder="150"
+              placeholder={dict.register.capacityPlaceholder}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="service-summary">
-              Service summary
+              {dict.register.servicesOffered}
             </label>
             <Textarea
               id="service-summary"
               value={serviceSummary}
               onChange={(event) => setServiceSummary(event.target.value)}
-              placeholder="Aggregation, cold storage, transport, mandi negotiation"
+              placeholder={dict.register.servicesPlaceholder}
             />
           </div>
         </div>
@@ -275,10 +299,10 @@ export function FpoRegistrationForm() {
             disabled={isPending}
             onClick={() => startTransition(() => void submitRegistration())}
           >
-            {isPending ? "Saving..." : "Save FPO profile"}
+            {isPending ? dict.register.saving : dict.register.saveFpoProfile}
           </Button>
           <Button asChild variant="outline">
-            <Link href="/dashboard/fpo">View FPO dashboard</Link>
+            <Link href="/dashboard/fpo">{dict.register.viewFpoDashboard}</Link>
           </Button>
         </div>
       </CardContent>

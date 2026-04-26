@@ -4,12 +4,12 @@ import { useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BellRing,
+  Check,
   CheckCircle2,
+  LoaderCircle,
   Mail,
   Send,
   Smartphone,
-  Check,
-  LoaderCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -18,6 +18,7 @@ import type { AppNotification } from "@/lib/notifications/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 
 type AlertsReportsPanelProps = {
   notifications: AppNotification[];
@@ -54,24 +55,54 @@ function statusClass(status: AppNotification["deliveryStatus"]) {
   }
 }
 
+function getMatchStatusLabel(status: MarketMatch["status"], dict: ReturnType<typeof useI18n>["dict"]) {
+  switch (status) {
+    case "OPEN":
+      return dict.alerts.matchStatus.open;
+    case "CONTACTED":
+      return dict.alerts.matchStatus.contacted;
+    case "ACCEPTED":
+      return dict.alerts.matchStatus.accepted;
+    case "COMPLETED":
+      return dict.alerts.matchStatus.completed;
+    default:
+      return status;
+  }
+}
+
 export function AlertsReportsPanel({
   notifications,
   matches,
   title,
   description,
 }: AlertsReportsPanelProps) {
+  const { dict } = useI18n();
   const [pushState, setPushState] = useState<string | null>(null);
   const [activeSimulatingMatchId, setActiveSimulatingMatchId] = useState<string | null>(null);
   const [isSimulating, startTransition] = useTransition();
   const router = useRouter();
   const latestNotification = notifications[0];
 
+  function getChannelLabel(channel: AppNotification["channel"]) {
+    switch (channel) {
+      case "EMAIL":
+        return dict.alerts.email;
+      case "SMS":
+        return dict.alerts.sms;
+      case "PUSH":
+        return dict.alerts.push;
+      case "WHATSAPP":
+      default:
+        return dict.alerts.whatsapp;
+    }
+  }
+
   return (
     <section className="rounded-[2rem] border border-border/70 bg-card/88 p-5 shadow-[0_30px_90px_-64px_rgba(29,77,50,0.45)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-            Phase 8 alerts and reports
+            {dict.alerts.alertsAndInbox}
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">{title}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{description}</p>
@@ -81,30 +112,33 @@ export function AlertsReportsPanel({
           variant="outline"
           onClick={async () => {
             if (typeof window === "undefined" || !("Notification" in window)) {
-              setPushState("This browser does not support notifications.");
+              setPushState(dict.alerts.browserNotSupported);
               return;
             }
 
             const permission = await Notification.requestPermission();
 
             if (permission !== "granted") {
-              setPushState("Permission denied. Push preview stays disabled.");
+              setPushState(dict.alerts.permissionDeniedPushDisabled);
               return;
             }
 
-            const message = latestNotification?.message ?? "AgriFlow alerts are ready.";
-            new Notification("AgriFlow push preview", {
+            const message =
+              latestNotification?.message ?? dict.alerts.agriflowAlertsReady;
+            new Notification(dict.alerts.notificationTitle, {
               body: message,
             });
-            setPushState("Push preview permission granted.");
+            setPushState(dict.alerts.pushPermissionGranted);
           }}
         >
           <BellRing className="size-4" />
-          Enable push preview
+          {dict.alerts.enablePushPreview}
         </Button>
       </div>
 
-      {pushState ? <p className="mt-4 text-sm text-muted-foreground">{pushState}</p> : null}
+      {pushState ? (
+        <p className="mt-4 text-sm text-muted-foreground">{pushState}</p>
+      ) : null}
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-3">
@@ -128,14 +162,16 @@ export function AlertsReportsPanel({
                         <Icon className="size-4" />
                       </div>
                       <div>
-                        <p className="font-medium">{notification.title ?? notification.kind}</p>
+                        <p className="font-medium">
+                          {notification.title ?? notification.kind}
+                        </p>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {notification.message}
                         </p>
                       </div>
                     </div>
                     <Badge className={cn("border", statusClass(notification.deliveryStatus))}>
-                      {notification.channel}
+                      {getChannelLabel(notification.channel)}
                     </Badge>
                   </div>
                 </motion.div>
@@ -152,14 +188,14 @@ export function AlertsReportsPanel({
               exit={{ opacity: 0 }}
               className="rounded-[1.3rem] border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground"
             >
-              No alerts have been generated yet. Daily alert and spoilage crons will populate this feed.
+              {dict.alerts.noAlertsYet}
             </motion.div>
           ) : null}
         </div>
 
         <div className="space-y-3">
           <div className="rounded-[1.3rem] border border-border/70 bg-background/65 p-4">
-            <p className="text-sm font-medium">Live matches</p>
+            <p className="text-sm font-medium">{dict.alerts.liveMatches}</p>
             <div className="mt-3 space-y-3 text-sm text-muted-foreground">
               <AnimatePresence mode="popLayout" initial={false}>
                 {matches.map((match) => (
@@ -175,15 +211,17 @@ export function AlertsReportsPanel({
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium text-foreground">{match.cropName}</p>
                       <Badge className="border border-white/0 bg-white/70 text-foreground">
-                        {match.status}
+                        {getMatchStatusLabel(match.status, dict)}
                       </Badge>
                     </div>
                     <div className="mt-2 flex items-end justify-between gap-3">
                       <p>
                         {match.quantityKg?.toLocaleString("en-IN") ?? "--"} kg ·{" "}
-                        {match.offeredPricePerKg ? `₹${match.offeredPricePerKg}/kg` : "price open"}
+                        {match.offeredPricePerKg
+                          ? `₹${match.offeredPricePerKg}/kg`
+                          : dict.alerts.priceOpen}
                       </p>
-                      {(match.status === "CONTACTED" || match.status === "OPEN") ? (
+                      {match.status === "CONTACTED" || match.status === "OPEN" ? (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -205,12 +243,12 @@ export function AlertsReportsPanel({
                           {isSimulating && activeSimulatingMatchId === match.id ? (
                             <>
                               <LoaderCircle className="mr-1 size-3 animate-spin" />
-                              Simulating...
+                              {dict.alerts.simulating}
                             </>
                           ) : (
                             <>
                               <Check className="mr-1 size-3 text-emerald-600" />
-                              Demo WhatsApp YES
+                              {dict.alerts.demoWhatsappYes}
                             </>
                           )}
                         </Button>
@@ -221,8 +259,14 @@ export function AlertsReportsPanel({
               </AnimatePresence>
 
               {matches.length === 0 ? (
-                <motion.p layout key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  No active match records yet.
+                <motion.p
+                  layout
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  {dict.alerts.noActiveMatchRecords}
                 </motion.p>
               ) : null}
             </div>
@@ -231,7 +275,7 @@ export function AlertsReportsPanel({
           <div className="rounded-[1.3rem] border border-border/70 bg-background/65 p-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="size-4 text-primary" />
-              Daily email summaries are logged here with `EMAIL` notifications until Resend wiring is enabled.
+              {dict.alerts.emailSummaryNote}
             </div>
           </div>
         </div>

@@ -11,9 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { InventoryItem } from "@/lib/inventory/types";
 import type { ListingItem } from "@/lib/listings/types";
-import { getFreshnessLabel, scoreListingAgainstInventory } from "@/lib/matches/scoring";
+import {
+  getFreshnessLabel,
+  scoreListingAgainstInventory,
+} from "@/lib/matches/scoring";
 import type { MarketMatch } from "@/lib/matches/types";
 import type { AppNotification } from "@/lib/notifications/types";
+import { useI18n } from "@/lib/i18n/context";
 
 type BuyerDirectoryProps = {
   inventory: InventoryItem[];
@@ -44,10 +48,13 @@ export function BuyerDirectory({
   initialFilters,
   onMatchCreated,
 }: BuyerDirectoryProps) {
+  const { dict } = useI18n();
   const [selectedInventoryId, setSelectedInventoryId] = useState(
     initialFilters?.inventoryId ?? inventory[0]?.id ?? "",
   );
-  const [districtFilter, setDistrictFilter] = useState(initialFilters?.district ?? "");
+  const [districtFilter, setDistrictFilter] = useState(
+    initialFilters?.district ?? "",
+  );
   const [minQty, setMinQty] = useState("");
   const [maxQty, setMaxQty] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -55,14 +62,22 @@ export function BuyerDirectory({
   const [activeListingId, setActiveListingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const selectedInventory =
-    inventory.find((item) => item.id === selectedInventoryId) ?? inventory[0] ?? null;
+    inventory.find((item) => item.id === selectedInventoryId) ??
+    inventory[0] ??
+    null;
 
   const candidates = selectedInventory
     ? listings
         .filter((listing) => listing.cropSlug === selectedInventory.cropSlug)
-        .filter((listing) => (districtFilter ? listing.district === districtFilter : true))
-        .filter((listing) => (minQty ? listing.quantityKg >= Number(minQty) : true))
-        .filter((listing) => (maxQty ? listing.quantityKg <= Number(maxQty) : true))
+        .filter((listing) =>
+          districtFilter ? listing.district === districtFilter : true,
+        )
+        .filter((listing) =>
+          minQty ? listing.quantityKg >= Number(minQty) : true,
+        )
+        .filter((listing) =>
+          maxQty ? listing.quantityKg <= Number(maxQty) : true,
+        )
         .map((listing) => ({
           listing,
           score: scoreListingAgainstInventory(listing, selectedInventory),
@@ -75,26 +90,28 @@ export function BuyerDirectory({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-            Phase 10 matching explainability
+            {dict.directory.phase10Explainability}
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            Match active inventory with farmer listings
+            {dict.directory.matchActiveInventory}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Search by crop, district, and quantity range, then create a contact loop
-            that notifies the farmer over WhatsApp.
+            {dict.directory.searchByCropDistrict}
           </p>
         </div>
         <div className="flex items-center gap-3 rounded-[1.2rem] border border-border/70 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
           <Users className="size-4 text-primary" />
-          {listings.length} farmer listings in the directory
+          {dict.directory.farmerListingsInDirectory.replace(
+            "{count}",
+            String(listings.length),
+          )}
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-4">
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="directory-inventory">
-            Inventory basis
+            {dict.directory.inventoryBasis}
           </label>
           <select
             id="directory-inventory"
@@ -104,7 +121,7 @@ export function BuyerDirectory({
           >
             {inventory.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.cropName} · {item.district}
+                {item.cropName} Â· {item.district}
               </option>
             ))}
           </select>
@@ -112,19 +129,19 @@ export function BuyerDirectory({
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="directory-district">
-            District
+            {dict.directory.district}
           </label>
           <Input
             id="directory-district"
             value={districtFilter}
             onChange={(event) => setDistrictFilter(event.target.value)}
-            placeholder="Any district"
+            placeholder={dict.directory.anyDistrict}
           />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="directory-min">
-            Min qty
+            {dict.directory.minQty}
           </label>
           <Input
             id="directory-min"
@@ -137,7 +154,7 @@ export function BuyerDirectory({
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="directory-max">
-            Max qty
+            {dict.directory.maxQty}
           </label>
           <Input
             id="directory-max"
@@ -149,7 +166,9 @@ export function BuyerDirectory({
         </div>
       </div>
 
-      {statusMessage ? <p className="mt-4 text-sm text-emerald-700">{statusMessage}</p> : null}
+      {statusMessage ? (
+        <p className="mt-4 text-sm text-emerald-700">{statusMessage}</p>
+      ) : null}
       {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
 
       <div className="mt-5 grid gap-3 xl:grid-cols-2">
@@ -167,40 +186,79 @@ export function BuyerDirectory({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-medium">
-                    {listing.cropName} · {listing.district}
+                    {listing.cropName} Â· {listing.district}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {formatQuantity(listing.quantityKg)} kg · {listing.qualityGrade ?? "Grade A"}
+                    {formatQuantity(listing.quantityKg)} kg Â·{" "}
+                    {listing.qualityGrade ?? dict.directory.gradeA}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <Badge className="border border-emerald-200 bg-emerald-100 text-emerald-900">
-                    Match {score.matchScore}
+                    {dict.directory.matchScore} {score.matchScore}
                   </Badge>
                   <AiConfidenceBadge confidence={score.matchScore / 100} />
                 </div>
               </div>
 
               <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-                <p>Ask {listing.askingPricePerKg ? `₹${listing.askingPricePerKg}/kg` : "--"}</p>
-                <p>Distance {score.distanceKm.toFixed(0)} km</p>
-                <p>Freshness {getFreshnessLabel(listing)}</p>
-                <p>Quantity fit {Math.round(score.scoreBreakdown.quantityFit * 100)}%</p>
+                <p>
+                  {dict.directory.ask}{" "}
+                  {listing.askingPricePerKg
+                    ? `₹${listing.askingPricePerKg}/kg`
+                    : "--"}
+                </p>
+                <p>
+                  {dict.directory.distanceKm.replace(
+                    "{distance}",
+                    score.distanceKm.toFixed(0),
+                  )}
+                </p>
+                <p>
+                  {dict.directory.freshness.replace(
+                    "{label}",
+                    getFreshnessLabel(listing),
+                  )}
+                </p>
+                <p>
+                  {dict.directory.quantityFit.replace(
+                    "{fit}",
+                    String(Math.round(score.scoreBreakdown.quantityFit * 100)),
+                  )}
+                </p>
               </div>
 
               {listing.notes ? (
-                <p className="mt-3 text-sm text-muted-foreground">{listing.notes}</p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {listing.notes}
+                </p>
               ) : null}
 
               <ExplainabilityPanel
                 className="mt-4"
-                title="Why this match"
-                summary="The directory score balances quantity fit, freshness window, price alignment, and transport distance."
+                title={dict.directory.whyThisMatch}
+                summary={dict.directory.directoryScoreBalances}
                 reasons={[
-                  `Quantity fit ${Math.round(score.scoreBreakdown.quantityFit * 100)}%.`,
-                  `Freshness fit ${Math.round(score.scoreBreakdown.freshnessFit * 100)}% with ${getFreshnessLabel(listing)}.`,
-                  `Price alignment ${Math.round(score.scoreBreakdown.priceAlignment * 100)}% against the crop benchmark.`,
-                  `Distance fit ${Math.round(score.scoreBreakdown.distanceFit * 100)}% at ${score.distanceKm.toFixed(0)} km.`,
+                  dict.directory.quantityFitPercent.replace(
+                    "{percent}",
+                    String(Math.round(score.scoreBreakdown.quantityFit * 100)),
+                  ),
+                  dict.directory.freshnessFitPercent
+                    .replace(
+                      "{percent}",
+                      String(Math.round(score.scoreBreakdown.freshnessFit * 100)),
+                    )
+                    .replace("{label}", getFreshnessLabel(listing)),
+                  dict.directory.priceAlignmentPercent.replace(
+                    "{percent}",
+                    String(Math.round(score.scoreBreakdown.priceAlignment * 100)),
+                  ),
+                  dict.directory.distanceFitPercent
+                    .replace(
+                      "{percent}",
+                      String(Math.round(score.scoreBreakdown.distanceFit * 100)),
+                    )
+                    .replace("{distance}", score.distanceKm.toFixed(0)),
                 ]}
               />
 
@@ -233,14 +291,16 @@ export function BuyerDirectory({
                     if (!response.ok || !payload.ok) {
                       setError(
                         ("error" in payload ? payload.error : undefined) ??
-                          "Could not create match.",
+                          dict.directory.couldNotCreateMatch,
                       );
                       return;
                     }
 
                     onMatchCreated(payload.match, payload.notification);
                     setStatusMessage(
-                      `Farmer notified for ${listing.cropName} in ${listing.district}. Waiting for YES reply.`,
+                      dict.directory.farmerNotifiedWaitingForYes
+                        .replace("{crop}", listing.cropName)
+                        .replace("{district}", listing.district),
                     );
                   })
                 }
@@ -248,12 +308,12 @@ export function BuyerDirectory({
                 {isPending && activeListingId === listing.id ? (
                   <>
                     <LoaderCircle className="size-4 animate-spin" />
-                    Connecting
+                    {dict.directory.connecting}
                   </>
                 ) : (
                   <>
                     <Link2 className="size-4" />
-                    Connect
+                    {dict.directory.connect}
                   </>
                 )}
               </Button>
@@ -270,7 +330,7 @@ export function BuyerDirectory({
             exit={{ opacity: 0 }}
             className="rounded-[1.35rem] border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground"
           >
-            No listings match the current crop and quantity filters.
+            {dict.directory.noListingsMatch}
           </motion.div>
         ) : null}
       </div>

@@ -1,23 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { PackagePlus, Store } from "lucide-react";
 
 import { TARGET_CROPS } from "@/lib/agmarknet/catalog";
 import type { ListingItem } from "@/lib/listings/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 
 type ListingManagerProps = {
   initialListings: ListingItem[];
@@ -36,18 +27,12 @@ function formatQuantity(value: number) {
   }).format(value);
 }
 
-function badgeClass(status: ListingItem["status"]) {
-  switch (status) {
-    case "MATCHED":
-      return "border-emerald-200 bg-emerald-100 text-emerald-900";
-    case "SOLD":
-      return "border-sky-200 bg-sky-100 text-sky-900";
-    case "CANCELLED":
-      return "border-zinc-200 bg-zinc-100 text-zinc-700";
-    case "ACTIVE":
-    default:
-      return "border-amber-200 bg-amber-100 text-amber-900";
-  }
+function getCropLabel(
+  cropSlug: string,
+  dict: ReturnType<typeof useI18n>["dict"],
+  fallback: string,
+) {
+  return dict.crops[cropSlug as keyof typeof dict.crops] ?? fallback;
 }
 
 export function ListingManager({
@@ -56,6 +41,7 @@ export function ListingManager({
   district,
   state,
 }: ListingManagerProps) {
+  const { dict } = useI18n();
   const [listings, setListings] = useState(initialListings);
   const [cropSlug, setCropSlug] = useState("tomato");
   const [quantityKg, setQuantityKg] = useState("1200");
@@ -67,156 +53,241 @@ export function ListingManager({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="flex flex-col xl:flex-row gap-6 items-start">
-      {/* Active Listings Table */}
-      <div className="flex-1 w-full flex flex-col gap-0 border border-outline-variant/30 rounded-[1.25rem] bg-surface-container-lowest overflow-hidden">
-        <div className="p-6 border-b border-outline-variant/30 flex items-center gap-3 bg-surface-container-low/50">
-          <span className="material-symbols-outlined text-primary text-[28px]" data-icon="store">store</span>
+    <div className="flex flex-col items-start gap-6 xl:flex-row">
+      <div className="flex w-full flex-1 flex-col gap-0 overflow-hidden rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest">
+        <div className="flex items-center gap-3 border-b border-outline-variant/30 bg-surface-container-low/50 p-6">
+          <span
+            className="material-symbols-outlined text-[28px] text-primary"
+            data-icon="store"
+          >
+            store
+          </span>
           <div>
-            <h3 className="font-headline font-bold text-lg text-on-surface">My crop listings</h3>
-            <p className="text-sm text-on-surface-variant font-medium">These listings feed the FPO buyer directory and match loop.</p>
+            <h3 className="text-lg font-bold text-on-surface font-headline">
+              {dict.listings.myCropListings}
+            </h3>
+            <p className="text-sm font-medium text-on-surface-variant">
+              {dict.listings.theseListingsFeed}
+            </p>
           </div>
         </div>
 
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-surface-container-lowest border-b border-outline-variant/20 text-on-surface-variant font-bold text-[11px] uppercase tracking-wider">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full whitespace-nowrap text-left text-sm">
+            <thead className="border-b border-outline-variant/20 bg-surface-container-lowest text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
               <tr>
-                <th className="px-6 py-4">Crop</th>
-                <th className="px-6 py-4">Qty</th>
-                <th className="px-6 py-4">Ask</th>
-                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">{dict.listings.crop}</th>
+                <th className="px-6 py-4">{dict.listings.qty}</th>
+                <th className="px-6 py-4">{dict.listings.ask}</th>
+                <th className="px-6 py-4">{dict.listings.status}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10 text-on-surface">
-              {listings.length > 0 ? listings.map((listing) => (
-                <tr key={listing.id} className="hover:bg-surface-container-lowest/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-bold flex items-center gap-2">
-                        <span className="w-6 h-6 rounded bg-primary-container/30 flex items-center justify-center text-primary-container">
-                           <span className="material-symbols-outlined text-[14px]">grass</span>
+              {listings.length > 0 ? (
+                listings.map((listing) => (
+                  <tr
+                    key={listing.id}
+                    className="transition-colors hover:bg-surface-container-lowest/50"
+                  >
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="flex items-center gap-2 font-bold">
+                          <span className="flex h-6 w-6 items-center justify-center rounded bg-primary-container/30 text-primary-container">
+                            <span className="material-symbols-outlined text-[14px]">
+                              grass
+                            </span>
+                          </span>
+                          {getCropLabel(listing.cropSlug, dict, listing.cropName)}
+                        </p>
+                        <p className="ml-8 mt-1 text-xs font-medium text-on-surface-variant">
+                          {listing.availableUntil ?? "--"}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-semibold">
+                      {formatQuantity(listing.quantityKg)} kg
+                    </td>
+                    <td className="px-6 py-4">
+                      {listing.askingPricePerKg ? (
+                        <span className="font-bold text-tertiary">
+                          {"₹"}
+                          {listing.askingPricePerKg}
+                          /kg
                         </span>
-                        {listing.cropName}
-                      </p>
-                      <p className="text-xs text-on-surface-variant font-medium mt-1 ml-8">
-                        until {listing.availableUntil ?? "--"}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-semibold">{formatQuantity(listing.quantityKg)} kg</td>
-                  <td className="px-6 py-4">
-                    {listing.askingPricePerKg ? <span className="font-bold text-tertiary">₹{listing.askingPricePerKg}/kg</span> : "--"}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={cn(
-                      "px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap",
-                      listing.status === "MATCHED" ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                        : listing.status === "SOLD" ? "bg-tertiary-container text-on-tertiary-container border-tertiary/20"
-                        : listing.status === "ACTIVE" ? "bg-primary-container text-on-primary-container border-primary/20"
-                        : "bg-surface-container-highest text-on-surface border-outline-variant/20"
-                    )}>
-                      {listing.status}
-                    </span>
+                      ) : (
+                        "--"
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={cn(
+                          "whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold",
+                          listing.status === "MATCHED"
+                            ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                            : listing.status === "SOLD"
+                              ? "border-tertiary/20 bg-tertiary-container text-on-tertiary-container"
+                              : listing.status === "ACTIVE"
+                                ? "border-primary/20 bg-primary-container text-on-primary-container"
+                                : "border-outline-variant/20 bg-surface-container-highest text-on-surface",
+                        )}
+                      >
+                        {listing.status === "MATCHED"
+                          ? dict.listings.matched
+                          : listing.status === "SOLD"
+                            ? dict.listings.sold
+                            : listing.status === "ACTIVE"
+                              ? dict.listings.active
+                              : dict.listings.cancelled}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-6 py-12 text-center font-medium text-on-surface-variant"
+                  >
+                    {dict.listings.noActiveListings}
                   </td>
                 </tr>
-              )) : (
-                 <tr>
-                   <td colSpan={4} className="px-6 py-12 text-center text-on-surface-variant font-medium">No active listings.</td>
-                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Create Listing Form */}
-      <div className="w-full xl:w-[400px] border border-outline-variant/30 rounded-[1.25rem] bg-surface-container-lowest p-6 shrink-0 shadow-sm">
-        <div className="flex items-center gap-3 border-b border-outline-variant/20 pb-4 mb-6">
-          <span className="material-symbols-outlined text-primary text-[28px]" data-icon="add_business">add_business</span>
+      <div className="w-full shrink-0 rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-6 shadow-sm xl:w-[400px]">
+        <div className="mb-6 flex items-center gap-3 border-b border-outline-variant/20 pb-4">
+          <span
+            className="material-symbols-outlined text-[28px] text-primary"
+            data-icon="add_business"
+          >
+            add_business
+          </span>
           <div>
-            <h3 className="font-headline font-bold text-lg text-on-surface">Publish lot</h3>
-            <p className="text-xs text-on-surface-variant font-medium">Allow buyers to contact you directly.</p>
+            <h3 className="text-lg font-bold text-on-surface font-headline">
+              {dict.listings.publishLot}
+            </h3>
+            <p className="text-xs font-medium text-on-surface-variant">
+              {dict.listings.allowBuyersToContact}
+            </p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-crop">Crop</label>
+            <label
+              className="text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+              htmlFor="listing-crop"
+            >
+              {dict.listings.crop}
+            </label>
             <select
               id="listing-crop"
-              className="w-full bg-surface-container-low border-none rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none text-on-surface font-medium"
+              className="w-full rounded-lg border-none bg-surface-container-low px-3 py-2.5 text-sm font-medium text-on-surface outline-none focus:ring-2 focus:ring-primary"
               value={cropSlug}
               onChange={(event) => setCropSlug(event.target.value)}
             >
               {TARGET_CROPS.map((crop) => (
-                <option key={crop.slug} value={crop.slug}>{crop.name}</option>
+                <option key={crop.slug} value={crop.slug}>
+                  {getCropLabel(crop.slug, dict, crop.name)}
+                </option>
               ))}
             </select>
           </div>
 
-          <div className="grid gap-4 grid-cols-2">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-quantity">Quantity (kg)</label>
+              <label
+                className="text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+                htmlFor="listing-quantity"
+              >
+                {dict.listings.quantityKg}
+              </label>
               <Input
                 id="listing-quantity"
                 type="number"
                 value={quantityKg}
                 onChange={(event) => setQuantityKg(event.target.value)}
-                className="bg-surface-container-low border-none rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium"
+                className="rounded-lg border-none bg-surface-container-low px-3 font-medium text-on-surface focus-visible:ring-2 focus-visible:ring-primary"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-price">Ask Price (/kg)</label>
+              <label
+                className="text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+                htmlFor="listing-price"
+              >
+                {dict.listings.askPriceKg}
+              </label>
               <Input
                 id="listing-price"
                 type="number"
                 value={askingPricePerKg}
                 onChange={(event) => setAskingPricePerKg(event.target.value)}
-                className="bg-surface-container-low border-none rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium"
+                className="rounded-lg border-none bg-surface-container-low px-3 font-medium text-on-surface focus-visible:ring-2 focus-visible:ring-primary"
               />
             </div>
           </div>
 
-          <div className="grid gap-4 grid-cols-2">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-               <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-grade">Grade</label>
-               <Input
+              <label
+                className="text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+                htmlFor="listing-grade"
+              >
+                {dict.listings.grade}
+              </label>
+              <Input
                 id="listing-grade"
                 value={qualityGrade}
                 onChange={(event) => setQualityGrade(event.target.value)}
-                className="bg-surface-container-low border-none rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium uppercase"
+                className="rounded-lg border-none bg-surface-container-low px-3 font-medium uppercase text-on-surface focus-visible:ring-2 focus-visible:ring-primary"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-date">Available until</label>
+              <label
+                className="text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+                htmlFor="listing-date"
+              >
+                {dict.listings.availableUntil}
+              </label>
               <Input
                 id="listing-date"
                 type="date"
                 value={availableUntil}
                 onChange={(event) => setAvailableUntil(event.target.value)}
-                className="bg-surface-container-low border-none rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium min-h-[40px]"
+                className="min-h-[40px] rounded-lg border-none bg-surface-container-low px-3 font-medium text-on-surface focus-visible:ring-2 focus-visible:ring-primary"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider" htmlFor="listing-notes">Notes</label>
+            <label
+              className="text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+              htmlFor="listing-notes"
+            >
+              {dict.listings.notes}
+            </label>
             <Textarea
               id="listing-notes"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Pickup timing, bagging, freshness notes"
-              className="bg-surface-container-low border-none rounded-lg px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-primary text-on-surface font-medium resize-none"
+              placeholder={dict.listings.notesPlaceholder}
+              className="resize-none rounded-lg border-none bg-surface-container-low px-3 py-2 text-sm font-medium text-on-surface focus-visible:ring-2 focus-visible:ring-primary"
               rows={3}
             />
           </div>
 
-          {error && <p className="text-sm font-bold text-error bg-error-container/30 px-3 py-2 rounded break-words">{error}</p>}
+          {error ? (
+            <p className="break-words rounded bg-error-container/30 px-3 py-2 text-sm font-bold text-error">
+              {error}
+            </p>
+          ) : null}
 
           <Button
             type="button"
-            className="w-full bg-primary hover:bg-primary/90 text-on-primary font-bold rounded-lg py-6 mt-2 shadow-sm transition-opacity"
+            className="mt-2 w-full rounded-lg bg-primary py-6 font-bold text-on-primary shadow-sm transition-opacity hover:bg-primary/90"
             disabled={isPending}
             onClick={() =>
               startTransition(async () => {
@@ -225,15 +296,24 @@ export function ListingManager({
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    farmerUserId, cropSlug, quantityKg: Number(quantityKg),
-                    askingPricePerKg: Number(askingPricePerKg), qualityGrade,
-                    district, state, availableUntil, notes,
+                    farmerUserId,
+                    cropSlug,
+                    quantityKg: Number(quantityKg),
+                    askingPricePerKg: Number(askingPricePerKg),
+                    qualityGrade,
+                    district,
+                    state,
+                    availableUntil,
+                    notes,
                   }),
                 });
                 const payload = (await response.json()) as ListingResponse;
 
                 if (!response.ok || !payload.ok) {
-                  setError(("error" in payload ? payload.error : undefined) ?? "Could not create listing.");
+                  setError(
+                    ("error" in payload ? payload.error : undefined) ??
+                      dict.listings.couldNotCreateListing,
+                  );
                   return;
                 }
 
@@ -243,8 +323,12 @@ export function ListingManager({
               })
             }
           >
-            {isPending ? "Publishing..." : "Publish Listing"}
-            {!isPending && <span className="material-symbols-outlined ml-2 text-[18px]">publish</span>}
+            {isPending ? dict.listings.publishing : dict.listings.publishListing}
+            {!isPending ? (
+              <span className="material-symbols-outlined ml-2 text-[18px]">
+                publish
+              </span>
+            ) : null}
           </Button>
         </div>
       </div>

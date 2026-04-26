@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useDeferredValue, useState, useTransition } from "react";
 
 import { AiConfidenceBadge } from "@/components/dashboard/ai-confidence-badge";
+import { AiChatWidget } from "@/components/dashboard/ai-chat-widget";
 import { ExplainabilityPanel } from "@/components/dashboard/explainability-panel";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
@@ -46,7 +47,7 @@ const CROP_COLORS: Record<string, string> = {
 function PanelLoading({ label }: { label: string }) {
   return (
     <div className="rounded-xl bg-surface-container-low p-8 text-sm text-on-surface-variant animate-pulse text-center">
-      Loading {label}…
+      ...
     </div>
   );
 }
@@ -169,15 +170,17 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             />
             <div className="p-4 bg-surface-container-low border-t border-outline-variant/10 grid grid-cols-2 gap-4">
               <div className="text-center">
-                <span className="block text-xs text-on-surface-variant">Market Demand</span>
+                <span className="block text-xs text-on-surface-variant">{dict.farmer.overview.marketDemand}</span>
                 <span className="text-lg font-bold text-tertiary">
                   {activeCrop.topOpportunityScore > 0 ? (activeCrop.topOpportunityScore / 10).toFixed(1) : "—"}/10
                 </span>
               </div>
               <div className="text-center border-l border-outline-variant/10">
-                <span className="block text-xs text-on-surface-variant">Price Changes</span>
+                <span className="block text-xs text-on-surface-variant">{dict.farmer.overview.priceChanges}</span>
                 <span className="text-lg font-bold text-on-surface">
-                  {activeCrop.routes.length > 3 ? "High" : "Low"}
+                  {activeCrop.routes.length > 3
+                    ? dict.recommendations.urgency.high
+                    : dict.recommendations.urgency.low}
                 </span>
               </div>
             </div>
@@ -229,12 +232,27 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                     {route.sourceState} → {route.targetState}
                   </p>
                   <ExplainabilityPanel
-                    title="Why this route?"
-                    summary="Score combines demand, transport feasibility, and price spread."
+                    title={dict.recommendations.whyThisRoute}
+                    summary={dict.farmer.overview.routeSummary}
                     reasons={[
-                      `Demand strength: ${route.demandStrength.toFixed(2)}`,
-                      `Transport feasibility: ${route.transportFeasibility.toFixed(2)}`,
-                      `${route.targetDistrict} pays ${formatCurrency(route.targetModalPrice)} vs ${formatCurrency(route.sourceModalPrice)} locally.`,
+                      dict.farmer.overview.demandStrength.replace(
+                        "{value}",
+                        route.demandStrength.toFixed(2),
+                      ),
+                      dict.farmer.overview.transportFeasibility.replace(
+                        "{value}",
+                        route.transportFeasibility.toFixed(2),
+                      ),
+                      dict.farmer.overview.destinationPays
+                        .replace("{district}", route.targetDistrict)
+                        .replace(
+                          "{targetPrice}",
+                          formatCurrency(route.targetModalPrice),
+                        )
+                        .replace(
+                          "{sourcePrice}",
+                          formatCurrency(route.sourceModalPrice),
+                        ),
                     ]}
                   />
                 </div>
@@ -246,7 +264,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                     onClick={() => navigate("directory")}
                     className="bg-gradient-to-r from-primary to-primary-container text-white px-5 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition-all"
                   >
-                    Find Buyers Here
+                    {dict.farmer.overview.findBuyersHere}
                   </button>
                 </div>
               </div>
@@ -254,8 +272,8 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             {activeCrop.routes.length === 0 && (
               <div className="text-center py-16 text-on-surface-variant">
                 <span className="material-symbols-outlined text-5xl mb-4 block" data-icon="route">route</span>
-                <p className="font-semibold">No routes available for this crop yet.</p>
-                <p className="text-sm mt-1">Price data is being collected. Check back soon.</p>
+                <p className="font-semibold">{dict.farmer.overview.noRoutesTitle}</p>
+                <p className="text-sm mt-1">{dict.farmer.overview.noRoutesDesc}</p>
               </div>
             )}
           </div>
@@ -276,8 +294,10 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
               <p className="text-on-surface-variant mt-1 italic">{dict.farmer.pageHeaders.findFpoSub}</p>
             </div>
             <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10">
-              <span className="text-xs font-semibold text-primary uppercase tracking-wider block">Near You</span>
-              <span className="text-2xl font-bold font-headline">{data.fpos.length} FPOs</span>
+              <span className="text-xs font-semibold text-primary uppercase tracking-wider block">{dict.farmer.overview.nearYou}</span>
+              <span className="text-2xl font-bold font-headline">
+                {data.fpos.length} {dict.farmer.overview.fposCount}
+              </span>
             </div>
           </div>
           <FpoDirectoryMap fpos={data.fpos} farmerDistrict={data.profile.district ?? deferredDistrict} />
@@ -315,8 +335,8 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           <AlertsReportsPanel
             notifications={notifications}
             matches={matches}
-            title="My Alerts"
-            description="Real-time crop alerts and buyer match notifications."
+            title={dict.farmer.overview.alertsPanelTitle}
+            description={dict.farmer.overview.alertsPanelDescription}
           />
         </div>
         <MobileBottomNav variant="farmer" />
@@ -349,23 +369,38 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   // ── OVERVIEW (default) ────────────────────────────────────────
   return (
     <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+      {/* ── DEMO DATA BANNER ── */}
+      {data.source === "mock" && (
+        <div className="mx-6 mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
+          <span className="material-symbols-outlined text-base" data-icon="warning">warning</span>
+          <span>
+            <strong>{dict.farmer.overview.demoBannerTitle}</strong>{" "}
+            {dict.farmer.overview.demoBannerDescription}
+          </span>
+        </div>
+      )}
       {/* ── HERO BANNER ── */}
       <section className="px-6 pt-8 pb-4">
         <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-900 to-emerald-700 text-white p-8 mb-6">
           <div className="relative z-10">
             <h2 className="text-3xl md:text-5xl font-black font-headline tracking-tight mb-2">
-              Namaste {data.profile.fullName.split(" ")[0]}!
+              {dict.farmer.overview.greeting.replace(
+                "{name}",
+                data.profile.fullName.split(" ")[0] ?? "",
+              )}
             </h2>
             <p className="text-emerald-50 text-lg md:text-xl font-medium opacity-90 max-w-2xl">
-              Your local price for{" "}
-              <span className="font-bold text-white">
-                {dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ?? activeCrop.name}
-              </span>{" "}
-              in {deferredDistrict} is{" "}
-              <span className="bg-white/20 px-2 py-0.5 rounded">
-                {localPrice ? formatCurrency(localPrice.modalPrice) : "—"}
-              </span>
-              .
+              {dict.farmer.overview.heroPriceLine
+                .replace(
+                  "{cropName}",
+                  dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ??
+                    activeCrop.name,
+                )
+                .replace("{district}", deferredDistrict)
+                .replace(
+                  "{price}",
+                  localPrice ? formatCurrency(localPrice.modalPrice) : "—",
+                )}
             </p>
           </div>
           <div className="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none flex items-center justify-end pr-4">
@@ -382,18 +417,21 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             </div>
             <div className="relative z-10">
               <span className="inline-block px-3 py-1 rounded-full bg-tertiary-container text-on-tertiary-container text-xs font-bold uppercase tracking-wider mb-4">
-                Market Gap Found
+                {dict.farmer.overview.marketGapFound}
               </span>
               <h3 className="text-2xl font-bold text-on-surface mb-4 leading-tight">
                 {bestRoute
-                  ? <>Sell in {bestRoute.targetDistrict} for <span className="text-primary font-black text-3xl">{formatCurrency(bestRoute.targetModalPrice)}</span></>
-                  : "Analysing best routes…"}
+                  ? <>{dict.farmer.overview.sellInFor.replace("{district}", bestRoute.targetDistrict).replace("{price}", formatCurrency(bestRoute.targetModalPrice))}</>
+                  : dict.farmer.overview.analyzingBestRoutes}
               </h3>
               {bestRoute && (
                 <p className="text-on-surface-variant text-lg mb-6">
-                  That&apos;s{" "}
-                  <span className="text-emerald-700 font-bold">{formatCurrency(bestRoute.priceGap)}/kg More Profit</span>{" "}
-                  compared to local Mandis.
+                  <span className="text-emerald-700 font-bold">
+                    {dict.farmer.overview.moreProfitCompared.replace(
+                      "{price}",
+                      formatCurrency(bestRoute.priceGap),
+                    )}
+                  </span>
                 </p>
               )}
               <div className="flex flex-wrap gap-4">
@@ -401,13 +439,16 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                   onClick={() => navigate("directory")}
                   className="bg-gradient-to-r from-primary to-primary-container text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:shadow-primary/20 hover:opacity-90 transition-all"
                 >
-                  Unlock Logistics
+                  {dict.farmer.overview.unlockLogistics}
                 </button>
                 <button
                   onClick={() => navigate("directory")}
                   className="bg-surface-container-high text-on-surface px-6 py-3 rounded-lg font-semibold hover:bg-surface-container-highest transition-colors"
                 >
-                  View {data.fpos.length} Near FPOs
+                  {dict.farmer.overview.viewNearFpos.replace(
+                    "{count}",
+                    String(data.fpos.length),
+                  )}
                 </button>
               </div>
             </div>
@@ -418,9 +459,15 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             <div className="bg-secondary-container text-on-secondary-container rounded-xl p-6 flex flex-col justify-between">
               <div>
                 <span className="material-symbols-outlined text-4xl mb-4 block" data-icon="priority_high">priority_high</span>
-                <h4 className="text-xl font-bold mb-2">Buyer Match!</h4>
+                <h4 className="text-xl font-bold mb-2">{dict.farmer.overview.buyerMatch}</h4>
                 <p className="opacity-90 text-sm">
-                  {activeMatch.cropName} — {activeMatch.quantityKg?.toLocaleString("en-IN") ?? "--"} kg interest live.
+                  {dict.farmer.overview
+                    .matchInterestLive
+                    .replace("{cropName}", activeMatch.cropName)
+                    .replace(
+                      "{quantity}",
+                      activeMatch.quantityKg?.toLocaleString("en-IN") ?? "--",
+                    )}
                 </p>
               </div>
               <Button
@@ -436,7 +483,10 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                     });
                     const payload = (await res.json()) as MatchAcceptResponse;
                     if (!res.ok || !payload.ok) {
-                      setActionError(("error" in payload ? payload.error : undefined) ?? "Could not accept.");
+                       setActionError(
+                         ("error" in payload ? payload.error : undefined) ??
+                           dict.farmer.overview.couldNotAccept,
+                       );
                       return;
                     }
                     setMatches((cur) => cur.map((e) => (e.id === payload.match.id ? payload.match : e)));
@@ -445,25 +495,33 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                   })
                 }
               >
-                {isActionPending ? "Accepting…" : "Accept Match"}
+                {isActionPending
+                  ? dict.farmer.overview.accepting
+                  : dict.farmer.overview.acceptMatch}
               </Button>
             </div>
           ) : (
             <div className="bg-secondary-container text-on-secondary-container rounded-xl p-6 flex flex-col justify-between">
               <div>
                 <span className="material-symbols-outlined text-4xl mb-4 block" data-icon="priority_high">priority_high</span>
-                <h4 className="text-xl font-bold mb-2">Price Alert</h4>
+                <h4 className="text-xl font-bold mb-2">{dict.farmer.overview.priceAlert}</h4>
                 <p className="opacity-90 text-sm">
                   {priceGap > 0
-                    ? `Earn ${formatCurrency(priceGap)} more per quintal in ${highestPrice?.district ?? "top market"}.`
-                    : "Set price alerts via WhatsApp to stay ahead."}
+                    ? dict.farmer.overview
+                        .earnMorePerQuintal
+                        .replace("{amount}", formatCurrency(priceGap))
+                        .replace(
+                          "{district}",
+                          highestPrice?.district ?? dict.farmer.overview.topMarket,
+                        )
+                    : dict.farmer.overview.setPriceAlerts}
                 </p>
               </div>
               <button
                 onClick={() => navigate("alerts")}
                 className="mt-6 bg-white/20 hover:bg-white/30 text-white font-bold border-0 rounded-lg py-2 px-4 text-sm transition-all"
               >
-                View Alerts
+                {dict.farmer.overview.viewAlerts}
               </button>
             </div>
           )}
@@ -474,11 +532,11 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
       <section className="px-6 mb-8">
         <div className="flex items-end justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-black font-headline text-emerald-900">My Live Crops</h2>
-            <p className="text-slate-500">Real-time local vs. state-wide comparisons</p>
+            <h2 className="text-2xl font-black font-headline text-emerald-900">{dict.farmer.overview.myLiveCrops}</h2>
+            <p className="text-slate-500">{dict.farmer.overview.liveCropsSub}</p>
           </div>
           <Link href="/register/farmer" className="text-primary font-bold hover:underline flex items-center gap-1 text-sm">
-            Edit Farm <span className="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+            {dict.farmer.overview.editFarm} <span className="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
           </Link>
         </div>
 
@@ -506,9 +564,9 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                     <span className={cn("material-symbols-outlined text-3xl", iconColor)} data-icon={icon}>{icon}</span>
                   </div>
                   {isScarcity ? (
-                    <span className="px-2 py-1 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold rounded">SCARCITY</span>
+                     <span className="px-2 py-1 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold rounded">{dict.farmer.overview.scarcity}</span>
                   ) : (
-                    <span className="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold rounded">SURPLUS</span>
+                     <span className="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold rounded">{dict.farmer.overview.surplus}</span>
                   )}
                 </div>
                 <h3 className="text-lg font-bold mb-1">
@@ -516,11 +574,11 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
                 </h3>
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-tighter">Local Price</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-tighter">{dict.farmer.overview.localPrice}</p>
                     <p className="text-xl font-black text-slate-900">{cropLocalPrice ? formatCurrency(cropLocalPrice.modalPrice) : "—"}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-tighter">Best State</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-tighter">{dict.farmer.overview.bestState}</p>
                     <p className="text-xl font-black text-emerald-700">{cropBestPrice ? formatCurrency(cropBestPrice.modalPrice) : "—"}</p>
                   </div>
                 </div>
@@ -533,7 +591,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
             className="border-2 border-dashed border-outline-variant p-6 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-colors"
           >
             <span className="material-symbols-outlined text-3xl mb-2" data-icon="add_circle">add_circle</span>
-            <span className="font-bold text-sm">Add New Crop</span>
+            <span className="font-bold text-sm">{dict.farmer.overview.addNewCrop}</span>
           </Link>
         </div>
       </section>
@@ -545,17 +603,21 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-xl font-black font-headline text-on-surface">
-                {dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ?? activeCrop.name} Forecast
+                {dict.farmer.overview.forecastTitle.replace(
+                  "{cropName}",
+                  dict.crops?.[activeCrop.slug as keyof typeof dict.crops] ??
+                    activeCrop.name,
+                )}
               </h3>
-              <p className="text-sm text-slate-500">Predicted daily price trends</p>
+              <p className="text-sm text-slate-500">{dict.forecast.predictedDailyPriceTrends}</p>
             </div>
             {bestRoute && bestRoute.priceGap > 0 ? (
               <div className="flex items-center bg-tertiary-container text-on-tertiary-container px-4 py-2 rounded-full font-bold text-sm">
-                <span className="material-symbols-outlined text-xl mr-1" data-icon="trending_up">trending_up</span>SELL
+                <span className="material-symbols-outlined text-xl mr-1" data-icon="trending_up">trending_up</span>{dict.forecast.sellNow}
               </div>
             ) : (
               <div className="flex items-center bg-secondary-fixed text-on-secondary-fixed px-4 py-2 rounded-full font-bold text-sm">
-                <span className="material-symbols-outlined text-xl mr-1" data-icon="front_hand">front_hand</span>HOLD
+                <span className="material-symbols-outlined text-xl mr-1" data-icon="front_hand">front_hand</span>{dict.forecast.hold}
               </div>
             )}
           </div>
@@ -573,10 +635,10 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
         {/* Quick Actions 2×2 — each navigates to the correct tab */}
         <div className="grid grid-cols-2 gap-4">
           {[
-            { label: "Find Buyer", icon: "search", tab: "directory" },
-            { label: "List My Crop", icon: "add_box", tab: "inventory" },
-            { label: "Find FPO", icon: "hub", tab: "directory" },
-            { label: "Track Sales", icon: "local_shipping", tab: "earnings" },
+            { label: dict.farmer.overview.findBuyer, icon: "search", tab: "directory" },
+            { label: dict.farmer.overview.listMyCrop, icon: "add_box", tab: "inventory" },
+            { label: dict.farmer.overview.findFpo, icon: "hub", tab: "directory" },
+            { label: dict.farmer.overview.trackSales, icon: "local_shipping", tab: "earnings" },
           ].map((action) => (
             <button
               key={action.label}
@@ -596,6 +658,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
       </section>
 
       <MobileBottomNav variant="farmer" />
+      <AiChatWidget userId={data.profile.id} />
     </DashboardShell>
   );
 }

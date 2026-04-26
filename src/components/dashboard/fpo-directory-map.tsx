@@ -5,9 +5,9 @@ import { MapPin, Phone, Warehouse } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { findTargetCrop } from "@/lib/agmarknet/catalog";
 import { DISTRICT_POSITIONS } from "@/lib/regions-map";
 import type { AppUser } from "@/lib/users/types";
+import { useI18n } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 type FpoDirectoryMapProps = {
@@ -19,6 +19,8 @@ export function FpoDirectoryMap({
   fpos,
   farmerDistrict,
 }: FpoDirectoryMapProps) {
+  const { dict } = useI18n();
+
   return (
     <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <div className="relative min-h-[500px] overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(245,249,242,0.98),rgba(232,241,234,0.95))] shadow-[0_30px_90px_-64px_rgba(29,77,50,0.5)]">
@@ -26,18 +28,23 @@ export function FpoDirectoryMap({
 
         <div className="absolute left-5 top-5 z-10 max-w-sm rounded-[1.4rem] border border-border/70 bg-card/88 px-4 py-3 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
-            Phase 9 FPO map
+            {dict.directory.phaseMapTitle}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            District markers show FPO hubs. The soft halo represents the current
-            fallback service area until Google Maps circles are wired.
+            {dict.directory.phaseMapDescription}
           </p>
         </div>
 
-        <svg viewBox="0 0 700 560" className="absolute inset-0 size-full" aria-hidden="true">
+        <svg
+          viewBox="0 0 700 560"
+          className="absolute inset-0 size-full"
+          aria-hidden="true"
+        >
           {fpos.flatMap((fpo) => {
             const primaryDistrict = fpo.districtsServed[0] ?? fpo.district;
-            const position = primaryDistrict ? DISTRICT_POSITIONS[primaryDistrict] : null;
+            const position = primaryDistrict
+              ? DISTRICT_POSITIONS[primaryDistrict]
+              : null;
 
             if (!position) {
               return [];
@@ -96,10 +103,15 @@ export function FpoDirectoryMap({
                 <p className="text-lg font-semibold">
                   {fpo.organizationName ?? fpo.fullName}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">{fpo.fullName}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {fpo.fullName}
+                </p>
               </div>
               <Badge className="border border-emerald-200 bg-emerald-100 text-emerald-900">
-                {fpo.serviceRadiusKm ?? 120} km
+                {dict.directory.kmBadge.replace(
+                  "{value}",
+                  String(fpo.serviceRadiusKm ?? 120),
+                )}
               </Badge>
             </div>
 
@@ -117,42 +129,44 @@ export function FpoDirectoryMap({
                   key={`${fpo.id}:${cropSlug}:crop`}
                   className="border border-primary/20 bg-primary/10 text-primary"
                 >
-                  {findTargetCrop(cropSlug)?.name ?? cropSlug}
+                  {dict.crops[cropSlug as keyof typeof dict.crops] ?? cropSlug}
                 </Badge>
               ))}
             </div>
 
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              {fpo.serviceSummary ?? "Aggregation and transport support for nearby districts."}
+              {fpo.serviceSummary ?? dict.directory.defaultServiceSummary}
             </p>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <Button asChild>
                 <Link href={`/fpos/${fpo.id}`}>
                   <Warehouse className="size-4" />
-                  View profile
+                  {dict.directory.viewProfile}
                 </Link>
               </Button>
               {fpo.phone ? (
                 <Button asChild variant="outline">
                   <Link href={`tel:${fpo.phone}`}>
                     <Phone className="size-4" />
-                    Call FPO
+                    {dict.directory.callFpo}
                   </Link>
                 </Button>
               ) : null}
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               <MapPin className="size-3.5" />
-              Hub: {fpo.district ?? fpo.districtsServed[0] ?? "District pending"}
+              {dict.directory.hub}:{" "}
+              {fpo.district ??
+                fpo.districtsServed[0] ??
+                dict.directory.districtPending}
             </div>
           </div>
         ))}
 
         {fpos.length === 0 ? (
           <div className="rounded-[1.7rem] border border-dashed border-border/70 bg-card/88 p-5 text-sm text-muted-foreground">
-            No FPO profiles currently match this district. Once more organizations
-            register, they will appear here automatically.
+            {dict.directory.noFpoProfiles}
           </div>
         ) : null}
       </div>

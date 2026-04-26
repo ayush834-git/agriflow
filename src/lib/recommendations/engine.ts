@@ -20,6 +20,7 @@ import type {
 } from "@/lib/recommendations/types";
 import { getRedisClient } from "@/lib/redis";
 import { getWeatherForLocation } from "@/lib/weather/service";
+import { findUserById } from "@/lib/users/store";
 import { z } from "zod";
 
 const TRANSPORT_RATE_PER_KM_INR = 24;
@@ -124,7 +125,7 @@ async function getWeatherSignal(item: InventoryItem) {
   };
 }
 
-async function getRouteCandidates(cropSlug: string, sourceDistrict: string) {
+async function getRouteCandidates(cropSlug: string, sourceDistrict: string, fpoDistricts?: string[]) {
   let routes = await loadStoredGapsForCrop(cropSlug, 12);
 
   if (routes.length === 0) {
@@ -140,10 +141,19 @@ async function getRouteCandidates(cropSlug: string, sourceDistrict: string) {
     }).filter((record) => record.cropSlug === cropSlug);
   }
 
-  const sourceFirst = routes.filter((route) => route.sourceDistrict === sourceDistrict);
+  // Prefer routes originating from the FPO's own service districts
+  const inFpoDistrict =
+    fpoDistricts && fpoDistricts.length > 0
+      ? routes.filter((route) => fpoDistricts.includes(route.sourceDistrict))
+      : [];
 
-  return (sourceFirst.length > 0 ? sourceFirst : routes).slice(0, 3);
+  // Fall back to matching source district if no FPO-scoped route found
+  const sourceFirst = routes.filter((route) => route.sourceDistrict === sourceDistrict);
+  const candidates = inFpoDistrict.length > 0 ? inFpoDistrict : sourceFirst.length > 0 ? sourceFirst : routes;
+
+  return candidates.slice(0, 3);
 }
+
 
 async function buildReasoning(item: InventoryItem, route: PriceGapRecord) {
   const daysLeft = daysUntil(item.deadlineDate);
@@ -296,7 +306,11 @@ export async function generateRecommendationsForInventory(
     throw new Error(`Inventory ${inventoryId} was not found.`);
   }
 
-  const routes = await getRouteCandidates(item.cropSlug, item.district);
+  // Load the owner's profile to scope routes to their service districts
+  const owner = await findUserById(item.ownerUserId);
+  const fpoDistricts = owner?.role === "FPO" ? owner.districtsServed : [];
+
+  const routes = await getRouteCandidates(item.cropSlug, item.district, fpoDistricts);
   
   // Using Promise.all here allows Gemini and Google Maps API requests to fire
   // entirely in parallel. This shrinks the overall recommendation execution latency

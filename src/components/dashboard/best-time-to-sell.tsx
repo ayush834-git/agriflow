@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Area,
   AreaChart,
@@ -23,8 +23,10 @@ import {
 import { AiConfidenceBadge } from "@/components/dashboard/ai-confidence-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { translateDynamicText } from "@/lib/i18n/dictionaries";
 import type { DashboardPricePoint } from "@/lib/dashboard";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/context";
 
 type BestTimeToSellProps = {
   cropName: string;
@@ -153,10 +155,28 @@ export function BestTimeToSell({
   localDistrict,
   source,
 }: BestTimeToSellProps) {
+  const { dict, lang } = useI18n();
   const [isPending, startTransition] = useTransition();
   const [geminiResult, setGeminiResult] =
     useState<GeminiForecastResult | null>(null);
   const [geminiError, setGeminiError] = useState<string | null>(null);
+  const [translatedExplanation, setTranslatedExplanation] = useState<string | null>(null);
+
+  const getRecommendationLabel = (rec: "SELL" | "HOLD" | "TRACK") => {
+    switch (rec) {
+      case "SELL": return dict.forecast.sellNow;
+      case "HOLD": return dict.forecast.hold;
+      case "TRACK": return dict.forecast.trackDaily;
+    }
+  };
+  
+  const getBiasLabel = (b: "upward" | "softening" | "stable") => {
+    switch (b) {
+      case "upward": return dict.forecast.upward;
+      case "softening": return dict.forecast.softening;
+      case "stable": return dict.forecast.stable;
+    }
+  };
 
   const localPrices = prices.filter((p) => p.district === localDistrict);
   const displayPrices = localPrices.length >= 3 ? localPrices : prices;
@@ -169,6 +189,29 @@ export function BestTimeToSell({
   const recConfig = RECOMMENDATION_CONFIG[activeRecommendation];
   const RecIcon = recConfig.icon;
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function translateExplanation() {
+      const explanation = geminiResult?.explanation ?? null;
+      if (!explanation) {
+        setTranslatedExplanation(null);
+        return;
+      }
+
+      const nextText = await translateDynamicText(explanation, lang);
+      if (!cancelled) {
+        setTranslatedExplanation(nextText);
+      }
+    }
+
+    void translateExplanation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [geminiResult?.explanation, lang]);
+
   function requestGeminiExplanation() {
     startTransition(async () => {
       setGeminiError(null);
@@ -177,7 +220,7 @@ export function BestTimeToSell({
           `/api/prices/${cropSlug}?district=${encodeURIComponent(localDistrict)}&forecast=1`,
         );
         if (!response.ok) {
-          setGeminiError("Could not reach the forecast endpoint.");
+          setGeminiError(dict.forecast.couldNotReachEndpoint);
           return;
         }
         const data = await response.json();
@@ -219,15 +262,16 @@ export function BestTimeToSell({
             <CalendarClock className="size-6" />
           </div>
           <div>
-            <h3 className="text-xl font-headline font-bold text-on-surface">Best Time to Sell</h3>
+            <h3 className="text-xl font-headline font-bold text-on-surface">{dict.forecast.bestTimeToSell}</h3>
             <p className="text-sm text-on-surface-variant font-medium mt-1">
-              {cropName} · 7-day trend + 4-day forecast{" "}
-              {localPrices.length >= 3 ? `for ${localDistrict}` : "across all districts"}
+              {localPrices.length >= 3 
+                ? dict.forecast.trendForecastForDistrict.replace("{cropName}", cropName).replace("{district}", localDistrict)
+                : dict.forecast.trendForecastAllDistricts.replace("{cropName}", cropName)}
             </p>
           </div>
         </div>
         <span className="bg-surface-container text-on-surface-variant border border-outline-variant/30 px-3 py-1.5 rounded-lg text-sm font-bold w-fit mt-4 sm:mt-0 uppercase tracking-widest text-[10px]">
-          {source === "mock" ? "Demo data" : "Live feed"}
+          {source === "mock" ? dict.forecast.demoData : dict.forecast.liveFeed}
         </span>
       </div>
 
@@ -235,11 +279,11 @@ export function BestTimeToSell({
       <div className="flex flex-wrap items-center gap-4 border border-outline-variant/30 bg-surface-container-lowest p-5 rounded-[1.25rem]">
         <span className={cn("flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm border", recConfig.className)}>
           <RecIcon className="size-4" />
-          {recConfig.label}
+          {getRecommendationLabel(activeRecommendation)}
         </span>
         <div className="flex items-center gap-2 text-sm font-medium text-on-surface-variant bg-surface-container/50 px-3 py-2 rounded-lg border border-outline-variant/20">
           <TrendingUp className="size-4 text-primary" />
-          Bias: <strong className="text-on-surface">{bias}</strong>
+          {dict.forecast.bias}: <strong className="text-on-surface">{getBiasLabel(bias)}</strong>
         </div>
         {geminiResult ? (
           <AiConfidenceBadge confidence={geminiResult.confidence} />
@@ -292,18 +336,18 @@ export function BestTimeToSell({
                     <div className="space-y-1 text-sm font-medium">
                         {data.actualPrice != null ? (
                           <p className="flex justify-between gap-4">
-                            <span className="text-on-surface-variant">Actual:</span>
+                            <span className="text-on-surface-variant">{dict.forecast.actual}:</span>
                             <span className="font-bold text-primary">{formatCurrency(data.actualPrice)}</span>
                           </p>
                         ) : null}
                         {data.forecastMid != null ? (
                           <>
                             <p className="flex justify-between gap-4">
-                              <span className="text-on-surface-variant">Forecast:</span>
+                              <span className="text-on-surface-variant">{dict.forecast.forecast}:</span>
                               <span className="font-bold text-tertiary">{formatCurrency(data.forecastMid)}</span>
                             </p>
                             <p className="flex justify-between gap-4 text-xs mt-1 pt-1 border-t border-outline-variant/20">
-                              <span className="text-on-surface-variant">Range:</span>
+                              <span className="text-on-surface-variant">{dict.forecast.range}</span>
                               <span className="text-on-surface">{formatCurrency(data.forecastLow!)} – {formatCurrency(data.forecastHigh!)}</span>
                             </p>
                           </>
@@ -321,7 +365,7 @@ export function BestTimeToSell({
               fill="url(#actualGrad)"
               dot={{ r: 4, fill: "var(--color-primary)", strokeWidth: 2, stroke: "white" }}
               connectNulls={false}
-              name="Actual"
+              name={dict.forecast.actual}
             />
             <Area
               type="monotone"
@@ -339,7 +383,7 @@ export function BestTimeToSell({
               fill="none"
               dot={{ r: 3, fill: "var(--color-tertiary)" }}
               connectNulls={false}
-              name="Forecast"
+              name={dict.forecast.forecast}
             />
             <Area
               type="monotone"
@@ -357,19 +401,19 @@ export function BestTimeToSell({
       {/* Stats row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-4 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Observed low</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">{dict.forecast.observedLow}</p>
           <p className="mt-2 text-xl font-black text-on-surface">{formatCurrency(observedLow)}</p>
         </div>
         <div className="rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-4 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Observed high</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">{dict.forecast.observedHigh}</p>
           <p className="mt-2 text-xl font-black text-on-surface">{formatCurrency(observedHigh)}</p>
         </div>
         <div className="rounded-[1.25rem] border border-tertiary/20 bg-tertiary-container/20 p-4 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-tertiary/80">Projected low</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-tertiary/80">{dict.forecast.projectedLow}</p>
           <p className="mt-2 text-xl font-black text-tertiary">{formatCurrency(projectedLow)}</p>
         </div>
         <div className="rounded-[1.25rem] border border-tertiary/20 bg-tertiary-container/30 p-4 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-tertiary/80">Projected high</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-tertiary/80">{dict.forecast.projectedHigh}</p>
           <p className="mt-2 text-xl font-black text-tertiary">{formatCurrency(projectedHigh)}</p>
         </div>
       </div>
@@ -379,14 +423,14 @@ export function BestTimeToSell({
         <div className="rounded-[1.25rem] border border-primary/20 bg-primary-container/20 p-6 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-bold text-primary tracking-wider uppercase">
             <Sparkles className="size-4" />
-            AI Analysis
+            {dict.forecast.aiAnalysis}
           </div>
           <p className="mt-3 text-sm leading-6 text-on-surface font-medium">
-            {geminiResult.explanation}
+            {translatedExplanation ?? geminiResult.explanation}
           </p>
           {geminiResult.bestDay ? (
             <p className="mt-3 text-sm font-bold text-primary bg-primary/10 w-fit px-3 py-1 rounded">
-              Best window: {geminiResult.bestDay}
+              {dict.forecast.bestWindow}{geminiResult.bestDay}
             </p>
           ) : null}
         </div>
@@ -402,7 +446,7 @@ export function BestTimeToSell({
           ) : (
             <Sparkles className="size-5 text-primary mr-2" />
           )}
-          {isPending ? "Analyzing market history..." : "Get AI forecast explanation"}
+          {isPending ? dict.forecast.analyzingMarketHistory : dict.forecast.getAiForecastExplanation}
         </Button>
       )}
       {geminiError ? (

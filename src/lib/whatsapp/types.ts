@@ -9,6 +9,7 @@ export type WhatsAppIntent =
   | "REGISTER_LISTING"
   | "REGISTER_INVENTORY"
   | "FORECAST"
+  | "INVENTORY_QUERY"
   | "OTHER";
 
 export type ListingDraft = {

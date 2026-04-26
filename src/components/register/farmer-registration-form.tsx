@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { TARGET_CROPS } from "@/lib/agmarknet/catalog";
 import { supportedLanguageOptions } from "@/lib/users/registration";
+import { useI18n } from "@/lib/i18n/context";
 
 type RegistrationResult = {
   user: {
@@ -67,11 +68,12 @@ function firstFieldError(messages?: string[]) {
 
 export function FarmerRegistrationForm() {
   const searchParams = useSearchParams();
+  const { dict } = useI18n();
   const [isPending, startTransition] = useTransition();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
   const [district, setDistrict] = useState("");
-  const [stateName, setStateName] = useState("Andhra Pradesh");
+  const [stateName, setStateName] = useState(dict.register.statePlaceholder);
   const [preferredLanguage, setPreferredLanguage] = useState(
     searchParams.get("language") ?? "te",
   );
@@ -81,6 +83,10 @@ export function FarmerRegistrationForm() {
     Partial<Record<FieldErrorKey, string>>
   >({});
   const [result, setResult] = useState<RegistrationResult | null>(null);
+  const translatedLanguageOptions = supportedLanguageOptions.map((option) => ({
+    ...option,
+    label: dict.common.languageNames[option.value],
+  }));
 
   const source = searchParams.get("source");
 
@@ -113,8 +119,6 @@ export function FarmerRegistrationForm() {
           preferredLanguage,
           crops: selectedCropSlugs.map((cropSlug) => ({
             cropSlug,
-            // Avoid sending an invalid empty district for each crop.
-            // District itself is validated at the top-level field.
             district:
               normalizedDistrict.length >= 2 ? normalizedDistrict : undefined,
           })),
@@ -127,21 +131,27 @@ export function FarmerRegistrationForm() {
       if (!response.ok) {
         const payload = extractErrorPayload(parsedPayload);
         const nextFieldErrors: Partial<Record<FieldErrorKey, string>> = {
-          fullName: firstFieldError(payload.details?.fieldErrors?.fullName) ?? undefined,
-          phone: firstFieldError(payload.details?.fieldErrors?.phone) ?? undefined,
-          district: firstFieldError(payload.details?.fieldErrors?.district) ?? undefined,
-          state: firstFieldError(payload.details?.fieldErrors?.state) ?? undefined,
+          fullName:
+            firstFieldError(payload.details?.fieldErrors?.fullName) ?? undefined,
+          phone:
+            firstFieldError(payload.details?.fieldErrors?.phone) ?? undefined,
+          district:
+            firstFieldError(payload.details?.fieldErrors?.district) ?? undefined,
+          state:
+            firstFieldError(payload.details?.fieldErrors?.state) ?? undefined,
           preferredLanguage:
-            firstFieldError(payload.details?.fieldErrors?.preferredLanguage) ?? undefined,
-          crops: firstFieldError(payload.details?.fieldErrors?.crops) ?? undefined,
+            firstFieldError(payload.details?.fieldErrors?.preferredLanguage) ??
+            undefined,
+          crops:
+            firstFieldError(payload.details?.fieldErrors?.crops) ?? undefined,
         };
 
         setFieldErrors(nextFieldErrors);
         setError(
           payload.error ??
             (response.status === 404
-              ? "Registration endpoint is unavailable in this session."
-              : "Registration failed."),
+              ? dict.register.endpointUnavailable
+              : dict.register.registrationFailed),
         );
         return;
       }
@@ -149,7 +159,7 @@ export function FarmerRegistrationForm() {
       const payload = parsedPayload as RegistrationResult & { ok: true };
 
       if (!payload || payload.ok !== true) {
-        setError("Registration failed.");
+        setError(dict.register.registrationFailed);
         return;
       }
 
@@ -158,9 +168,7 @@ export function FarmerRegistrationForm() {
         crops: payload.crops,
       });
     } catch {
-      setError(
-        "Could not submit registration right now. Please retry in a moment.",
-      );
+      setError(dict.register.couldNotSubmitRegistration);
     }
   }
 
@@ -168,28 +176,26 @@ export function FarmerRegistrationForm() {
     return (
       <Card className="border border-border/70 bg-card/90">
         <CardHeader>
-          <CardTitle>Farmer profile saved</CardTitle>
+          <CardTitle>{dict.register.farmerProfileSaved}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
           <p>
-            {result.user.fullName} is ready. Use{" "}
-            <span className="font-medium text-foreground">
-              {result.user.phone ?? phone}
-            </span>{" "}
-            on WhatsApp or SMS to continue.
+            {dict.register.farmerReady
+              .replace("{name}", result.user.fullName)
+              .replace("{phone}", result.user.phone ?? phone)}
           </p>
           <p>
-            Saved crops:{" "}
+            {dict.register.savedCrops}:{" "}
             <span className="font-medium text-foreground">
               {result.crops.map((crop) => crop.cropName).join(", ")}
             </span>
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild>
-              <Link href="/dashboard">Open dashboard</Link>
+              <Link href="/dashboard">{dict.register.openDashboard}</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/register">Register another user</Link>
+              <Link href="/register">{dict.register.registerAnotherUser}</Link>
             </Button>
           </div>
         </CardContent>
@@ -200,27 +206,26 @@ export function FarmerRegistrationForm() {
   return (
     <Card className="border border-border/70 bg-card/90">
       <CardHeader>
-        <CardTitle>Farmer onboarding</CardTitle>
+        <CardTitle>{dict.register.farmerOnboarding}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {source ? (
           <div className="rounded-2xl border border-border/70 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
-            You came from {source}. Use the same phone number here so the bot can
-            recognize you immediately.
+            {dict.register.sourceBanner.replace("{source}", source)}
           </div>
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="full-name">
-              Full name
+              {dict.register.fullName}
             </label>
             <Input
               id="full-name"
               className={fieldErrors.fullName ? "border-destructive/60" : undefined}
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              placeholder="Ravi Kumar"
+              placeholder={dict.register.namePlaceholder}
             />
             {fieldErrors.fullName ? (
               <p className="text-xs text-destructive">{fieldErrors.fullName}</p>
@@ -228,14 +233,14 @@ export function FarmerRegistrationForm() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="phone">
-              Phone
+              {dict.register.phoneNumber}
             </label>
             <Input
               id="phone"
               className={fieldErrors.phone ? "border-destructive/60" : undefined}
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              placeholder="+91 9876543210"
+              placeholder={dict.register.phonePlaceholder}
             />
             {fieldErrors.phone ? (
               <p className="text-xs text-destructive">{fieldErrors.phone}</p>
@@ -243,14 +248,14 @@ export function FarmerRegistrationForm() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="district">
-              District
+              {dict.register.district}
             </label>
             <Input
               id="district"
               className={fieldErrors.district ? "border-destructive/60" : undefined}
               value={district}
               onChange={(event) => setDistrict(event.target.value)}
-              placeholder="Kurnool"
+              placeholder={dict.register.districtPlaceholder}
             />
             {fieldErrors.district ? (
               <p className="text-xs text-destructive">{fieldErrors.district}</p>
@@ -258,14 +263,14 @@ export function FarmerRegistrationForm() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="state">
-              State
+              {dict.register.state}
             </label>
             <Input
               id="state"
               className={fieldErrors.state ? "border-destructive/60" : undefined}
               value={stateName}
               onChange={(event) => setStateName(event.target.value)}
-              placeholder="Andhra Pradesh"
+              placeholder={dict.register.statePlaceholder}
             />
             {fieldErrors.state ? (
               <p className="text-xs text-destructive">{fieldErrors.state}</p>
@@ -275,7 +280,7 @@ export function FarmerRegistrationForm() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="language">
-            Preferred language
+            {dict.register.preferredLanguage}
           </label>
           <select
             id="language"
@@ -287,7 +292,7 @@ export function FarmerRegistrationForm() {
             value={preferredLanguage}
             onChange={(event) => setPreferredLanguage(event.target.value)}
           >
-            {supportedLanguageOptions.map((option) => (
+            {translatedLanguageOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -302,9 +307,12 @@ export function FarmerRegistrationForm() {
 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">Crops to track</p>
+            <p className="text-sm font-medium">{dict.register.cropsToTrack}</p>
             <p className="text-xs text-muted-foreground">
-              {selectedCropSlugs.length} selected
+              {dict.register.selectedCount.replace(
+                "{count}",
+                String(selectedCropSlugs.length),
+              )}
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -326,7 +334,9 @@ export function FarmerRegistrationForm() {
                     checked={checked}
                     onChange={() => toggleCrop(crop.slug)}
                   />
-                  <span>{crop.name}</span>
+                  <span>
+                    {dict.crops[crop.slug as keyof typeof dict.crops] ?? crop.name}
+                  </span>
                 </label>
               );
             })}
@@ -348,10 +358,10 @@ export function FarmerRegistrationForm() {
             disabled={isPending}
             onClick={() => startTransition(() => void submitRegistration())}
           >
-            {isPending ? "Saving..." : "Save farmer profile"}
+            {isPending ? dict.register.saving : dict.register.saveFarmerProfile}
           </Button>
           <Button asChild variant="outline">
-            <Link href="/dashboard">View dashboard</Link>
+            <Link href="/dashboard">{dict.register.viewDashboard}</Link>
           </Button>
         </div>
       </CardContent>

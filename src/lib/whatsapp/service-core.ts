@@ -1,6 +1,7 @@
 import { getTargetCropOrThrow } from "@/lib/agmarknet/catalog";
 import { transcribeAudioBufferWithGemini } from "@/lib/gemini-audio";
 import { getGeminiClient } from "@/lib/gemini";
+import { buildUserInventoryContext, buildMarketContext } from "@/lib/gemini-context";
 import { resolveAgmarknetFeed } from "@/lib/agmarknet/service";
 import type { NormalizedMandiPriceRecord } from "@/lib/agmarknet/types";
 import { getEnv } from "@/lib/env";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/users/registration";
 import {
   findUserByPhone,
+  listFarmerCropsForUser,
   listFposForDistrict,
   upsertFarmerCropAlertThreshold,
 } from "@/lib/users/store";
@@ -1170,6 +1172,19 @@ async function handleInventoryConversation({
         storageLocationName: "Added via WhatsApp",
       });
 
+      // Immediately generate movement recommendations for the new lot
+      let recLine = "";
+      try {
+        const { generateRecommendationsForInventory } = await import("@/lib/recommendations/engine");
+        const recs = await generateRecommendationsForInventory(item.id, { force: true });
+        const topRec = recs[0];
+        if (topRec) {
+          recLine = `\nBest route: ${topRec.targetDistrict}, ${topRec.targetState} → net ~₹${Math.round(topRec.totalNetProfitInr ?? 0)} total (${topRec.urgency} urgency).`;
+        }
+      } catch {
+        // non-fatal — recommendations are optional
+      }
+
       return {
         body: [
           `Inventory added: ${formatListingSummary({
@@ -1177,7 +1192,7 @@ async function handleInventoryConversation({
             quantityKg: item.quantityKg,
             availableUntil: item.deadlineDate,
           })}`,
-          "You can manage it from the web dashboard.",
+          `You can manage it from the web dashboard.${recLine}`,
         ].join("\n"),
         session: touchSession(session, {
           state: "IDLE",
@@ -1448,6 +1463,34 @@ export async function processWhatsAppMessage(
       );
       body = formatForecastReply(snapshot, enrichedIntent.language);
       nextSession = touchSession(nextSession, { state: "FORECAST_SHARED" });
+      break;
+    }
+    case "INVENTORY_QUERY": {
+      // Answer questions about the user's own inventory using Gemini with full context
+      const gemini = getGeminiClient();
+      if (gemini && registeredUser) {
+        try {
+          const cropSlugs =
+            registeredUser.role === "FPO"
+              ? registeredUser.cropsHandled
+              : (await listFarmerCropsForUser(registeredUser.id)).map((c) => c.cropSlug);
+          const [inventoryCtx, marketCtx] = await Promise.all([
+            buildUserInventoryContext(registeredUser),
+            buildMarketContext(cropSlugs, registeredUser.district ?? null),
+          ]);
+          const model = gemini.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: `You are AgriFlow AI. Answer the user's question about their agricultural inventory and market data using ONLY the data below. Be concise and practical. Answer in ${enrichedIntent.language === "te" ? "Telugu" : enrichedIntent.language === "hi" ? "Hindi" : enrichedIntent.language === "kn" ? "Kannada" : "English"}. Do not make up numbers.\n\n${inventoryCtx}\n\n${marketCtx}`,
+          });
+          const result = await model.generateContent(normalizedIncomingMessage.body);
+          body = result.response.text().trim();
+        } catch {
+          body = HELP_TEXT[enrichedIntent.language];
+        }
+      } else {
+        body = HELP_TEXT[enrichedIntent.language];
+      }
+      nextSession = touchSession(nextSession, { state: "INVENTORY_SHARED" });
       break;
     }
     case "OTHER":

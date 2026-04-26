@@ -10,6 +10,28 @@ export type TargetRegion = {
   districts: string[];
 };
 
+/** Approximate headquarters lat/lng for each district in the catalog. */
+export const DISTRICT_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  // Andhra Pradesh
+  Kurnool:       { lat: 15.828, lng: 78.037 },
+  Guntur:        { lat: 16.307, lng: 80.436 },
+  Anantapur:     { lat: 14.683, lng: 77.600 },
+  Chittoor:      { lat: 13.217, lng: 79.100 },
+  Visakhapatnam: { lat: 17.686, lng: 83.218 },
+  // Telangana
+  Hyderabad:     { lat: 17.385, lng: 78.487 },
+  Warangal:      { lat: 17.978, lng: 79.600 },
+  Karimnagar:    { lat: 18.438, lng: 79.129 },
+  Nizamabad:     { lat: 18.672, lng: 78.093 },
+  Khammam:       { lat: 17.247, lng: 80.150 },
+  // Karnataka
+  Bengaluru:     { lat: 12.971, lng: 77.594 },
+  Mysuru:        { lat: 12.296, lng: 76.639 },
+  Belagavi:      { lat: 15.851, lng: 74.497 },
+  Hubballi:      { lat: 15.362, lng: 75.124 },
+  Ballari:       { lat: 15.139, lng: 76.924 },
+};
+
 export const TARGET_CROPS: TargetCrop[] = [
   { slug: "tomato", name: "Tomato", commodityFilters: ["Tomato"], basePrice: 1800 },
   { slug: "onion", name: "Onion", commodityFilters: ["Onion"], basePrice: 2200 },
