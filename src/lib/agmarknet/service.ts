@@ -178,8 +178,16 @@ export async function resolveAgmarknetFeed(
       };
     }
 
-    if (mode === "live") {
-      throw error;
+    if (mode === "live" || mode === "auto") {
+      return {
+        source: "live",
+        records: [],
+        warnings: [
+          error instanceof Error
+            ? `Live Agmarknet failed: ${error.message}`
+            : "Live Agmarknet failed.",
+        ],
+      };
     }
 
     return {
@@ -193,8 +201,12 @@ export async function resolveAgmarknetFeed(
     };
   }
 
-  if (mode === "live") {
-    throw new Error("Live Agmarknet returned no records.");
+  if (mode === "live" || mode === "auto") {
+    return {
+      source: "live",
+      records: [],
+      warnings: ["Live Agmarknet returned no records."],
+    };
   }
 
   return {

@@ -327,7 +327,7 @@ export async function upsertFarmerCropAlertThreshold(params: {
   const crop = getTargetCropOrThrow(params.cropSlug);
   const district = params.district ?? user?.district ?? null;
 
-  if (!hasSupabaseWriteConfig() || params.userId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     const current = [...(getFarmerCropStore().get(params.userId) ?? [])];
     const existingIndex = current.findIndex(
       (entry) =>
@@ -601,7 +601,7 @@ export async function updateUserPreferredLanguage(
     updatedAt: new Date().toISOString(),
   };
 
-  if (!hasSupabaseWriteConfig() || userId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     getUserStore().set(userId, nextUser);
     return nextUser;
   }
@@ -701,7 +701,7 @@ export async function updateUserSettings(input: UpdateUserSettingsInput) {
     }
   }
 
-  if (!hasSupabaseWriteConfig() || input.userId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     getUserStore().set(input.userId, nextUser);
 
     if (nextUser.role === "FARMER" && input.farmerCropSlugs) {

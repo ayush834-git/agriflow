@@ -111,7 +111,28 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
   const topRecommendation = recommendations[0];
   const atRiskQt = inventory.filter((i) => i.spoilageLevel !== "LOW").reduce((s, i) => s + i.quantityKg, 0);
 
-  if (!activeCrop) return null;
+  if (!activeCrop) {
+    return (
+      <DashboardShell role="fpo" districtLabel={data.owner.districtsServed[0]}>
+        <div className="p-6 md:p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <div className="size-20 bg-surface-container-high rounded-full flex items-center justify-center mb-6">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant" data-icon="query_stats">query_stats</span>
+          </div>
+          <h2 className="text-2xl font-bold font-headline text-on-surface mb-2">No Market Data Available</h2>
+          <p className="text-on-surface-variant max-w-md mb-8">
+            We are currently waiting for the latest live feed for your handled crops. Try updating your crop preferences to ensure they match active regional markets.
+          </p>
+          <button 
+            onClick={() => setSelectedTab("settings")}
+            className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-primary/90"
+          >
+            Update Crop Preferences
+          </button>
+        </div>
+        <MobileBottomNav variant="fpo" />
+      </DashboardShell>
+    );
+  }
 
   function handleRecommendationsUpdated(inventoryId: string, next: MovementRecommendation[]) {
     setRecommendations((cur) => [...cur.filter((r) => r.inventoryId !== inventoryId), ...next]);

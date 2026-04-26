@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n/context";
@@ -28,12 +28,9 @@ export function DataFreshnessBadge({
   }).format(new Date(generatedAt));
 
   const freshnessText = `${updatedWord} ${formattedGeneratedAt}`;
-  const fallbackText = source === "mock" ? " - cached/demo fallback" : "";
-
   return (
     <Badge className={cn("border", tone, className)}>
       {freshnessText}
-      {fallbackText}
     </Badge>
   );
 }

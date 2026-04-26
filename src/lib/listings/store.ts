@@ -188,7 +188,7 @@ function filterListings(listings: ListingItem[], filters: ListingSearchFilters =
 }
 
 export async function listListings(filters: ListingSearchFilters = {}) {
-  if (!hasSupabaseWriteConfig() || (filters.farmerUserId && filters.farmerUserId.startsWith("demo-"))) {
+  if (!hasSupabaseWriteConfig()) {
     return filterListings(Array.from(getListingStore().values()), filters);
   }
 
@@ -231,7 +231,7 @@ export async function listListings(filters: ListingSearchFilters = {}) {
 }
 
 export async function findListingById(listingId: string) {
-  if (!hasSupabaseWriteConfig() || listingId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     return getListingStore().get(listingId) ?? null;
   }
 
@@ -256,7 +256,7 @@ export async function findListingById(listingId: string) {
 export async function createListing(payload: AddListingPayload) {
   const listing = buildListingItem(payload);
 
-  if (!hasSupabaseWriteConfig() || listing.farmerUserId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     getListingStore().set(listing.id, listing);
     return listing;
   }
@@ -302,7 +302,7 @@ export async function updateListingStatus(listingId: string, status: ListingStat
     updatedAt: new Date().toISOString(),
   };
 
-  if (!hasSupabaseWriteConfig() || listingId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     getListingStore().set(listingId, nextListing);
     return nextListing;
   }

@@ -88,7 +88,6 @@ export type FarmerDashboardProfile = {
   state: string | null;
   preferredLanguage: SupportedLanguage;
   whatsappBotLanguage?: SupportedLanguage;
-  isDemo: boolean;
 };
 
 export type FarmerDashboardData = SharedDashboardData & {
@@ -114,7 +113,6 @@ export type FpoDashboardOwner = {
   serviceRadiusKm?: number | null;
   serviceSummary?: string | null;
   state: string | null;
-  isDemo: boolean;
 };
 
 export type FpoDashboardData = SharedDashboardData & {
@@ -266,23 +264,14 @@ export async function buildSharedDashboardData(
 }
 
 export async function buildFarmerDashboardData(clerkUserId?: string | null): Promise<FarmerDashboardData> {
-  const [farmerEntries, authenticated] = await Promise.all([
-    listFarmersWithCrops(),
-    clerkUserId ? findUserByClerkId(clerkUserId) : Promise.resolve(null),
-  ]);
-  const fallbackFarmer = farmerEntries[0]?.user ?? DEMO_FARMER_USERS[0];
-
-  let activeFarmer = fallbackFarmer;
-
-  if (authenticated && authenticated.role === "FARMER") {
-    activeFarmer = authenticated;
+  const authenticated = clerkUserId ? await findUserByClerkId(clerkUserId) : null;
+  if (!authenticated || authenticated.role !== "FARMER") {
+    throw new Error("Unauthorized: Farmer profile not found.");
   }
 
-  const activeFarmerEntry = farmerEntries.find(
-    (entry) => entry.user.id === activeFarmer.id,
-  );
-  const cropPreferences =
-    activeFarmerEntry?.crops ?? (await listFarmerCropsForUser(activeFarmer.id));
+  const activeFarmer = authenticated;
+
+  const cropPreferences = await listFarmerCropsForUser(activeFarmer.id);
 
   const baseData = await buildSharedDashboardData(
     cropPreferences.map(c => c.cropSlug),
@@ -294,17 +283,16 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
   );
 
   const profile: FarmerDashboardProfile = {
-    id: activeFarmer.id ?? DEMO_FARMER_DEFAULT_ID,
+    id: activeFarmer.id,
     fullName: activeFarmer.fullName,
     phone: activeFarmer.phone ?? null,
     email: activeFarmer.email ?? null,
     address: activeFarmer.address ?? null,
-    district: activeFarmer.district ?? fallbackFarmer.district ?? null,
-    state: activeFarmer.state ?? fallbackFarmer.state ?? null,
+    district: activeFarmer.district ?? null,
+    state: activeFarmer.state ?? null,
     preferredLanguage: activeFarmer.preferredLanguage ?? "te",
     whatsappBotLanguage:
       activeFarmer.whatsappBotLanguage ?? activeFarmer.preferredLanguage ?? "te",
-    isDemo: activeFarmer.id.startsWith("demo-"),
   };
 
   const [notifications, matches, listings, fpos] = await Promise.all([
@@ -332,54 +320,31 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
 }
 
 export async function buildFpoDashboardData(clerkUserId?: string | null): Promise<FpoDashboardData> {
-  const [fpoUsers, authenticated] = await Promise.all([
-    listUsersByRole("FPO"),
-    clerkUserId ? findUserByClerkId(clerkUserId) : Promise.resolve(null),
-  ]);
-  
-  let registeredOwner = fpoUsers[0];
-  
-  if (authenticated && authenticated.role === "FPO") {
-    registeredOwner = authenticated;
+  const authenticated = clerkUserId ? await findUserByClerkId(clerkUserId) : null;
+  if (!authenticated || authenticated.role !== "FPO") {
+    throw new Error("Unauthorized: FPO profile not found.");
   }
-  const owner: FpoDashboardOwner = registeredOwner
-    ? {
-        id: registeredOwner.id,
-        fullName: registeredOwner.fullName,
-        phone: registeredOwner.phone ?? null,
-        email: registeredOwner.email ?? null,
-        address: registeredOwner.address ?? null,
-        organizationName:
-          registeredOwner.organizationName ?? "Registered FPO workspace",
-        districtsServed: registeredOwner.districtsServed,
-        cropsHandled: registeredOwner.cropsHandled,
-        preferredLanguage: registeredOwner.preferredLanguage ?? "en",
-        whatsappBotLanguage:
-          registeredOwner.whatsappBotLanguage ??
-          registeredOwner.preferredLanguage ??
-          "en",
-        serviceRadiusKm: registeredOwner.serviceRadiusKm ?? null,
-        serviceSummary: registeredOwner.serviceSummary ?? null,
-        state: registeredOwner.state ?? null,
-        isDemo: registeredOwner.id.startsWith("demo-"),
-      }
-    : {
-        id: DEMO_FPO_OWNER_ID,
-        fullName: DEMO_FPO_CONTACT.fullName,
-        phone: DEMO_FPO_CONTACT.phone,
-        email: DEMO_FPO_CONTACT.email,
-        address: null,
-        organizationName: DEMO_FPO_CONTACT.organizationName,
-        districtsServed: ["Guntur", "Kurnool", "Khammam", "Hyderabad"],
-        cropsHandled: ["tomato", "onion", "green-chilli", "maize"],
-        preferredLanguage: "en",
-        whatsappBotLanguage: "en",
-        serviceRadiusKm: 180,
-        serviceSummary:
-          "Aggregation, reefer dispatch, and mandi-side negotiation for perishables across AP and Telangana.",
-        state: "Andhra Pradesh",
-        isDemo: true,
-      };
+
+  const registeredOwner = authenticated;
+  const owner: FpoDashboardOwner = {
+    id: registeredOwner.id,
+    fullName: registeredOwner.fullName,
+    phone: registeredOwner.phone ?? null,
+    email: registeredOwner.email ?? null,
+    address: registeredOwner.address ?? null,
+    organizationName:
+      registeredOwner.organizationName ?? "Registered FPO workspace",
+    districtsServed: registeredOwner.districtsServed,
+    cropsHandled: registeredOwner.cropsHandled,
+    preferredLanguage: registeredOwner.preferredLanguage ?? "en",
+    whatsappBotLanguage:
+      registeredOwner.whatsappBotLanguage ??
+      registeredOwner.preferredLanguage ??
+      "en",
+    serviceRadiusKm: registeredOwner.serviceRadiusKm ?? null,
+    serviceSummary: registeredOwner.serviceSummary ?? null,
+    state: registeredOwner.state ?? null,
+  };
 
   const baseData = await buildSharedDashboardData(
     owner.cropsHandled,

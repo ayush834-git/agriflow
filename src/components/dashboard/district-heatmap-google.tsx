@@ -34,7 +34,7 @@ export function GoogleHeatmapOverlay({
         defaultCenter={{ lat: 15.9, lng: 78.5 }}
         defaultZoom={6.2}
         disableDefaultUI={true}
-        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_STYLE_ID || "DEMO_MAP_ID"}
+        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_STYLE_ID || ""}
         className="absolute inset-0 size-full"
       />
 

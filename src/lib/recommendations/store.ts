@@ -92,7 +92,7 @@ function buildRecommendation(payload: CreateRecommendationPayload): MovementReco
 }
 
 export async function listRecommendationsForInventory(inventoryId: string) {
-  if (!hasSupabaseWriteConfig() || inventoryId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     return Array.from(getRecommendationStore().values())
       .filter((recommendation) => recommendation.inventoryId === inventoryId)
       .sort(
@@ -130,7 +130,7 @@ export async function replaceRecommendationsForInventory(
 ) {
   const nextRecommendations = payloads.map(buildRecommendation);
 
-  if (!hasSupabaseWriteConfig() || inventoryId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     const store = getRecommendationStore();
 
     for (const existing of Array.from(store.values())) {

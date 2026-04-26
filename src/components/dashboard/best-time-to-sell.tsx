@@ -271,7 +271,7 @@ export function BestTimeToSell({
           </div>
         </div>
         <span className="bg-surface-container text-on-surface-variant border border-outline-variant/30 px-3 py-1.5 rounded-lg text-sm font-bold w-fit mt-4 sm:mt-0 uppercase tracking-widest text-[10px]">
-          {source === "mock" ? dict.forecast.demoData : dict.forecast.liveFeed}
+          {dict.forecast.liveFeed}
         </span>
       </div>
 

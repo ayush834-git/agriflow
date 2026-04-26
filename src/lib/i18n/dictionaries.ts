@@ -139,9 +139,6 @@ const en = {
       alertsPanelTitle: "My Alerts",
       alertsPanelDescription:
         "Real-time crop alerts and buyer match notifications.",
-      demoBannerTitle: "Demo prices shown.",
-      demoBannerDescription:
-        "Live Agmarknet data could not be fetched. Set your AGMARKNET_API_KEY to see real market prices.",
       greeting: "Namaste {name}!",
       heroPriceLine:
         "Your local price for {cropName} in {district} is {price}.",
@@ -466,9 +463,8 @@ const en = {
       "No alerts have been generated yet. Daily alert and spoilage jobs will populate this feed.",
     priceOpen: "price open",
     simulating: "Simulating...",
-    demoWhatsappYes: "Demo WhatsApp YES",
     emailSummaryNote:
-      "Daily email summaries are logged here with EMAIL notifications until email delivery is wired.",
+      "Daily email summaries are logged here for your records.",
     matchStatus: {
       open: "Open",
       contacted: "Contacted",
@@ -625,9 +621,6 @@ const hi: typeof en = {
       noRoutesDesc: "भाव का डेटा जमा किया जा रहा है। थोड़ी देर में देखें।",
       alertsPanelTitle: "मेरे अलर्ट",
       alertsPanelDescription: "फसल के अलर्ट और खरीदार मैच की जानकारी।",
-      demoBannerTitle: "डेमो भाव दिख रहे हैं।",
-      demoBannerDescription:
-        "असली भाव नहीं मिल पाए। असली भाव देखने के लिए AGMARKNET_API_KEY डालें।",
       greeting: "नमस्ते {name}!",
       heroPriceLine:
         "{district} में {cropName} का आपका स्थानीय भाव {price} है।",
@@ -829,7 +822,6 @@ const hi: typeof en = {
     sellNow: "अभी बेचें",
     hold: "रोकें",
     trackDaily: "रोज़ देखें",
-    demoData: "डेमो डेटा",
     analyzingMarketHistory: "बाज़ार का पिछला डेटा देखा जा रहा है",
     getAiForecastExplanation: "AI से वजह जानें",
     actual: "असल",
@@ -1023,9 +1015,6 @@ const te: typeof en = {
       alertsPanelTitle: "నా అలర్ట్లు",
       alertsPanelDescription:
         "రియల్ టైమ్ పంట అలర్ట్లు మరియు కొనుగోలుదారుల మ్యాచ్ నోటిఫికేషన్లు.",
-      demoBannerTitle: "డెమో ధరలు చూపబడుతున్నాయి.",
-      demoBannerDescription:
-        "నిజమైన మార్కెట్ డేటా రాలేదు. నిజమైన ధరల కోసం AGMARKNET_API_KEY ని సెట్ చేయండి.",
       greeting: "నమస్తే {name}!",
       heroPriceLine: "{district}లో మీ {cropName} స్థానిక ధర {price}.",
       marketGapFound: "మార్కెట్ అవకాశం దొరికింది",
@@ -1364,9 +1353,6 @@ const kn: typeof en = {
       alertsPanelTitle: "ನನ್ನ ಎಚ್ಚರಿಕೆಗಳು",
       alertsPanelDescription:
         "ರಿಯಲ್-ಟೈಮ್ ಬೆಳೆ ಎಚ್ಚರಿಕೆಗಳು ಮತ್ತು ಖರೀದಿದಾರರ ಮ್ಯಾಚ್ ಸೂಚನೆಗಳು.",
-      demoBannerTitle: "ಡೆಮೊ ಬೆಲೆಗಳನ್ನು ತೋರಿಸಲಾಗುತ್ತಿದೆ.",
-      demoBannerDescription:
-        "ನೈಜ ಮಾರುಕಟ್ಟೆ ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ. ನೈಜ ಬೆಲೆಗಳಿಗಾಗಿ AGMARKNET_API_KEY ಹೊಂದಿಸಿ.",
       greeting: "ನಮಸ್ಕಾರ {name}!",
       heroPriceLine: "{district} ನಲ್ಲಿ ನಿಮ್ಮ {cropName} ನ ಸ್ಥಳೀಯ ಬೆಲೆ {price}.",
       marketGapFound: "ಮಾರುಕಟ್ಟೆ ಅವಕಾಶ ಸಿಕ್ಕಿದೆ",

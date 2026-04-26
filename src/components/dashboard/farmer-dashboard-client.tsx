@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -130,7 +130,25 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   const deferredDistrict = useDeferredValue(selectedDistrict);
   const activeCrop = data.crops.find((c) => c.slug === deferredCropSlug) ?? data.crops[0];
 
-  if (!activeCrop) return null;
+  if (!activeCrop) {
+    return (
+      <DashboardShell role="farmer" districtLabel={deferredDistrict}>
+        <div className="p-6 md:p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <div className="size-20 bg-surface-container-high rounded-full flex items-center justify-center mb-6">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant" data-icon="query_stats">query_stats</span>
+          </div>
+          <h2 className="text-2xl font-bold font-headline text-on-surface mb-2">No Market Data Available</h2>
+          <p className="text-on-surface-variant max-w-md mb-8">
+            We are currently waiting for the latest live feed for your requested crops. If no data appears, try updating your crop preferences to ensure they match active regional markets.
+          </p>
+          <Button onClick={() => navigate("settings")}>
+            Update Crop Preferences
+          </Button>
+        </div>
+        <MobileBottomNav variant="farmer" />
+      </DashboardShell>
+    );
+  }
 
   const localPrice =
     activeCrop.prices.find((p) => p.district === deferredDistrict) ?? activeCrop.prices[0];
@@ -369,16 +387,6 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
   // ── OVERVIEW (default) ────────────────────────────────────────
   return (
     <DashboardShell role="farmer" districtLabel={deferredDistrict}>
-      {/* ── DEMO DATA BANNER ── */}
-      {data.source === "mock" && (
-        <div className="mx-6 mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
-          <span className="material-symbols-outlined text-base" data-icon="warning">warning</span>
-          <span>
-            <strong>{dict.farmer.overview.demoBannerTitle}</strong>{" "}
-            {dict.farmer.overview.demoBannerDescription}
-          </span>
-        </div>
-      )}
       {/* ── HERO BANNER ── */}
       <section className="px-6 pt-8 pb-4">
         <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-900 to-emerald-700 text-white p-8 mb-6">

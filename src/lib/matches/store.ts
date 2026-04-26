@@ -89,7 +89,7 @@ function buildMatch(payload: CreateMatchPayload): MarketMatch {
 }
 
 export async function listMatchesForFarmer(farmerUserId: string, limit = 8) {
-  if (!hasSupabaseWriteConfig() || farmerUserId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     return Array.from(getMatchStore().values())
       .filter((match) => match.farmerUserId === farmerUserId)
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
@@ -112,7 +112,7 @@ export async function listMatchesForFarmer(farmerUserId: string, limit = 8) {
 }
 
 export async function listMatchesForCounterparty(counterpartyUserId: string, limit = 8) {
-  if (!hasSupabaseWriteConfig() || counterpartyUserId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     return Array.from(getMatchStore().values())
       .filter((match) => match.counterpartyUserId === counterpartyUserId)
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
@@ -135,7 +135,7 @@ export async function listMatchesForCounterparty(counterpartyUserId: string, lim
 }
 
 export async function findMatchById(matchId: string) {
-  if (!hasSupabaseWriteConfig() || matchId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     return getMatchStore().get(matchId) ?? null;
   }
 
@@ -160,11 +160,7 @@ export async function findMatchById(matchId: string) {
 export async function createMatch(payload: CreateMatchPayload) {
   const match = buildMatch(payload);
 
-  if (
-    !hasSupabaseWriteConfig() ||
-    (match.farmerUserId?.startsWith("demo-") ?? false) ||
-    (match.counterpartyUserId?.startsWith("demo-") ?? false)
-  ) {
+  if (!hasSupabaseWriteConfig()) {
     getMatchStore().set(match.id, match);
     return match;
   }
@@ -210,11 +206,7 @@ export async function updateMatchStatus(matchId: string, status: MatchStatus, no
     updatedAt: new Date().toISOString(),
   };
 
-  if (
-    !hasSupabaseWriteConfig() ||
-    (nextMatch.farmerUserId?.startsWith("demo-") ?? false) ||
-    (nextMatch.counterpartyUserId?.startsWith("demo-") ?? false)
-  ) {
+  if (!hasSupabaseWriteConfig()) {
     getMatchStore().set(matchId, nextMatch);
     return nextMatch;
   }

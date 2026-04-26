@@ -84,7 +84,7 @@ export async function createNotification(payload: CreateNotificationPayload) {
   let deliveryStatus = payload.deliveryStatus ?? "SENT";
   let sentAt: string | undefined = payload.sentAt ?? new Date().toISOString();
 
-  if (payload.channel === "WHATSAPP" && !payload.userId.startsWith("demo-")) {
+  if (payload.channel === "WHATSAPP") {
     try {
       const user = await findUserById(payload.userId);
 
@@ -109,7 +109,7 @@ export async function createNotification(payload: CreateNotificationPayload) {
     sentAt,
   });
 
-  if (!hasSupabaseWriteConfig() || notification.userId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     getNotificationStore().set(notification.id, notification);
     return notification;
   }
@@ -140,7 +140,7 @@ export async function createNotification(payload: CreateNotificationPayload) {
 }
 
 export async function listNotificationsForUser(userId: string, limit = 8) {
-  if (!hasSupabaseWriteConfig() || userId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     return Array.from(getNotificationStore().values())
       .filter((notification) => notification.userId === userId)
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
@@ -167,7 +167,7 @@ export async function markNotificationRead(notificationId: string) {
     (notification) => notification.id === notificationId,
   );
 
-  if (!hasSupabaseWriteConfig() || current?.userId.startsWith("demo-")) {
+  if (!hasSupabaseWriteConfig()) {
     if (!current) {
       return null;
     }
