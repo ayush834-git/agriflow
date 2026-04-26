@@ -353,7 +353,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
                   <div className="text-center">
                     <span className="block text-xs text-on-surface-variant">{dict.farmer.overview.marketDemand}</span>
                     <span className="text-lg font-bold text-tertiary">
-                      {activeCrop.topOpportunityScore > 0 ? (activeCrop.topOpportunityScore / 10).toFixed(1) : "—"}/10
+                      {activeCrop.routes[0] ? Math.min(10, activeCrop.routes[0].demandStrength * 5.5).toFixed(1) : "—"}/10
                     </span>
                   </div>
                   <div className="text-center border-l border-outline-variant/10">
