@@ -34,6 +34,12 @@ const envSchema = z.object({
   WEATHER_API_KEY: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   CRON_SECRET: z.string().optional(),
+  // Exotel voice call integration
+  EXOTEL_API_KEY: z.string().optional(),
+  EXOTEL_API_TOKEN: z.string().optional(),
+  EXOTEL_SID: z.string().optional(),
+  // Google Cloud Text-to-Speech (base64-encoded service account JSON)
+  GOOGLE_TTS_CREDENTIALS_JSON: z.string().optional(),
 });
 
 
