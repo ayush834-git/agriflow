@@ -269,14 +269,13 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
   const authenticated = clerkUserId ? await findUserByClerkId(clerkUserId) : null;
   
   // Fall back to demo farmer if no real profile is found
-  const activeFarmer: AppUser = (authenticated?.role === "FARMER")
-    ? authenticated
-    : { ...DEMO_FARMER_USERS[0], whatsappBotLanguage: undefined, address: null };
-
-  const isDemo = activeFarmer.id === DEMO_FARMER_USERS[0].id && (!authenticated || authenticated.role !== "FARMER");
+  const isDemo = !authenticated || authenticated.role !== "FARMER";
+  const activeFarmer: AppUser = isDemo
+    ? { ...DEMO_FARMER_USERS[0], whatsappBotLanguage: undefined, address: null }
+    : authenticated!;
 
   const cropPreferences = isDemo
-    ? (DEMO_FARMER_CROPS[activeFarmer.id] ?? [])
+    ? (DEMO_FARMER_CROPS[DEMO_FARMER_USERS[0].id] ?? [])
     : await listFarmerCropsForUser(activeFarmer.id);
 
   const baseData = await buildSharedDashboardData(
@@ -301,18 +300,21 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
       activeFarmer.whatsappBotLanguage ?? activeFarmer.preferredLanguage ?? "te",
   };
 
-  const [notifications, matches, listings, fpos] = await Promise.all([
-    listNotificationsForUser(profile.id, 6),
-    listMatchesForFarmer(profile.id, 6),
-    listListings({
-      farmerUserId: profile.id,
-      statuses: ["ACTIVE", "MATCHED"],
-    }),
-    listFposForDistrict({
-      district: profile.district,
-      cropSlug: baseData.defaultCropSlug,
-    }),
-  ]);
+  // Skip UUID-dependent DB calls when using demo profile (demo IDs are not valid UUIDs)
+  const [notifications, matches, listings, fpos] = isDemo
+    ? [[], [], [], []]
+    : await Promise.all([
+        listNotificationsForUser(profile.id, 6),
+        listMatchesForFarmer(profile.id, 6),
+        listListings({
+          farmerUserId: profile.id,
+          statuses: ["ACTIVE", "MATCHED"],
+        }),
+        listFposForDistrict({
+          district: profile.district,
+          cropSlug: baseData.defaultCropSlug,
+        }),
+      ]);
 
   return {
     ...baseData,
@@ -329,9 +331,10 @@ export async function buildFpoDashboardData(clerkUserId?: string | null): Promis
   const authenticated = clerkUserId ? await findUserByClerkId(clerkUserId) : null;
 
   // Fall back to demo FPO if no real profile is found
-  const registeredOwner: AppUser = (authenticated?.role === "FPO")
-    ? authenticated
-    : { ...DEMO_FPO_USERS[0], whatsappBotLanguage: undefined, address: null };
+  const isDemo = !authenticated || authenticated.role !== "FPO";
+  const registeredOwner: AppUser = isDemo
+    ? { ...DEMO_FPO_USERS[0], whatsappBotLanguage: undefined, address: null }
+    : authenticated!;
 
   const owner: FpoDashboardOwner = {
     id: registeredOwner.id,
@@ -363,6 +366,27 @@ export async function buildFpoDashboardData(clerkUserId?: string | null): Promis
         : [],
     },
   );
+
+  // Skip UUID-dependent DB calls when using demo profile (demo IDs are not valid UUIDs)
+  if (isDemo) {
+    return {
+      ...baseData,
+      owner,
+      inventory: [],
+      recommendations: [],
+      directoryListings: [],
+      notifications: [],
+      matches: [],
+      metrics: {
+        activeInventoryCount: 0,
+        urgentInventoryCount: 0,
+        criticalInventoryCount: 0,
+        atRiskQuantityKg: 0,
+        recommendationCount: 0,
+        liveMatchCount: 0,
+      },
+    };
+  }
 
   const [inventory, directoryListings, notifications, matches] =
     await Promise.all([
