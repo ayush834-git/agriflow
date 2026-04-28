@@ -4,34 +4,39 @@ import { useEffect, useState, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Filter, Search, RefreshCw } from "lucide-react";
-import { useI18n } from "@/lib/i18n/context";
+import { Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { Icon } from "leaflet";
 
 // Fix leaflet default icon issue in Next.js
-const DefaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  tooltipAnchor: [16, -28],
-  shadowSize: [41, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+let DefaultIcon: Icon | undefined;
+let BestMandiIcon: Icon | undefined;
 
-// Smart Feature: Best Mandi Icon (Gold)
-const BestMandiIcon = L.icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  tooltipAnchor: [16, -28],
-  shadowSize: [41, 41]
-});
+if (typeof window !== 'undefined') {
+  DefaultIcon = L.icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    tooltipAnchor: [16, -28],
+    shadowSize: [41, 41]
+  });
+  L.Marker.prototype.options.icon = DefaultIcon;
+
+  // Smart Feature: Best Mandi Icon (Gold)
+  BestMandiIcon = L.icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    tooltipAnchor: [16, -28],
+    shadowSize: [41, 41]
+  });
+}
 
 export type MandiData = {
   id: string;
@@ -62,7 +67,7 @@ function RecenterAutomatically({ lat, lng }: { lat: number; lng: number }) {
 // -----------------------------------------------------------------------------------
 const geocodeCache = new Map<string, {lat: number, lng: number}>();
 
-async function geocodeMandi(market: string, district: string, state: string): Promise<{lat: number, lng: number} | null> {
+export async function geocodeMandi(market: string, district: string, state: string): Promise<{lat: number, lng: number} | null> {
   const query = `${market}, ${district}, ${state}, India`;
   if (geocodeCache.has(query)) return geocodeCache.get(query) || null;
   
@@ -75,8 +80,8 @@ async function geocodeMandi(market: string, district: string, state: string): Pr
       geocodeCache.set(query, coords);
       return coords;
     }
-  } catch (e) {
-    console.error("Geocoding failed for", query);
+  } catch (error) {
+    console.error("Geocoding failed for", query, error);
   }
   return null;
 }
@@ -85,7 +90,7 @@ async function fetchAgmarknetData(apiKey: string, state?: string, commodity?: st
   try {
     // Example endpoint from data.gov.in for Agmarknet
     // You would replace the resource ID with the actual one for the dataset you need
-    const RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070"; 
+    // const RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070"; 
     
     // Build query parameters
     const params = new URLSearchParams({
@@ -150,7 +155,6 @@ function getDemoData(stateFilter?: string, commodityFilter?: string): MandiData[
 }
 
 export default function MandiMapLeaflet() {
-  const { dict } = useI18n();
   const [data, setData] = useState<MandiData[]>([]);
   const [loading, setLoading] = useState(true);
   
