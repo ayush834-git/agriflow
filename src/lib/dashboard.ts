@@ -17,10 +17,12 @@ import type { AppNotification } from "@/lib/notifications/types";
 import { listRecommendationsForInventory } from "@/lib/recommendations/store";
 import type { MovementRecommendation } from "@/lib/recommendations/types";
 import {
+  DEMO_FARMER_CROPS,
   DEMO_FARMER_DEFAULT_ID,
   DEMO_FARMER_USERS,
   DEMO_FPO_CONTACT,
   DEMO_FPO_OWNER_ID,
+  DEMO_FPO_USERS,
 } from "@/lib/users/demo";
 import {
   findUserByClerkId,
@@ -265,13 +267,17 @@ export async function buildSharedDashboardData(
 
 export async function buildFarmerDashboardData(clerkUserId?: string | null): Promise<FarmerDashboardData> {
   const authenticated = clerkUserId ? await findUserByClerkId(clerkUserId) : null;
-  if (!authenticated || authenticated.role !== "FARMER") {
-    throw new Error("Unauthorized: Farmer profile not found.");
-  }
+  
+  // Fall back to demo farmer if no real profile is found
+  const activeFarmer: AppUser = (authenticated?.role === "FARMER")
+    ? authenticated
+    : { ...DEMO_FARMER_USERS[0], whatsappBotLanguage: undefined, address: null };
 
-  const activeFarmer = authenticated;
+  const isDemo = activeFarmer.id === DEMO_FARMER_USERS[0].id && (!authenticated || authenticated.role !== "FARMER");
 
-  const cropPreferences = await listFarmerCropsForUser(activeFarmer.id);
+  const cropPreferences = isDemo
+    ? (DEMO_FARMER_CROPS[activeFarmer.id] ?? [])
+    : await listFarmerCropsForUser(activeFarmer.id);
 
   const baseData = await buildSharedDashboardData(
     cropPreferences.map(c => c.cropSlug),
@@ -321,11 +327,12 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
 
 export async function buildFpoDashboardData(clerkUserId?: string | null): Promise<FpoDashboardData> {
   const authenticated = clerkUserId ? await findUserByClerkId(clerkUserId) : null;
-  if (!authenticated || authenticated.role !== "FPO") {
-    throw new Error("Unauthorized: FPO profile not found.");
-  }
 
-  const registeredOwner = authenticated;
+  // Fall back to demo FPO if no real profile is found
+  const registeredOwner: AppUser = (authenticated?.role === "FPO")
+    ? authenticated
+    : { ...DEMO_FPO_USERS[0], whatsappBotLanguage: undefined, address: null };
+
   const owner: FpoDashboardOwner = {
     id: registeredOwner.id,
     fullName: registeredOwner.fullName,
