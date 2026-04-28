@@ -22,6 +22,8 @@ function getCachedFarmerData(clerkUserId: string | null) {
   )();
 }
 
+import { redirect } from "next/navigation";
+
 async function DashboardContent() {
   let clerkUserId: string | null = null;
   try {
@@ -31,7 +33,16 @@ async function DashboardContent() {
     clerkUserId = null;
   }
 
-  const data = await getCachedFarmerData(clerkUserId);
+  let data;
+  try {
+    data = await getCachedFarmerData(clerkUserId);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      redirect("/register/farmer");
+    }
+    throw error;
+  }
+  
   return <FarmerDashboardClient data={data} />;
 }
 

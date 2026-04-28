@@ -19,6 +19,8 @@ function getCachedFpoData(clerkUserId: string | null) {
   )();
 }
 
+import { redirect } from "next/navigation";
+
 async function FpoContent() {
   let clerkUserId: string | null = null;
   try {
@@ -28,7 +30,16 @@ async function FpoContent() {
     clerkUserId = null;
   }
 
-  const data = await getCachedFpoData(clerkUserId);
+  let data;
+  try {
+    data = await getCachedFpoData(clerkUserId);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      redirect("/register/fpo");
+    }
+    throw error;
+  }
+
   return <FpoDashboardClient data={data} />;
 }
 
