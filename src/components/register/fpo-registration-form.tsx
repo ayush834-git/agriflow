@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useUser } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ type FpoResult = {
 export function FpoRegistrationForm() {
   const searchParams = useSearchParams();
   const { dict } = useI18n();
+  const { user } = useUser();
   const [isPending, startTransition] = useTransition();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -75,6 +77,7 @@ export function FpoRegistrationForm() {
           state: stateName,
           serviceRadiusKm: Number(serviceRadiusKm),
           serviceSummary,
+          clerkUserId: user?.id ?? null,
         }),
       });
 

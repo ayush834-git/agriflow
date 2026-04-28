@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useUser } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,6 +70,7 @@ function firstFieldError(messages?: string[]) {
 export function FarmerRegistrationForm() {
   const searchParams = useSearchParams();
   const { dict } = useI18n();
+  const { user } = useUser();
   const [isPending, startTransition] = useTransition();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
@@ -122,6 +124,7 @@ export function FarmerRegistrationForm() {
             district:
               normalizedDistrict.length >= 2 ? normalizedDistrict : undefined,
           })),
+          clerkUserId: user?.id ?? null,
         }),
       });
 
