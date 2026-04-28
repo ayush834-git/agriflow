@@ -2,27 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
-import { unstable_cache } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { FarmerDashboardClient } from "@/components/dashboard/farmer-dashboard-client";
 import { buildFarmerDashboardData } from "@/lib/dashboard";
+import { findUserByClerkId } from "@/lib/users/store";
 import DashboardLoading from "./loading";
-
-// Cache dashboard data per Clerk user for 5 minutes.
-// This survives serverless cold starts and prevents repeat API calls.
-function getCachedFarmerData(clerkUserId: string | null) {
-  return unstable_cache(
-    () => buildFarmerDashboardData(clerkUserId),
-    // Cache key: unique per user (or "guest" for unauthenticated)
-    ["farmer-dashboard", clerkUserId ?? "guest"],
-    {
-      revalidate: 5 * 60, // 5 minutes
-      tags: [`farmer-${clerkUserId ?? "guest"}`],
-    },
-  )();
-}
-
-import { redirect } from "next/navigation";
 
 async function DashboardContent() {
   let clerkUserId: string | null = null;
@@ -33,16 +18,20 @@ async function DashboardContent() {
     clerkUserId = null;
   }
 
-  let data;
-  try {
-    data = await getCachedFarmerData(clerkUserId);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("Unauthorized")) {
-      redirect("/register/farmer");
+  // If logged in as FPO, redirect to FPO dashboard
+  if (clerkUserId) {
+    try {
+      const user = await findUserByClerkId(clerkUserId);
+      if (user?.role === "FPO") {
+        redirect("/dashboard/fpo");
+      }
+    } catch {
+      // ignore — proceed with farmer dashboard
     }
-    throw error;
   }
-  
+
+  // No caching — always fetch fresh so registration is immediately reflected
+  const data = await buildFarmerDashboardData(clerkUserId);
   return <FarmerDashboardClient data={data} />;
 }
 
