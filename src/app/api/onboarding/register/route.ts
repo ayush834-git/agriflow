@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { auth } from "@clerk/nextjs/server";
 
 import {
   parseFarmerRegistration,
@@ -12,10 +13,21 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as { role?: string };
+    // Get clerk user ID server-side (most reliable source)
+    let serverClerkUserId: string | null = null;
+    try {
+      const session = await auth();
+      serverClerkUserId = session.userId ?? null;
+    } catch {
+      // Clerk auth may not be configured; fall through
+    }
+
+    const payload = (await request.json()) as { role?: string; clerkUserId?: string };
+    // Prefer server-side clerk ID, fall back to client-provided one
+    const clerkUserId = serverClerkUserId || payload.clerkUserId || undefined;
 
     if (payload.role === "FARMER") {
-      const registration = parseFarmerRegistration(payload);
+      const registration = parseFarmerRegistration({ ...payload, clerkUserId });
       const result = await registerFarmer(registration);
 
       return NextResponse.json({
@@ -27,7 +39,7 @@ export async function POST(request: Request) {
     }
 
     if (payload.role === "FPO") {
-      const registration = parseFpoRegistration(payload);
+      const registration = parseFpoRegistration({ ...payload, clerkUserId });
       const result = await registerFpo(registration);
 
       return NextResponse.json({

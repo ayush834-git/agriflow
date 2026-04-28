@@ -12,6 +12,9 @@ const supportedLanguageSchema = z.enum(["te", "hi", "kn", "en"]);
 const settingsSchema = z.object({
   userId: z.string().trim().min(1, "Missing userId."),
   role: z.enum(["FARMER", "FPO"]),
+  fullName: z.string().trim().min(1).max(200).optional(),
+  email: z.string().trim().email().optional(),
+  phone: z.string().trim().min(8).max(20).optional(),
   preferredLanguage: supportedLanguageSchema,
   whatsappBotLanguage: supportedLanguageSchema.optional(),
   address: z.string().trim().max(300).optional().nullable(),
@@ -47,6 +50,9 @@ export async function POST(request: NextRequest) {
 
     const updateInput: UpdateUserSettingsInput = {
       userId: payload.userId,
+      fullName: payload.fullName,
+      email: payload.email,
+      phone: payload.phone,
       preferredLanguage: payload.preferredLanguage,
       whatsappBotLanguage: payload.whatsappBotLanguage,
       address: payload.address,

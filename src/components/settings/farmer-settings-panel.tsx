@@ -11,6 +11,7 @@ import type { SupportedLanguage } from "@/lib/whatsapp/types";
 
 type FarmerSettingsPanelProps = {
   userId: string;
+  fullName?: string | null;
   phone?: string | null;
   initialLanguage: SupportedLanguage;
   initialAddress?: string | null;
@@ -42,7 +43,8 @@ const LANGUAGE_OPTIONS: Array<{ value: SupportedLanguage; label: string }> = [
 
 export function FarmerSettingsPanel({
   userId,
-  phone,
+  fullName: initialFullName,
+  phone: initialPhone,
   initialLanguage,
   initialAddress,
   initialDistrict,
@@ -51,6 +53,8 @@ export function FarmerSettingsPanel({
   onLanguageUpdated,
 }: FarmerSettingsPanelProps) {
   const [isPending, startTransition] = useTransition();
+  const [fullName, setFullName] = useState(initialFullName ?? "");
+  const [phone, setPhone] = useState(initialPhone ?? "");
   const [preferredLanguage, setPreferredLanguage] =
     useState<SupportedLanguage>(initialLanguage);
   const [address, setAddress] = useState(initialAddress ?? "");
@@ -88,6 +92,8 @@ export function FarmerSettingsPanel({
           body: JSON.stringify({
             userId,
             role: "FARMER",
+            fullName: fullName.trim() || undefined,
+            phone: phone.trim() || undefined,
             preferredLanguage,
             whatsappBotLanguage: preferredLanguage,
             address: address.trim() || null,
@@ -123,10 +129,22 @@ export function FarmerSettingsPanel({
         <CardTitle className="text-xl">Settings</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <label className="space-y-2 text-sm font-medium">
-            <span>Login account</span>
-            <Input value={phone ?? "Phone not available"} readOnly />
+            <span>Full name</span>
+            <Input
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Your name"
+            />
+          </label>
+          <label className="space-y-2 text-sm font-medium">
+            <span>Phone number</span>
+            <Input
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+91..."
+            />
           </label>
           <label className="space-y-2 text-sm font-medium">
             <span>App + WhatsApp bot language</span>

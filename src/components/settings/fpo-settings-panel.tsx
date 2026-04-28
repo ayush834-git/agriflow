@@ -12,6 +12,7 @@ import type { SupportedLanguage } from "@/lib/whatsapp/types";
 
 type FpoSettingsPanelProps = {
   userId: string;
+  fullName?: string | null;
   email?: string | null;
   phone?: string | null;
   initialLanguage: SupportedLanguage;
@@ -46,8 +47,9 @@ const LANGUAGE_OPTIONS: Array<{ value: SupportedLanguage; label: string }> = [
 
 export function FpoSettingsPanel({
   userId,
-  email,
-  phone,
+  fullName: initialFullName,
+  email: initialEmail,
+  phone: initialPhone,
   initialLanguage,
   initialAddress,
   initialState,
@@ -59,6 +61,9 @@ export function FpoSettingsPanel({
   onLanguageUpdated,
 }: FpoSettingsPanelProps) {
   const [isPending, startTransition] = useTransition();
+  const [fullName, setFullName] = useState(initialFullName ?? "");
+  const [email, setEmail] = useState(initialEmail ?? "");
+  const [phone, setPhone] = useState(initialPhone ?? "");
   const [preferredLanguage, setPreferredLanguage] =
     useState<SupportedLanguage>(initialLanguage);
   const [organizationName, setOrganizationName] = useState(
@@ -122,6 +127,9 @@ export function FpoSettingsPanel({
           body: JSON.stringify({
             userId,
             role: "FPO",
+            fullName: fullName.trim() || undefined,
+            email: email.trim() || undefined,
+            phone: phone.trim() || undefined,
             preferredLanguage,
             whatsappBotLanguage: preferredLanguage,
             address: address.trim() || null,
@@ -162,12 +170,28 @@ export function FpoSettingsPanel({
       <CardContent className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-3">
           <label className="space-y-2 text-sm font-medium">
+            <span>Full name</span>
+            <Input
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Your name"
+            />
+          </label>
+          <label className="space-y-2 text-sm font-medium">
             <span>Login email</span>
-            <Input value={email ?? "Email not available"} readOnly />
+            <Input
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="email@example.com"
+            />
           </label>
           <label className="space-y-2 text-sm font-medium">
             <span>Phone</span>
-            <Input value={phone ?? "Phone not available"} readOnly />
+            <Input
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+91..."
+            />
           </label>
           <label className="space-y-2 text-sm font-medium">
             <span>App + WhatsApp bot language</span>

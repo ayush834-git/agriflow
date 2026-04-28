@@ -40,6 +40,9 @@ type PersistedUserRow = {
 
 export type UpdateUserSettingsInput = {
   userId: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
   preferredLanguage?: SupportedLanguage;
   whatsappBotLanguage?: SupportedLanguage;
   address?: string | null;
@@ -655,6 +658,9 @@ export async function updateUserSettings(input: UpdateUserSettingsInput) {
 
   const nextUser: AppUser = {
     ...existing,
+    fullName: input.fullName ?? existing.fullName,
+    email: input.email ?? existing.email ?? null,
+    phone: input.phone ?? existing.phone ?? null,
     preferredLanguage,
     whatsappBotLanguage,
     address: input.address ?? existing.address ?? null,
@@ -769,6 +775,9 @@ export async function updateUserSettings(input: UpdateUserSettingsInput) {
   const { data, error } = await admin
     .from("users")
     .update({
+      full_name: nextUser.fullName,
+      email: nextUser.email,
+      phone: nextUser.phone,
       preferred_language: preferredLanguage,
       district: nextUser.district,
       state: nextUser.state,

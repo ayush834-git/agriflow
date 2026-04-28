@@ -345,6 +345,7 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
           <TabHeader title={dict.farmer.pageHeaders.settingsTitle} subtitle={dict.farmer.pageHeaders.settingsSub} />
           <FarmerSettingsPanel
             userId={data.profile.id}
+            fullName={data.profile.fullName}
             phone={data.profile.phone}
             initialLanguage={preferredLanguage}
             initialAddress={data.profile.address}

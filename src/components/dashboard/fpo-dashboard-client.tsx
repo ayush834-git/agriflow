@@ -200,9 +200,17 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
               <div className="bg-surface-container-lowest rounded-xl overflow-hidden">
                 <div className="px-6 py-4 flex justify-between items-center bg-surface-container-low">
                   <h2 className="font-headline font-bold text-lg">{dict.fpo.overview.activeInventory}</h2>
-                  <button className="text-primary font-semibold text-sm flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span> {dict.fpo.overview.filter}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setSelectedTab("inventory")}
+                      className="bg-primary text-white font-semibold text-sm flex items-center gap-1.5 px-4 py-2 rounded-lg hover:bg-primary/90 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-sm" data-icon="add">add</span> Add Stock
+                    </button>
+                    <button className="text-primary font-semibold text-sm flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span> {dict.fpo.overview.filter}
+                    </button>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -253,7 +261,13 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
                       {inventory.length === 0 && (
                         <tr>
                           <td colSpan={6} className="px-6 py-10 text-center text-on-surface-variant">
-                            No inventory — add stock to start tracking.
+                            <p className="mb-4">No inventory — add stock to start tracking.</p>
+                            <button
+                              onClick={() => setSelectedTab("inventory")}
+                              className="bg-primary text-white font-semibold text-sm px-6 py-2.5 rounded-lg hover:bg-primary/90 transition-all inline-flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-sm" data-icon="add">add</span> Add Your First Stock
+                            </button>
                           </td>
                         </tr>
                       )}
@@ -477,6 +491,7 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
           <h1 className="text-3xl font-extrabold font-headline mb-6">{dict.fpo.pageHeaders.settingsTitle}</h1>
           <FpoSettingsPanel
             userId={data.owner.id}
+            fullName={data.owner.fullName}
             email={data.owner.email}
             phone={data.owner.phone}
             initialLanguage={data.owner.preferredLanguage}
