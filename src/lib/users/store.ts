@@ -476,6 +476,16 @@ export async function registerFarmer(payload: FarmerRegistrationPayload) {
     "phone",
   );
 
+  // Guarantee clerk_user_id is linked — the upsert on "phone" may not overwrite
+  // an existing clerk_user_id if there was a conflict, so force-set it by row ID.
+  if (payload.clerkUserId && user.id) {
+    const admin = getSupabaseAdminClient();
+    await admin
+      .from("users")
+      .update({ clerk_user_id: payload.clerkUserId } as never)
+      .eq("id", user.id);
+  }
+
   const admin = getSupabaseAdminClient();
   const { error: deleteError } = await admin
     .from("farmer_crops")
