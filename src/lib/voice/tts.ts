@@ -21,20 +21,25 @@ const VOICE_MAP: Record<VoiceLang, VoiceConfig> = {
 
 let ttsClient: TextToSpeechClient | null = null;
 
-function getTtsClient(): TextToSpeechClient {
+function getTtsClient(): TextToSpeechClient | null {
   if (ttsClient) return ttsClient;
 
   const env = getEnv();
   if (!env.GOOGLE_TTS_CREDENTIALS_JSON) {
-    throw new Error("GOOGLE_TTS_CREDENTIALS_JSON is not set.");
+    return null; // Return null gracefully if no credentials
   }
 
-  const creds = JSON.parse(
-    Buffer.from(env.GOOGLE_TTS_CREDENTIALS_JSON, "base64").toString("utf-8"),
-  ) as Record<string, unknown>;
+  try {
+    const creds = JSON.parse(
+      Buffer.from(env.GOOGLE_TTS_CREDENTIALS_JSON, "base64").toString("utf-8"),
+    ) as Record<string, unknown>;
 
-  ttsClient = new TextToSpeechClient({ credentials: creds });
-  return ttsClient;
+    ttsClient = new TextToSpeechClient({ credentials: creds });
+    return ttsClient;
+  } catch (error) {
+    console.warn("[voice:tts] Failed to parse GOOGLE_TTS_CREDENTIALS_JSON");
+    return null;
+  }
 }
 
 // ── Synthesis ─────────────────────────────────────────────────────────────────
@@ -42,28 +47,39 @@ function getTtsClient(): TextToSpeechClient {
 export async function synthesizeSpeech(
   text: string,
   lang: VoiceLang,
-): Promise<Buffer> {
+): Promise<Buffer | null> {
   const client = getTtsClient();
-  const voice = VOICE_MAP[lang];
-
-  const [response] = await client.synthesizeSpeech({
-    input: { text },
-    voice: {
-      languageCode: voice.languageCode,
-      name: voice.name,
-      ssmlGender: voice.ssmlGender,
-    },
-    audioConfig: {
-      audioEncoding: "MP3",
-    },
-  });
-
-  const audioContent = response.audioContent;
-  if (!audioContent) {
-    throw new Error("Google TTS returned no audioContent.");
+  
+  if (!client) {
+    return null; // Return null so the webhook falls back to Exotel <Say>
   }
 
-  return Buffer.from(
-    typeof audioContent === "string" ? audioContent : audioContent,
-  );
+  const voice = VOICE_MAP[lang];
+
+  try {
+    const [response] = await client.synthesizeSpeech({
+      input: { text },
+      voice: {
+        languageCode: voice.languageCode,
+        name: voice.name,
+        ssmlGender: voice.ssmlGender,
+      },
+      audioConfig: {
+        audioEncoding: "MP3",
+      },
+    });
+
+    const audioContent = response.audioContent;
+    if (!audioContent) {
+      console.warn("[voice:tts] Google TTS returned no audioContent.");
+      return null;
+    }
+
+    return Buffer.from(
+      typeof audioContent === "string" ? audioContent : audioContent,
+    );
+  } catch (error) {
+    console.error("[voice:tts] Synthesis failed:", error);
+    return null;
+  }
 }

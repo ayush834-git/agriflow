@@ -67,8 +67,8 @@ const ListingManager = dynamic(
   { ssr: false, loading: () => <PanelLoading label="listings" /> },
 );
 
-const FpoHeatmapHero = dynamic(
-  () => import("@/components/dashboard/fpo-heatmap-hero").then((m) => m.FpoHeatmapHero),
+const MandiMapLeaflet = dynamic(
+  () => import("@/components/dashboard/mandi-map-leaflet"),
   { ssr: false, loading: () => <PanelLoading label="heatmap" /> },
 );
 
@@ -175,33 +175,8 @@ export function FarmerDashboardClient({ data }: FarmerDashboardClientProps) {
       <DashboardShell role="farmer" districtLabel={deferredDistrict}>
         <div className="p-6 md:p-8">
           <TabHeader title={dict.farmer.pageHeaders.heatmapTitle} subtitle={dict.farmer.pageHeaders.heatmapSub} />
-          <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10 mb-6">
-            <FpoHeatmapHero
-              crop={activeCrop}
-              availableCrops={data.crops}
-              districts={data.districts}
-              selectedDistrict={deferredDistrict}
-              generatedAt={data.generatedAt}
-              source={data.source}
-              onSelectDistrict={(d) => startTransition(() => setSelectedDistrict(d))}
-              onSelectCrop={(c) => startTransition(() => setSelectedCropSlug(c))}
-            />
-            <div className="p-4 bg-surface-container-low border-t border-outline-variant/10 grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <span className="block text-xs text-on-surface-variant">{dict.farmer.overview.marketDemand}</span>
-                <span className="text-lg font-bold text-tertiary">
-                  {activeCrop.routes[0] ? Math.min(10, activeCrop.routes[0].demandStrength * 5.5).toFixed(1) : "—"}/10
-                </span>
-              </div>
-              <div className="text-center border-l border-outline-variant/10">
-                <span className="block text-xs text-on-surface-variant">{dict.farmer.overview.priceChanges}</span>
-                <span className="text-lg font-bold text-on-surface">
-                  {activeCrop.routes.length > 3
-                    ? dict.recommendations.urgency.high
-                    : dict.recommendations.urgency.low}
-                </span>
-              </div>
-            </div>
+          <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10 mb-6 h-[600px]">
+            <MandiMapLeaflet />
           </div>
         </div>
         <MobileBottomNav variant="farmer" />

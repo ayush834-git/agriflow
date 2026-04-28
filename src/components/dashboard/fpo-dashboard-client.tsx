@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
-import { FpoHeatmapHero } from "@/components/dashboard/fpo-heatmap-hero";
+const MandiMapLeaflet = dynamic(() => import("@/components/dashboard/mandi-map-leaflet"), { ssr: false, loading: () => <div className="p-4 text-center">Loading map...</div> });
 import { AiChatWidget } from "@/components/dashboard/ai-chat-widget";
 import type { FpoDashboardData } from "@/lib/dashboard";
 import type { InventoryItem } from "@/lib/inventory/types";
@@ -339,16 +339,9 @@ export function FpoDashboardClient({ data }: FpoDashboardClientProps) {
                   <h3 className="font-headline font-bold mb-1">{dict.fpo.overview.marketShortageMap}</h3>
                   <p className="text-xs text-on-surface-variant mb-4">{dict.fpo.overview.realtimeHeatmap}</p>
                 </div>
-                <FpoHeatmapHero
-                  crop={activeCrop}
-                  availableCrops={data.crops}
-                  districts={data.districts}
-                  selectedDistrict={deferredDistrict}
-                  generatedAt={data.generatedAt}
-                  source={data.source}
-                  onSelectDistrict={(d) => startTransition(() => setSelectedDistrict(d))}
-                  onSelectCrop={(c) => startTransition(() => setSelectedCropSlug(c))}
-                />
+                <div className="h-[400px]">
+                  <MandiMapLeaflet />
+                </div>
                 <div className="p-4 bg-surface-container-low border-t border-outline-variant/10 grid grid-cols-2 gap-4">
                   <div className="text-center">
                     <span className="block text-xs text-on-surface-variant">{dict.farmer.overview.marketDemand}</span>

@@ -214,8 +214,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     let audioId: string | null = null;
     try {
       const mp3 = await synthesizeSpeech(responseText, session.lang);
-      audioId = randomUUID();
-      await storeAudio(audioId, mp3);
+      if (mp3) {
+        audioId = randomUUID();
+        await storeAudio(audioId, mp3);
+      }
     } catch (err) {
       console.error("[voice:tts]", err);
       // audioId stays null → fall through to <Say>
