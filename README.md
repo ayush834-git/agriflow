@@ -226,6 +226,7 @@ Take the generated URL (e.g., `https://abc-123.ngrok.app`) and configure it in T
 Vercel handles cron jobs in production via `vercel.json`. Locally, you can manually trigger them:
 ```bash
 curl "http://localhost:3000/api/cron/fetch-prices?mode=mock&historyDays=7"
+by siddhu and aayush
 ```
 
 ### Production Deployment
