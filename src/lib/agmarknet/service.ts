@@ -178,7 +178,7 @@ export async function resolveAgmarknetFeed(
       };
     }
 
-    if (mode === "live" || mode === "auto") {
+    if (mode === "live") {
       return {
         source: "live",
         records: [],
@@ -195,13 +195,13 @@ export async function resolveAgmarknetFeed(
       records: listDemoMarketRecords(normalizedOptions),
       warnings: [
         error instanceof Error
-          ? `Falling back to the seeded demo feed: ${error.message}`
-          : "Falling back to the seeded demo feed because the live fetch failed.",
+          ? `Live Agmarknet fetch failed (${error.message}). Showing sample market dataset.`
+          : "Live Agmarknet fetch failed. Showing sample market dataset.",
       ],
     };
   }
 
-  if (mode === "live" || mode === "auto") {
+  if (mode === "live") {
     return {
       source: "live",
       records: [],
@@ -213,7 +213,7 @@ export async function resolveAgmarknetFeed(
     source: "mock",
     records: listDemoMarketRecords(normalizedOptions),
     warnings: [
-      "Live Agmarknet returned no records, so the seeded demo feed was used instead.",
+      "Live Agmarknet returned no records for selected filters. Showing sample market dataset.",
     ],
   };
 }

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getRedisClient } from "@/lib/redis";
 import { buildTwimlMessage, processWhatsAppMessage } from "@/lib/whatsapp/service";
 import type { IncomingWhatsAppMessage } from "@/lib/whatsapp/types";
+import { verifyTwilioSignature } from "@/lib/twilio/auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -95,6 +96,18 @@ function parseIncomingMessage(formData: FormData): IncomingWhatsAppMessage {
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
+
+    // Verify Twilio webhook signature
+    const authCheck = verifyTwilioSignature(request, formData);
+    if (!authCheck.valid) {
+      return new NextResponse(buildTwimlMessage(authCheck.reason ?? "Forbidden"), {
+        status: 403,
+        headers: {
+          "Content-Type": "application/xml; charset=utf-8",
+        },
+      });
+    }
+
     const incomingMessage = parseIncomingMessage(formData);
 
     if (!incomingMessage.from) {

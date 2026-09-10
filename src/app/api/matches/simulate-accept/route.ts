@@ -34,6 +34,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify caller identity if Clerk authenticated
+    try {
+      const { auth } = await import("@clerk/nextjs/server");
+      const { findUserByClerkId } = await import("@/lib/users/store");
+      const session = await auth();
+      if (session.userId) {
+        const user = await findUserByClerkId(session.userId);
+        if (user && user.id !== match.farmerUserId) {
+          return NextResponse.json(
+            { ok: false, error: "Forbidden: You do not own this match." },
+            { status: 403 }
+          );
+        }
+      }
+    } catch {
+      // Continue for demo mode if Clerk unconfigured
+    }
+
     const result = await acceptPendingMatchForFarmer(match.farmerUserId, match.id);
 
     return NextResponse.json({

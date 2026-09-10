@@ -5,6 +5,8 @@ import { hasSupabaseWriteConfig } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   DEMO_FARMER_DEFAULT_ID,
+  DEMO_FARMER_RAMESH_ID,
+  DEMO_FARMER_SARITHA_ID,
   DEMO_FARMER_USERS,
 } from "@/lib/users/demo";
 import type {
@@ -115,13 +117,13 @@ function seedDemoListings(store: Map<string, ListingItem>) {
     {
       id: "demo-listing-onion-ballari",
       payload: {
-        farmerUserId: "demo-farmer-ramesh",
+        farmerUserId: DEMO_FARMER_RAMESH_ID,
         cropSlug: "onion",
         quantityKg: 5200,
         askingPricePerKg: 21,
         qualityGrade: "A",
         district: "Ballari",
-        state: states.get("demo-farmer-ramesh") ?? "Karnataka",
+        state: states.get(DEMO_FARMER_RAMESH_ID) ?? "Karnataka",
         availableFrom: "2026-04-08",
         availableUntil: "2026-04-12",
         notes: "Stored onions with moderate ventilation.",
@@ -130,13 +132,13 @@ function seedDemoListings(store: Map<string, ListingItem>) {
     {
       id: "demo-listing-chilli-khammam",
       payload: {
-        farmerUserId: "demo-farmer-saritha",
+        farmerUserId: DEMO_FARMER_SARITHA_ID,
         cropSlug: "green-chilli",
         quantityKg: 1800,
         askingPricePerKg: 46,
         qualityGrade: "A+",
         district: "Khammam",
-        state: states.get("demo-farmer-saritha") ?? "Telangana",
+        state: states.get(DEMO_FARMER_SARITHA_ID) ?? "Telangana",
         availableFrom: "2026-04-08",
         availableUntil: "2026-04-09",
         notes: "Needs dispatch within 24 hours to preserve freshness.",

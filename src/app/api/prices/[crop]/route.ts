@@ -1,11 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getRequestedMode, parseNumberParam } from "@/lib/api";
+import { getRequestedMode, parseBooleanFlag, parseNumberParam } from "@/lib/api";
 import { getTargetCropOrThrow } from "@/lib/agmarknet/catalog";
 import { resolveAgmarknetFeed } from "@/lib/agmarknet/service";
 import { hasSupabaseWriteConfig } from "@/lib/env";
 import { latestPricesForCrop } from "@/lib/market/engine";
+import { computeMarketForecast } from "@/lib/market/forecast";
 import { loadStoredPricesForCrop } from "@/lib/market/repository";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,8 @@ export async function GET(
     const { crop } = await context.params;
     const targetCrop = getTargetCropOrThrow(crop);
     const limit = parseNumberParam(request.nextUrl.searchParams.get("limit"), 15);
+    const districtFilter = request.nextUrl.searchParams.get("district");
+    const wantForecast = parseBooleanFlag(request.nextUrl.searchParams.get("forecast"));
     const mode = getRequestedMode(request);
     let prices = await loadStoredPricesForCrop(targetCrop.slug);
     let source: "database" | "live" | "mock" = hasSupabaseWriteConfig()
@@ -39,7 +42,26 @@ export async function GET(
       warnings.push("Using the seeded demo market snapshot.");
     }
 
-    const latest = latestPricesForCrop(prices, targetCrop.slug).slice(0, limit);
+    let matchingRecords = prices;
+    if (districtFilter) {
+      const filteredByDistrict = prices.filter(
+        (p) => p.district.toLowerCase() === districtFilter.toLowerCase(),
+      );
+      if (filteredByDistrict.length > 0) {
+        matchingRecords = filteredByDistrict;
+      }
+    }
+
+    const latest = latestPricesForCrop(matchingRecords, targetCrop.slug).slice(0, limit);
+
+    const forecast = wantForecast
+      ? computeMarketForecast(prices, {
+          cropName: targetCrop.name,
+          cropSlug: targetCrop.slug,
+          district: districtFilter ?? undefined,
+          source,
+        })
+      : undefined;
 
     return NextResponse.json(
       {
@@ -48,6 +70,7 @@ export async function GET(
           name: targetCrop.name,
         },
         source,
+        dataFreshness: source === "live" ? "LIVE" : source === "database" ? "STALE" : "DEMO",
         count: latest.length,
         prices: latest.map((record) => ({
           district: record.district,
@@ -60,6 +83,7 @@ export async function GET(
           arrivalsTonnes: record.arrivalsTonnes,
           fetchedAt: record.fetchedAt,
         })),
+        forecast,
         warnings,
       },
       {

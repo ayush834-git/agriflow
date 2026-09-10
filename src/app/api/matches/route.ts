@@ -8,8 +8,15 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const farmerUserId = request.nextUrl.searchParams.get("farmerUserId");
-    const counterpartyUserId = request.nextUrl.searchParams.get("counterpartyUserId");
+    let farmerUserId = request.nextUrl.searchParams.get("farmerUserId");
+    let counterpartyUserId = request.nextUrl.searchParams.get("counterpartyUserId");
+
+    if (farmerUserId === "demo-farmer-ramu") {
+      farmerUserId = "00000000-0000-0000-0000-000000000001";
+    }
+    if (counterpartyUserId === "demo-fpo-suresh") {
+      counterpartyUserId = "00000000-0000-0000-0000-000000000011";
+    }
 
     if (!farmerUserId && !counterpartyUserId) {
       return NextResponse.json(

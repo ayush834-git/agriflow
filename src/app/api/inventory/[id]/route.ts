@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { updateInventory, deleteInventory } from "@/lib/inventory/store";
+import { auth } from "@clerk/nextjs/server";
+import { updateInventory, deleteInventory, findInventoryById } from "@/lib/inventory/store";
+import { findUserByClerkId } from "@/lib/users/store";
 
 export async function PUT(
   request: Request,
@@ -7,6 +9,29 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const item = await findInventoryById(id);
+    if (!item) {
+      return NextResponse.json(
+        { ok: false, error: "Inventory item not found." },
+        { status: 404 }
+      );
+    }
+
+    try {
+      const session = await auth();
+      if (session.userId) {
+        const user = await findUserByClerkId(session.userId);
+        if (user && item.ownerUserId && item.ownerUserId !== user.id) {
+          return NextResponse.json(
+            { ok: false, error: "Forbidden: You do not own this inventory item." },
+            { status: 403 }
+          );
+        }
+      }
+    } catch {
+      // Unauthenticated
+    }
+
     const body = await request.json();
     const inventory = await updateInventory(id, body);
     
@@ -26,6 +51,29 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const item = await findInventoryById(id);
+    if (!item) {
+      return NextResponse.json(
+        { ok: false, error: "Inventory item not found." },
+        { status: 404 }
+      );
+    }
+
+    try {
+      const session = await auth();
+      if (session.userId) {
+        const user = await findUserByClerkId(session.userId);
+        if (user && item.ownerUserId && item.ownerUserId !== user.id) {
+          return NextResponse.json(
+            { ok: false, error: "Forbidden: You do not own this inventory item." },
+            { status: 403 }
+          );
+        }
+      }
+    } catch {
+      // Unauthenticated
+    }
+
     await deleteInventory(id);
     
     return NextResponse.json({ ok: true });

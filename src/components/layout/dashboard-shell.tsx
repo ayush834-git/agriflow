@@ -13,6 +13,25 @@ type DashboardShellProps = {
   districtLabel?: string;
 };
 
+const hasClerkKey = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+function ClerkAuthControl({ signInLabel }: { signInLabel: string }) {
+  const { isSignedIn, isLoaded } = useAuth();
+  if (!isLoaded) return null;
+
+  if (isSignedIn) {
+    return <UserButton appearance={{ elements: { avatarBox: "h-9 w-9" } }} />;
+  }
+
+  return (
+    <SignInButton mode="redirect">
+      <button className="px-2 text-xs font-semibold text-primary">
+        {signInLabel}
+      </button>
+    </SignInButton>
+  );
+}
+
 export function DashboardShell({
   children,
   role,
@@ -20,7 +39,6 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isSignedIn, isLoaded } = useAuth();
   const { dict, lang, setLang } = useI18n();
 
   const currentTab = searchParams.get("tab");
@@ -204,14 +222,12 @@ export function DashboardShell({
               </span>
             </Link>
             <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-emerald-200 bg-emerald-50">
-              {isLoaded && isSignedIn ? (
-                <UserButton appearance={{ elements: { avatarBox: "h-9 w-9" } }} />
+              {hasClerkKey ? (
+                <ClerkAuthControl signInLabel={dict.nav.signIn} />
               ) : (
-                <SignInButton mode="redirect">
-                  <button className="px-2 text-xs font-semibold text-primary">
-                    {dict.nav.signIn}
-                  </button>
-                </SignInButton>
+                <Link href="/sign-in" className="px-2 text-xs font-semibold text-primary">
+                  {dict.nav.signIn}
+                </Link>
               )}
             </div>
           </div>

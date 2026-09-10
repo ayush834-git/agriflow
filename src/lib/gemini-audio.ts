@@ -11,12 +11,12 @@ import { OggOpusDecoder } from "ogg-opus-decoder";
 import type { OggOpusDecodedAudio } from "ogg-opus-decoder";
 
 import { getEnv } from "@/lib/env";
-import { getGeminiClient } from "@/lib/gemini";
+import { GEMINI_MODEL, getGeminiClient } from "@/lib/gemini";
 
 const MAX_AUDIO_BYTES = 20_971_520;
 const FILE_ACTIVE_TIMEOUT_MS = 8_000;
 const FILE_POLL_INTERVAL_MS = 500;
-const TRANSCRIPTION_MODEL = "gemini-2.5-flash";
+const TRANSCRIPTION_MODEL = GEMINI_MODEL;
 
 const TRANSCRIPTION_PROMPT = [
   "Transcribe this voice message exactly in the language spoken.",

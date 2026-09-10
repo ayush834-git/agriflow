@@ -28,8 +28,20 @@ export function getRequestedMode(
 export function requireCronAuthorization(request: NextRequest) {
   const env = getEnv();
 
-  if (!env.CRON_SECRET || env.NODE_ENV === "development") {
-    return null;
+  if (env.NODE_ENV === "development" || env.NODE_ENV === "test") {
+    // In local dev and testing, allow testing cron endpoints without secret if not configured
+    if (!env.CRON_SECRET) {
+      return null;
+    }
+  }
+
+  if (!env.CRON_SECRET) {
+    return NextResponse.json(
+      {
+        error: "CRON_SECRET is not configured on the server.",
+      },
+      { status: 500 },
+    );
   }
 
   const authorization = request.headers.get("authorization");
@@ -37,7 +49,7 @@ export function requireCronAuthorization(request: NextRequest) {
   if (authorization !== `Bearer ${env.CRON_SECRET}`) {
     return NextResponse.json(
       {
-        error: "Unauthorized cron request.",
+        error: "Unauthorized cron request. Bearer token mismatch.",
       },
       { status: 401 },
     );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { buildMarketContext, buildUserInventoryContext } from "@/lib/gemini-context";
-import { getGeminiClient } from "@/lib/gemini";
+import { GEMINI_MODEL, getGeminiClient } from "@/lib/gemini";
 import { findUserById } from "@/lib/users/store";
 import { listFarmerCropsForUser } from "@/lib/users/store";
 
@@ -54,7 +54,7 @@ ${inventoryContext}
 ${marketContext}`;
 
     const model = gemini.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       systemInstruction: systemPrompt,
     });
 

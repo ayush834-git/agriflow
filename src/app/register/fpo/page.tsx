@@ -21,7 +21,7 @@ export default function FpoRegisterPage() {
           Set up your trading profile.
         </h1>
         <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-          Add your business details and the areas you operate in. Once set up, you'll 
+          Add your business details and the areas you operate in. Once set up, you&apos;ll 
           get access to live route mapping and farmer market inventory matching.
         </p>
       </section>

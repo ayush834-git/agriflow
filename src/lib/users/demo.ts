@@ -1,6 +1,12 @@
 import type { AppUser, FarmerCropPreference } from "@/lib/users/types";
 
-export const DEMO_FPO_OWNER_ID = "demo-fpo-suresh";
+export const DEMO_FARMER_RAMU_ID = "00000000-0000-0000-0000-000000000001";
+export const DEMO_FARMER_RAMESH_ID = "00000000-0000-0000-0000-000000000002";
+export const DEMO_FARMER_SARITHA_ID = "00000000-0000-0000-0000-000000000003";
+
+export const DEMO_FPO_OWNER_ID = "00000000-0000-0000-0000-000000000011";
+export const DEMO_FPO_WARANGAL_ID = "00000000-0000-0000-0000-000000000012";
+export const DEMO_FPO_BALLARI_ID = "00000000-0000-0000-0000-000000000013";
 
 const DEMO_TIMESTAMP = "2026-04-01T06:00:00.000Z";
 
@@ -16,7 +22,7 @@ export const DEMO_FPO_CONTACT = {
 
 export const DEMO_FARMER_USERS: AppUser[] = [
   {
-    id: "demo-farmer-ramu",
+    id: DEMO_FARMER_RAMU_ID,
     role: "FARMER",
     fullName: "Ramu Naik",
     phone: "+919900000101",
@@ -33,7 +39,7 @@ export const DEMO_FARMER_USERS: AppUser[] = [
     updatedAt: DEMO_TIMESTAMP,
   },
   {
-    id: "demo-farmer-ramesh",
+    id: DEMO_FARMER_RAMESH_ID,
     role: "FARMER",
     fullName: "Ramesh Gowda",
     phone: "+919900000102",
@@ -50,7 +56,7 @@ export const DEMO_FARMER_USERS: AppUser[] = [
     updatedAt: DEMO_TIMESTAMP,
   },
   {
-    id: "demo-farmer-saritha",
+    id: DEMO_FARMER_SARITHA_ID,
     role: "FARMER",
     fullName: "Saritha Rani",
     phone: "+919900000103",
@@ -88,7 +94,7 @@ export const DEMO_FPO_USERS: AppUser[] = [
     updatedAt: DEMO_TIMESTAMP,
   },
   {
-    id: "demo-fpo-warangal-link",
+    id: DEMO_FPO_WARANGAL_ID,
     role: "FPO",
     fullName: "Meena Rao",
     phone: "+919900000402",
@@ -106,7 +112,7 @@ export const DEMO_FPO_USERS: AppUser[] = [
     updatedAt: DEMO_TIMESTAMP,
   },
   {
-    id: "demo-fpo-ballari-fresh",
+    id: DEMO_FPO_BALLARI_ID,
     role: "FPO",
     fullName: "Naveen Patil",
     phone: "+919900000403",
@@ -126,7 +132,7 @@ export const DEMO_FPO_USERS: AppUser[] = [
 ];
 
 export const DEMO_FARMER_CROPS: Record<string, FarmerCropPreference[]> = {
-  "demo-farmer-ramu": [
+  [DEMO_FARMER_RAMU_ID]: [
     {
       cropSlug: "tomato",
       cropName: "Tomato",
@@ -140,7 +146,7 @@ export const DEMO_FARMER_CROPS: Record<string, FarmerCropPreference[]> = {
       alertThreshold: 260,
     },
   ],
-  "demo-farmer-ramesh": [
+  [DEMO_FARMER_RAMESH_ID]: [
     {
       cropSlug: "onion",
       cropName: "Onion",
@@ -154,12 +160,27 @@ export const DEMO_FARMER_CROPS: Record<string, FarmerCropPreference[]> = {
       alertThreshold: 180,
     },
   ],
-  "demo-farmer-saritha": [
+  [DEMO_FARMER_SARITHA_ID]: [
     {
       cropSlug: "green-chilli",
       cropName: "Green Chilli",
       district: "Khammam",
       alertThreshold: 450,
+    },
+  ],
+  // Keep legacy string keys for backward compatibility
+  "demo-farmer-ramu": [
+    {
+      cropSlug: "tomato",
+      cropName: "Tomato",
+      district: "Kurnool",
+      alertThreshold: 300,
+    },
+    {
+      cropSlug: "onion",
+      cropName: "Onion",
+      district: "Kurnool",
+      alertThreshold: 260,
     },
   ],
 };

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { buildSmsTwiml, processSmsMessage } from "@/lib/sms/service";
 import type { IncomingSmsMessage } from "@/lib/sms/service";
+import { verifyTwilioSignature } from "@/lib/twilio/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,18 @@ function parseIncomingMessage(formData: FormData): IncomingSmsMessage {
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
+
+    // Verify Twilio signature
+    const authCheck = verifyTwilioSignature(request, formData);
+    if (!authCheck.valid) {
+      return new NextResponse(buildSmsTwiml(authCheck.reason ?? "Forbidden"), {
+        status: 403,
+        headers: {
+          "Content-Type": "application/xml; charset=utf-8",
+        },
+      });
+    }
+
     const incomingMessage = parseIncomingMessage(formData);
 
     if (!incomingMessage.from) {

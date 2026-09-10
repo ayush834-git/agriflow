@@ -1612,6 +1612,27 @@ export async function translateDynamicText(
 ): Promise<string> {
   if (targetLanguage === "en" || !text.trim()) return text;
 
+  // In browser, delegate to secure server-side /api/translate endpoint
+  if (typeof window !== "undefined") {
+    try {
+      const response = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, targetLanguage }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.ok && data.translatedText) {
+          return data.translatedText;
+        }
+      }
+    } catch {
+      // Graceful fallback to original text
+    }
+    return text;
+  }
+
+  // Server-side execution
   const langNames: Record<SupportedLang, string> = {
     en: "English",
     hi: "Hindi",
@@ -1619,17 +1640,21 @@ export async function translateDynamicText(
     kn: "Kannada",
   };
 
-  const { getGeminiClient } = await import("@/lib/gemini");
-  const gemini = getGeminiClient();
-  if (!gemini) return text;
+  try {
+    const { getGeminiClient } = await import("@/lib/gemini");
+    const gemini = getGeminiClient();
+    if (!gemini) return text;
 
-  const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
-  const prompt = `Translate the following agricultural market text into ${langNames[targetLanguage]}.
+    const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const prompt = `Translate the following agricultural market text into ${langNames[targetLanguage]}.
 Use simple, natural language that an Indian farmer would understand.
 Return only the translated text, no explanation, no quotes.
 
 Text: ${text}`;
 
-  const result = await model.generateContent(prompt);
-  return result.response.text().trim();
+    const result = await model.generateContent(prompt);
+    return result.response.text().trim();
+  } catch {
+    return text;
+  }
 }

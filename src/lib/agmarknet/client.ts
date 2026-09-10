@@ -37,6 +37,7 @@ async function requestAgmarknetRecords(params: URLSearchParams, init?: RequestIn
       Accept: "application/json",
       ...(init?.headers ?? {}),
     },
+    signal: AbortSignal.timeout(4000),
   });
 
   if (!response.ok) {

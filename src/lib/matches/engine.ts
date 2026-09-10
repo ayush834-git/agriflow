@@ -238,6 +238,19 @@ export async function acceptPendingMatchForFarmer(
     return null;
   }
 
+  // Prevent duplicate acceptance or modifying completed/cancelled matches
+  if (target.status === "ACCEPTED" || target.status === "COMPLETED") {
+    return {
+      match: target,
+      alreadyAccepted: true,
+      farmerMessage: `Match was already confirmed. Status: ${target.status}`,
+    };
+  }
+
+  if (target.status === "CANCELLED") {
+    throw new Error("This match has already been cancelled.");
+  }
+
   const match = await updateMatchStatus(target.id, "ACCEPTED");
   if (match.listingId) {
     await updateListingStatus(match.listingId, "MATCHED");

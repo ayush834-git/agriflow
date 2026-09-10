@@ -14,21 +14,44 @@ export type VoiceSession = {
   startedAt: number; // Date.now()
 };
 
+declare global {
+  var __agriflowVoiceSessions: Map<string, VoiceSession> | undefined;
+  var __agriflowVoiceAudio: Map<string, Buffer> | undefined;
+}
+
+function getFallbackSessionStore() {
+  if (!globalThis.__agriflowVoiceSessions) {
+    globalThis.__agriflowVoiceSessions = new Map();
+  }
+  return globalThis.__agriflowVoiceSessions;
+}
+
+function getFallbackAudioStore() {
+  if (!globalThis.__agriflowVoiceAudio) {
+    globalThis.__agriflowVoiceAudio = new Map();
+  }
+  return globalThis.__agriflowVoiceAudio;
+}
+
 // ── Redis client (lazy singleton) ─────────────────────────────────────────────
 
 let redisClient: Redis | null = null;
 
-function getRedis(): Redis {
+function getRedis(): Redis | null {
   if (redisClient) return redisClient;
   const env = getEnv();
   if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
-    throw new Error("Upstash Redis is not configured (missing URL or token).");
+    return null;
   }
-  redisClient = new Redis({
-    url: env.UPSTASH_REDIS_REST_URL,
-    token: env.UPSTASH_REDIS_REST_TOKEN,
-  });
-  return redisClient;
+  try {
+    redisClient = new Redis({
+      url: env.UPSTASH_REDIS_REST_URL,
+      token: env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    return redisClient;
+  } catch {
+    return null;
+  }
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -51,6 +74,21 @@ export async function getOrCreateSession(
   from: string,
 ): Promise<VoiceSession> {
   const redis = getRedis();
+  if (!redis) {
+    const mem = getFallbackSessionStore().get(callSid);
+    if (mem) return mem;
+    const fresh: VoiceSession = {
+      callSid,
+      from,
+      history: [],
+      lang: "hi-IN",
+      turnCount: 0,
+      startedAt: Date.now(),
+    };
+    getFallbackSessionStore().set(callSid, fresh);
+    return fresh;
+  }
+
   const existing = await redis.get<VoiceSession>(sessionKey(callSid));
   if (existing) return existing;
 
@@ -67,6 +105,10 @@ export async function getOrCreateSession(
 
 export async function saveSession(session: VoiceSession): Promise<void> {
   const redis = getRedis();
+  if (!redis) {
+    getFallbackSessionStore().set(session.callSid, session);
+    return;
+  }
   await redis.set(sessionKey(session.callSid), session, {
     ex: SESSION_TTL_SECONDS,
   });
@@ -85,6 +127,10 @@ export function detectLang(text: string): VoiceLang {
 
 export async function storeAudio(id: string, buffer: Buffer): Promise<void> {
   const redis = getRedis();
+  if (!redis) {
+    getFallbackAudioStore().set(id, buffer);
+    return;
+  }
   await redis.set(audioKey(id), buffer.toString("base64"), {
     ex: AUDIO_TTL_SECONDS,
   });
@@ -92,6 +138,9 @@ export async function storeAudio(id: string, buffer: Buffer): Promise<void> {
 
 export async function loadAudio(id: string): Promise<Buffer | null> {
   const redis = getRedis();
+  if (!redis) {
+    return getFallbackAudioStore().get(id) ?? null;
+  }
   const value = await redis.get<string>(audioKey(id));
   if (!value) return null;
   return Buffer.from(value, "base64");

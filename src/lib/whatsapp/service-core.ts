@@ -1,6 +1,6 @@
 import { getTargetCropOrThrow } from "@/lib/agmarknet/catalog";
 import { transcribeAudioBufferWithGemini } from "@/lib/gemini-audio";
-import { getGeminiClient } from "@/lib/gemini";
+import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
 import { buildUserInventoryContext, buildMarketContext } from "@/lib/gemini-context";
 import { resolveAgmarknetFeed } from "@/lib/agmarknet/service";
 import type { NormalizedMandiPriceRecord } from "@/lib/agmarknet/types";
@@ -218,7 +218,7 @@ async function humanizeResponse(text: string, language: SupportedLanguage): Prom
   }
 
   try {
-    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = gemini.getGenerativeModel({ model: GEMINI_MODEL });
     
     const langMap = { te: "Telugu", hi: "Hindi", kn: "Kannada", en: "English" };
     const localeName = langMap[language] ?? "English";
@@ -1479,7 +1479,7 @@ export async function processWhatsAppMessage(
             buildMarketContext(cropSlugs, registeredUser.district ?? null),
           ]);
           const model = gemini.getGenerativeModel({
-            model: "gemini-2.5-flash",
+            model: GEMINI_MODEL,
             systemInstruction: `You are AgriFlow AI. Answer the user's question about their agricultural inventory and market data using ONLY the data below. Be concise and practical. Answer in ${enrichedIntent.language === "te" ? "Telugu" : enrichedIntent.language === "hi" ? "Hindi" : enrichedIntent.language === "kn" ? "Kannada" : "English"}. Do not make up numbers.\n\n${inventoryCtx}\n\n${marketCtx}`,
           });
           const result = await model.generateContent(normalizedIncomingMessage.body);

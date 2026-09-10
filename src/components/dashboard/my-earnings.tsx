@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -18,7 +17,6 @@ import {
   Trophy,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n/context";
 import type { MarketMatch } from "@/lib/matches/types";
 import type { DashboardPricePoint, DashboardRoute } from "@/lib/dashboard";
@@ -68,22 +66,16 @@ export function MyEarnings({
     bestRoute && localPrice ? (bestRoute.targetModalPrice - localPrice) / 100 : 0;
 
   // Build earnings entries ONLY from real completed/accepted matches
-  const entries: EarningsEntry[] = useMemo(() => {
-    if (completedMatches.length === 0) {
-      return []; // No fake data — show empty state below
-    }
-
-    return completedMatches.map((match, index) => {
-      const matchPrice = match.offeredPricePerKg ?? bestPrice;
-      const qty = match.quantityKg ?? 100;
-      return {
-        label: `${dict.earnings.match} ${index + 1}`,
-        actual: matchPrice * qty,
-        baseline: localPrice * qty,
-        saved: (matchPrice - localPrice) * qty,
-      };
-    });
-  }, [completedMatches, bestPrice, localPrice]);
+  const entries: EarningsEntry[] = completedMatches.map((match, index) => {
+    const matchPrice = match.offeredPricePerKg ?? bestPrice;
+    const qty = match.quantityKg ?? 100;
+    return {
+      label: `${dict.earnings.match} ${index + 1}`,
+      actual: matchPrice * qty,
+      baseline: localPrice * qty,
+      saved: (matchPrice - localPrice) * qty,
+    };
+  });
 
   const totalActual = entries.reduce((sum, e) => sum + e.actual, 0);
   const totalBaseline = entries.reduce((sum, e) => sum + e.baseline, 0);

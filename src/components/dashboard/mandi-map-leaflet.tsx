@@ -261,14 +261,17 @@ export default function MandiMapLeaflet() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          {data.map((mandi) => {
-            const isBest = bestMandi?.id === mandi.id;
+          {data
+            .filter((mandi) => Number.isFinite(mandi.lat) && Number.isFinite(mandi.lng))
+            .map((mandi) => {
+              const isBest = bestMandi?.id === mandi.id;
+              const iconToUse = isBest ? (BestMandiIcon || DefaultIcon) : DefaultIcon;
             
             return (
               <Marker 
                 key={mandi.id} 
                 position={[mandi.lat, mandi.lng]}
-                icon={isBest ? BestMandiIcon : DefaultIcon}
+                icon={iconToUse}
                 zIndexOffset={isBest ? 1000 : 0}
               >
                 <Popup className="mandi-popup">

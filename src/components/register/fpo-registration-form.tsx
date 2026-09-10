@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useUser } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
@@ -21,10 +21,36 @@ type FpoResult = {
   };
 };
 
+const hasClerkKey = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+function SafeFpoUserAutofill({
+  onAutofill,
+}: {
+  onAutofill: (data: {
+    fullName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    id?: string;
+  }) => void;
+}) {
+  const { user } = useUser();
+  useEffect(() => {
+    if (user) {
+      onAutofill({
+        fullName: user.fullName,
+        email: user.primaryEmailAddress?.emailAddress,
+        phone: user.primaryPhoneNumber?.phoneNumber,
+        id: user.id,
+      });
+    }
+  }, [user, onAutofill]);
+  return null;
+}
+
 export function FpoRegistrationForm() {
   const searchParams = useSearchParams();
   const { dict } = useI18n();
-  const { user } = useUser();
+  const [clerkUserId, setClerkUserId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -40,6 +66,22 @@ export function FpoRegistrationForm() {
   );
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FpoResult | null>(null);
+
+  const handleAutofill = useCallback(
+    (data: {
+      fullName?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      id?: string;
+    }) => {
+      if (data.fullName && !fullName) setFullName(data.fullName);
+      if (data.email && !email) setEmail(data.email);
+      if (data.phone && !phone) setPhone(data.phone);
+      if (data.id) setClerkUserId(data.id);
+    },
+    [fullName, email, phone],
+  );
+
   const translatedLanguageOptions = supportedLanguageOptions.map((option) => ({
     ...option,
     label: dict.common.languageNames[option.value],
@@ -77,7 +119,7 @@ export function FpoRegistrationForm() {
           state: stateName,
           serviceRadiusKm: Number(serviceRadiusKm),
           serviceSummary,
-          clerkUserId: user?.id ?? null,
+          clerkUserId,
         }),
       });
 
@@ -96,8 +138,12 @@ export function FpoRegistrationForm() {
       setResult({
         user: payload.user,
       });
-    } catch {
-      setError(dict.register.couldNotSubmitRegistration);
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : dict.register.registrationFailed,
+      );
     }
   }
 
@@ -107,24 +153,21 @@ export function FpoRegistrationForm() {
         <CardHeader>
           <CardTitle>{dict.register.fpoProfileSaved}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
           <p>
             {dict.register.fpoReady
               .replace(
                 "{organization}",
-                result.user.organizationName ?? dict.register.organizationFallback,
+                result.user.organizationName ?? organizationName,
               )
-              .replace(
-                "{email}",
-                result.user.email ?? dict.register.emailFallback,
-              )}
+              .replace("{email}", result.user.email ?? email)}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild>
               <Link href="/dashboard/fpo">{dict.register.openFpoDashboard}</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/register">{dict.register.registerAnotherTeam}</Link>
+              <Link href="/register">{dict.register.registerAnotherUser}</Link>
             </Button>
           </div>
         </CardContent>
@@ -134,6 +177,7 @@ export function FpoRegistrationForm() {
 
   return (
     <Card className="border border-border/70 bg-card/90">
+      {hasClerkKey ? <SafeFpoUserAutofill onAutofill={handleAutofill} /> : null}
       <CardHeader>
         <CardTitle>{dict.register.fpoOnboarding}</CardTitle>
       </CardHeader>

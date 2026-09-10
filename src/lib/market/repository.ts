@@ -24,16 +24,34 @@ export async function loadStoredPricesForCrop(cropSlug: string) {
   const since = new Date();
   since.setUTCDate(since.getUTCDate() - 7);
 
-  const { data, error } = await admin
+  const queryResult = await admin
     .from("mandi_prices")
     .select("*")
     .eq("crop_slug", cropSlug)
     .gte("market_date", since.toISOString().slice(0, 10))
     .order("market_date", { ascending: false })
-    .order("fetched_at", { ascending: false });
+    .order("fetched_at", { ascending: false })
+    .limit(60);
 
-  if (error) {
-    throw new Error(`Failed to load mandi prices: ${error.message}`);
+  if (queryResult.error) {
+    throw new Error(`Failed to load mandi prices: ${queryResult.error.message}`);
+  }
+
+  let data = queryResult.data;
+
+  // If no prices in the last 7 days, retrieve the most recent stored snapshot
+  if (!data || data.length === 0) {
+    const fallbackResult = await admin
+      .from("mandi_prices")
+      .select("*")
+      .eq("crop_slug", cropSlug)
+      .order("market_date", { ascending: false })
+      .order("fetched_at", { ascending: false })
+      .limit(60);
+
+    if (!fallbackResult.error && fallbackResult.data && fallbackResult.data.length > 0) {
+      data = fallbackResult.data;
+    }
   }
 
   const rows = (data ?? []) as unknown as PersistableMandiPriceRecord[];

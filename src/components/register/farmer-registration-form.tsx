@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useUser } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
@@ -67,10 +67,30 @@ function firstFieldError(messages?: string[]) {
   return Array.isArray(messages) && messages.length > 0 ? messages[0] : null;
 }
 
+const hasClerkKey = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+function SafeUserAutofill({
+  onAutofill,
+}: {
+  onAutofill: (data: { fullName?: string | null; phone?: string | null; id?: string }) => void;
+}) {
+  const { user } = useUser();
+  useEffect(() => {
+    if (user) {
+      onAutofill({
+        fullName: user.fullName,
+        phone: user.primaryPhoneNumber?.phoneNumber,
+        id: user.id,
+      });
+    }
+  }, [user, onAutofill]);
+  return null;
+}
+
 export function FarmerRegistrationForm() {
   const searchParams = useSearchParams();
   const { dict } = useI18n();
-  const { user } = useUser();
+  const [clerkUserId, setClerkUserId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
@@ -85,6 +105,16 @@ export function FarmerRegistrationForm() {
     Partial<Record<FieldErrorKey, string>>
   >({});
   const [result, setResult] = useState<RegistrationResult | null>(null);
+
+  const handleAutofill = useCallback(
+    (data: { fullName?: string | null; phone?: string | null; id?: string }) => {
+      if (data.fullName && !fullName) setFullName(data.fullName);
+      if (data.phone && !phone) setPhone(data.phone);
+      if (data.id) setClerkUserId(data.id);
+    },
+    [fullName, phone],
+  );
+
   const translatedLanguageOptions = supportedLanguageOptions.map((option) => ({
     ...option,
     label: dict.common.languageNames[option.value],
@@ -124,7 +154,7 @@ export function FarmerRegistrationForm() {
             district:
               normalizedDistrict.length >= 2 ? normalizedDistrict : undefined,
           })),
-          clerkUserId: user?.id ?? null,
+          clerkUserId,
         }),
       });
 
@@ -208,6 +238,7 @@ export function FarmerRegistrationForm() {
 
   return (
     <Card className="border border-border/70 bg-card/90">
+      {hasClerkKey ? <SafeUserAutofill onAutofill={handleAutofill} /> : null}
       <CardHeader>
         <CardTitle>{dict.register.farmerOnboarding}</CardTitle>
       </CardHeader>

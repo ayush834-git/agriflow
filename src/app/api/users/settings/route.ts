@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { auth } from "@clerk/nextjs/server";
 
 import {
+  findUserByClerkId,
   updateUserSettings,
   type UpdateUserSettingsInput,
 } from "@/lib/users/store";
@@ -33,6 +35,25 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     const payload = settingsSchema.parse(await request.json());
+
+    // Prevent IDOR: Ensure caller owns the userId being modified
+    try {
+      const session = await auth();
+      if (session.userId) {
+        const caller = await findUserByClerkId(session.userId);
+        if (caller && caller.id !== payload.userId) {
+          return NextResponse.json(
+            {
+              ok: false,
+              error: "Forbidden: You are not authorized to modify another user's profile.",
+            },
+            { status: 403 },
+          );
+        }
+      }
+    } catch {
+      // Unauthenticated / demo mode
+    }
 
     if (
       payload.role === "FARMER" &&

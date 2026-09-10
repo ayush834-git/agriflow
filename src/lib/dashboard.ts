@@ -300,21 +300,83 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
       activeFarmer.whatsappBotLanguage ?? activeFarmer.preferredLanguage ?? "te",
   };
 
-  // Skip UUID-dependent DB calls when using demo profile (demo IDs are not valid UUIDs)
-  const [notifications, matches, listings, fpos] = isDemo
-    ? [[], [], [], []]
-    : await Promise.all([
-        listNotificationsForUser(profile.id, 6),
-        listMatchesForFarmer(profile.id, 6),
-        listListings({
+  let [notifications, matches, listings] = await Promise.all([
+    listNotificationsForUser(profile.id, 6).catch(() => []),
+    listMatchesForFarmer(profile.id, 6).catch(() => []),
+    listListings({
+      farmerUserId: profile.id,
+      statuses: ["ACTIVE", "MATCHED"],
+    }).catch(() => []),
+  ]);
+  const fpos = await listFposForDistrict({
+    district: profile.district,
+    cropSlug: baseData.defaultCropSlug,
+  }).catch(() => []);
+
+  // If in demo mode and database has no records for demo user, provide populated sample data
+  if (isDemo) {
+    if (listings.length === 0) {
+      listings = [
+        {
+          id: "00000000-0000-0000-0000-000000000101",
           farmerUserId: profile.id,
-          statuses: ["ACTIVE", "MATCHED"],
-        }),
-        listFposForDistrict({
-          district: profile.district,
-          cropSlug: baseData.defaultCropSlug,
-        }),
-      ]);
+          cropSlug: "tomato",
+          cropName: "Tomato",
+          quantityKg: 2500,
+          askingPricePerKg: 14,
+          qualityGrade: "A",
+          district: profile.district ?? "Kurnool",
+          state: profile.state ?? "Andhra Pradesh",
+          availableFrom: "2026-04-08",
+          availableUntil: "2026-04-15",
+          status: "ACTIVE",
+          notes: "Fresh harvest ready for pickup.",
+          metadata: {},
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+    }
+
+    if (matches.length === 0) {
+      matches = [
+        {
+          id: "00000000-0000-0000-0000-000000000201",
+          listingId: listings[0]?.id ?? null,
+          inventoryId: null,
+          farmerUserId: profile.id,
+          counterpartyUserId: DEMO_FPO_OWNER_ID,
+          cropSlug: "tomato",
+          cropName: "Tomato",
+          quantityKg: 2000,
+          offeredPricePerKg: 16,
+          matchScore: 94,
+          status: "CONTACTED",
+          conversationChannel: "WHATSAPP",
+          notes: "FPO offers ₹16/kg for 2,000kg tomato dispatched to Hyderabad.",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+    }
+
+    if (notifications.length === 0) {
+      notifications = [
+        {
+          id: "00000000-0000-0000-0000-000000000301",
+          userId: profile.id,
+          channel: "WHATSAPP",
+          kind: "PRICE_SPIKE",
+          title: "Price Alert: Tomato",
+          message: "Tomato price jumped to ₹18/kg in Hyderabad mandi. Potential ₹6/kg extra margin available.",
+          language: profile.preferredLanguage,
+          deliveryStatus: "SENT",
+          payload: { cropSlug: "tomato", modalPrice: 1800 },
+          createdAt: new Date().toISOString(),
+        },
+      ];
+    }
+  }
 
   return {
     ...baseData,
@@ -367,26 +429,7 @@ export async function buildFpoDashboardData(clerkUserId?: string | null): Promis
     },
   );
 
-  // Skip UUID-dependent DB calls when using demo profile (demo IDs are not valid UUIDs)
-  if (isDemo) {
-    return {
-      ...baseData,
-      owner,
-      inventory: [],
-      recommendations: [],
-      directoryListings: [],
-      notifications: [],
-      matches: [],
-      metrics: {
-        activeInventoryCount: 0,
-        urgentInventoryCount: 0,
-        criticalInventoryCount: 0,
-        atRiskQuantityKg: 0,
-        recommendationCount: 0,
-        liveMatchCount: 0,
-      },
-    };
-  }
+
 
   const [inventory, directoryListings, notifications, matches] =
     await Promise.all([

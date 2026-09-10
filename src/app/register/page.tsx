@@ -46,7 +46,7 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg">
                 <Link href="/register/farmer">
-                  I'm a Farmer
+                  I&apos;m a Farmer
                   <ArrowRight className="size-4 ml-2" />
                 </Link>
               </Button>
@@ -67,7 +67,7 @@ export default function RegisterPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-7 text-muted-foreground">
-              <p>We'll only send you alerts when your crops reach your target price.</p>
+              <p>We&apos;ll only send you alerts when your crops reach your target price.</p>
               <p>Everything is available in your local language.</p>
               <p>
                 No hidden fees. Free for farmers forever.
