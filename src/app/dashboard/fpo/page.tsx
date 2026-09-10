@@ -18,20 +18,24 @@ async function FpoContent() {
     clerkUserId = null;
   }
 
+  let user: import("@/lib/users/types").AppUser | null = null;
   // If logged in as FARMER, redirect to farmer dashboard
   if (clerkUserId) {
     try {
-      const user = await findUserByClerkId(clerkUserId);
+      user = await findUserByClerkId(clerkUserId);
       if (user?.role === "FARMER") {
         redirect("/dashboard");
       }
-    } catch {
+    } catch (err) {
+      if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_REDIRECT")) {
+        throw err;
+      }
       // ignore — proceed with FPO dashboard
     }
   }
 
-  // No caching — always fetch fresh so registration is immediately reflected
-  const data = await buildFpoDashboardData(clerkUserId);
+  // Pass pre-resolved user to avoid duplicate DB query
+  const data = await buildFpoDashboardData(user ?? clerkUserId);
   return <FpoDashboardClient data={data} />;
 }
 

@@ -11,27 +11,25 @@ import DashboardLoading from "./loading";
 
 async function DashboardContent() {
   let clerkUserId: string | null = null;
+  let user = null;
   try {
     const session = await auth();
     clerkUserId = session.userId ?? null;
-  } catch {
-    clerkUserId = null;
-  }
-
-  // If logged in as FPO, redirect to FPO dashboard
-  if (clerkUserId) {
-    try {
-      const user = await findUserByClerkId(clerkUserId);
+    if (clerkUserId) {
+      user = await findUserByClerkId(clerkUserId);
       if (user?.role === "FPO") {
         redirect("/dashboard/fpo");
       }
-    } catch {
-      // ignore — proceed with farmer dashboard
     }
+  } catch (err) {
+    if (err && typeof err === "object" && "digest" in err) {
+      throw err;
+    }
+    clerkUserId = null;
   }
 
-  // No caching — always fetch fresh so registration is immediately reflected
-  const data = await buildFarmerDashboardData(clerkUserId);
+  // Pass already-resolved user directly to avoid a duplicate database query
+  const data = await buildFarmerDashboardData(user ?? clerkUserId);
   return <FarmerDashboardClient data={data} />;
 }
 

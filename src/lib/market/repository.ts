@@ -6,57 +6,52 @@ import {
 } from "@/lib/demo/market";
 import { toPersistablePriceGap } from "@/lib/agmarknet/normalize";
 import type {
+  NormalizedMandiPriceRecord,
   PersistableMandiPriceRecord,
   PersistablePriceGapRecord,
   PriceGapRecord,
 } from "@/lib/agmarknet/types";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export async function loadStoredPricesForCrop(cropSlug: string) {
+// In-memory short-TTL cache to avoid repeated Supabase queries within and across requests
+type CacheEntry<T> = { data: T; expiresAt: number };
+const pricesCache = new Map<string, CacheEntry<NormalizedMandiPriceRecord[]>>();
+const gapsCache = new Map<string, CacheEntry<PriceGapRecord[]>>();
+const CACHE_TTL_MS = 60_000; // 60 seconds
+
+export async function loadStoredPricesForCrop(cropSlug: string): Promise<NormalizedMandiPriceRecord[]> {
+  const now = Date.now();
+  const cached = pricesCache.get(cropSlug);
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
   if (!hasSupabaseWriteConfig()) {
-    return listDemoMarketRecords({
+    const records = listDemoMarketRecords({
       cropSlugs: [cropSlug],
       historyDays: 7,
     });
+    pricesCache.set(cropSlug, { data: records, expiresAt: now + CACHE_TTL_MS });
+    return records;
   }
 
   const admin = getSupabaseAdminClient();
-  const since = new Date();
-  since.setUTCDate(since.getUTCDate() - 7);
 
+  // Fast single query: select only scalar columns (omit heavy raw_payload JSON)
   const queryResult = await admin
     .from("mandi_prices")
-    .select("*")
+    .select("source_record_id, crop_slug, crop_name, mandi_name, district, state, market_date, min_price, max_price, modal_price, arrivals_tonnes, variety, grade, fetched_at")
     .eq("crop_slug", cropSlug)
-    .gte("market_date", since.toISOString().slice(0, 10))
     .order("market_date", { ascending: false })
-    .order("fetched_at", { ascending: false })
     .limit(60);
 
   if (queryResult.error) {
     throw new Error(`Failed to load mandi prices: ${queryResult.error.message}`);
   }
 
-  let data = queryResult.data;
+  const rows = (queryResult.data ?? []) as unknown as PersistableMandiPriceRecord[];
 
-  // If no prices in the last 7 days, retrieve the most recent stored snapshot
-  if (!data || data.length === 0) {
-    const fallbackResult = await admin
-      .from("mandi_prices")
-      .select("*")
-      .eq("crop_slug", cropSlug)
-      .order("market_date", { ascending: false })
-      .order("fetched_at", { ascending: false })
-      .limit(60);
-
-    if (!fallbackResult.error && fallbackResult.data && fallbackResult.data.length > 0) {
-      data = fallbackResult.data;
-    }
-  }
-
-  const rows = (data ?? []) as unknown as PersistableMandiPriceRecord[];
-
-  return rows.map((row) => ({
+  const result: NormalizedMandiPriceRecord[] = rows.map((row) => ({
     sourceRecordId: row.source_record_id,
     cropSlug: row.crop_slug,
     cropName: row.crop_name,
@@ -70,20 +65,32 @@ export async function loadStoredPricesForCrop(cropSlug: string) {
     arrivalsTonnes: row.arrivals_tonnes,
     variety: row.variety,
     grade: row.grade,
-    rawPayload: row.raw_payload,
+    rawPayload: {},
     fetchedAt: row.fetched_at,
   }));
+
+  pricesCache.set(cropSlug, { data: result, expiresAt: now + CACHE_TTL_MS });
+  return result;
 }
 
-export async function loadStoredGapsForCrop(cropSlug: string, limit = 10) {
+export async function loadStoredGapsForCrop(cropSlug: string, limit = 10): Promise<PriceGapRecord[]> {
+  const cacheKey = `${cropSlug}:${limit}`;
+  const now = Date.now();
+  const cached = gapsCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
   if (!hasSupabaseWriteConfig()) {
-    return listDemoPriceGaps(cropSlug, limit);
+    const gaps = listDemoPriceGaps(cropSlug, limit);
+    gapsCache.set(cacheKey, { data: gaps, expiresAt: now + CACHE_TTL_MS });
+    return gaps;
   }
 
   const admin = getSupabaseAdminClient();
   const { data, error } = await admin
     .from("price_gaps")
-    .select("*")
+    .select("crop_slug, crop_name, source_district, source_state, source_modal_price, target_district, target_state, target_modal_price, price_gap, demand_strength, transport_feasibility, opportunity_score, distance_km, data_window_started_at, data_window_ended_at, explanation, fetched_at")
     .eq("crop_slug", cropSlug)
     .order("opportunity_score", { ascending: false })
     .limit(limit);
@@ -94,7 +101,7 @@ export async function loadStoredGapsForCrop(cropSlug: string, limit = 10) {
 
   const rows = (data ?? []) as unknown as PersistablePriceGapRecord[];
 
-  return rows.map((row) => ({
+  const result: PriceGapRecord[] = rows.map((row) => ({
     cropSlug: row.crop_slug,
     cropName: row.crop_name,
     sourceDistrict: row.source_district,
@@ -112,7 +119,10 @@ export async function loadStoredGapsForCrop(cropSlug: string, limit = 10) {
     dataWindowEndedAt: row.data_window_ended_at,
     explanation: row.explanation,
     fetchedAt: row.fetched_at,
-  })) satisfies PriceGapRecord[];
+  }));
+
+  gapsCache.set(cacheKey, { data: result, expiresAt: now + CACHE_TTL_MS });
+  return result;
 }
 
 export async function replaceStoredPriceGaps(priceGaps: PriceGapRecord[]) {

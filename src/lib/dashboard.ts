@@ -1,7 +1,5 @@
 import { TARGET_CROPS, TARGET_REGIONS } from "@/lib/agmarknet/catalog";
-import type { PriceGapRecord, NormalizedMandiPriceRecord } from "@/lib/agmarknet/types";
-import { resolveAgmarknetFeed } from "@/lib/agmarknet/service";
-import { listDemoMarketRecords } from "@/lib/demo/market";
+import type { PriceGapRecord } from "@/lib/agmarknet/types";
 import { hasSupabaseWriteConfig } from "@/lib/env";
 import { getDistrictsWithinKm } from "@/lib/geo/distance";
 import { listInventory } from "@/lib/inventory/store";
@@ -18,18 +16,14 @@ import { listRecommendationsForInventory } from "@/lib/recommendations/store";
 import type { MovementRecommendation } from "@/lib/recommendations/types";
 import {
   DEMO_FARMER_CROPS,
-  DEMO_FARMER_DEFAULT_ID,
   DEMO_FARMER_USERS,
-  DEMO_FPO_CONTACT,
   DEMO_FPO_OWNER_ID,
   DEMO_FPO_USERS,
 } from "@/lib/users/demo";
 import {
   findUserByClerkId,
   listFarmerCropsForUser,
-  listFarmersWithCrops,
   listFposForDistrict,
-  listUsersByRole,
 } from "@/lib/users/store";
 import type { AppUser, FarmerCropPreference } from "@/lib/users/types";
 import type { SupportedLanguage } from "@/lib/whatsapp/types";
@@ -152,32 +146,14 @@ export async function buildSharedDashboardData(
   const requestedCrops = TARGET_CROPS.filter((c) => selectedCropSlugs.includes(c.slug));
   const fallbackCrops = requestedCrops.length > 0 ? requestedCrops : [TARGET_CROPS[0]];
 
-  const feedResult = await resolveAgmarknetFeed({
-    cropSlugs: fallbackCrops.map(c => c.slug),
-    historyDays: 3,
-    mode: "auto",
-  });
-
-  const usedDemoFallback = feedResult.source === "mock";
-  const recordsByCrop = new Map<string, NormalizedMandiPriceRecord[]>();
-  
-  for (const record of feedResult.records) {
-    const arr = recordsByCrop.get(record.cropSlug) ?? [];
-    arr.push(record);
-    recordsByCrop.set(record.cropSlug, arr);
-  }
-
-  const allPriceRecords = feedResult.records;
-  const computedRoutes = computePriceGaps(allPriceRecords, {
-    maxSourceDistricts: 5,
-    maxTargetDistricts: 5,
-    maxPairsPerCrop: 8,
-  });
-
-  const crops = (await Promise.all(
+  // Load stored prices and routes directly from cache / database snapshot (NO external blocking API calls)
+  const cropsData = await Promise.all(
     fallbackCrops.map(async (crop) => {
-      const cropRecords = recordsByCrop.get(crop.slug) ?? [];
-      // Filter to nearby districts if we have them, fallback to all records
+      const [cropRecords, storedRoutes] = await Promise.all([
+        loadStoredPricesForCrop(crop.slug),
+        loadStoredGapsForCrop(crop.slug, 8),
+      ]);
+
       const scopedRecords =
         nearbyDistricts.length > 0
           ? cropRecords.filter((r) => nearbyDistricts.includes(r.district))
@@ -191,12 +167,16 @@ export async function buildSharedDashboardData(
         marketDate: record.marketDate,
         arrivalsTonnes: record.arrivalsTonnes,
       }));
-      const storedRoutes = await loadStoredGapsForCrop(crop.slug, 8);
+
       const routeSource =
         storedRoutes.length > 0
           ? storedRoutes
-          : computedRoutes.filter((route) => route.cropSlug === crop.slug);
-      // Filter routes whose source is in nearby districts when available
+          : computePriceGaps(cropRecords, {
+              maxSourceDistricts: 5,
+              maxTargetDistricts: 5,
+              maxPairsPerCrop: 8,
+            }).filter((route) => route.cropSlug === crop.slug);
+
       const filteredRoutes =
         nearbyDistricts.length > 0
           ? routeSource.filter((route) => nearbyDistricts.includes(route.sourceDistrict))
@@ -232,7 +212,9 @@ export async function buildSharedDashboardData(
         topOpportunityScore,
       } satisfies DashboardCropView;
     }),
-  ))
+  );
+
+  const crops = cropsData
     .filter((crop): crop is DashboardCropView => crop !== null)
     .sort((left, right) => {
       if (right.topOpportunityScore !== left.topOpportunityScore) {
@@ -244,15 +226,10 @@ export async function buildSharedDashboardData(
 
   return {
     generatedAt: new Date().toISOString(),
-    source: usedDemoFallback ? "mock" : "live",
-    warnings: usedDemoFallback
-      ? [
-          hasPersistentPriceStore
-            ? "Some feed fetches missed, causing demo fallbacks for continuity."
-            : "Using seeded demo data because no persistent price store is configured.",
-          ...feedResult.warnings,
-        ]
-      : feedResult.warnings,
+    source: hasPersistentPriceStore ? "live" : "mock",
+    warnings: hasPersistentPriceStore
+      ? []
+      : ["Using seeded demo data because no persistent price store is configured."],
     defaultCropSlug: crops[0]?.slug ?? fallbackCrops[0].slug,
     nearbyDistricts,
     districts: TARGET_REGIONS.flatMap((region) =>
@@ -265,8 +242,15 @@ export async function buildSharedDashboardData(
   };
 }
 
-export async function buildFarmerDashboardData(clerkUserId?: string | null): Promise<FarmerDashboardData> {
-  const authenticated = clerkUserId ? await findUserByClerkId(clerkUserId) : null;
+export async function buildFarmerDashboardData(
+  userOrClerkId?: string | AppUser | null,
+): Promise<FarmerDashboardData> {
+  const authenticated: AppUser | null =
+    userOrClerkId && typeof userOrClerkId === "object"
+      ? userOrClerkId
+      : typeof userOrClerkId === "string"
+        ? await findUserByClerkId(userOrClerkId)
+        : null;
   
   // Fall back to demo farmer if no real profile is found
   const isDemo = !authenticated || authenticated.role !== "FARMER";
@@ -277,15 +261,6 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
   const cropPreferences = isDemo
     ? (DEMO_FARMER_CROPS[DEMO_FARMER_USERS[0].id] ?? [])
     : await listFarmerCropsForUser(activeFarmer.id);
-
-  const baseData = await buildSharedDashboardData(
-    cropPreferences.map(c => c.cropSlug),
-    {
-      nearbyDistricts: activeFarmer.district
-        ? getDistrictsWithinKm(activeFarmer.district, 100)
-        : [],
-    },
-  );
 
   const profile: FarmerDashboardProfile = {
     id: activeFarmer.id,
@@ -300,18 +275,32 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
       activeFarmer.whatsappBotLanguage ?? activeFarmer.preferredLanguage ?? "te",
   };
 
-  let [notifications, matches, listings] = await Promise.all([
+  const targetCropSlug = cropPreferences[0]?.cropSlug ?? TARGET_CROPS[0].slug;
+
+  const [baseData, fetchedNotifications, fetchedMatches, fetchedListings, fpos] = await Promise.all([
+    buildSharedDashboardData(
+      cropPreferences.map((c) => c.cropSlug),
+      {
+        nearbyDistricts: activeFarmer.district
+          ? getDistrictsWithinKm(activeFarmer.district, 100)
+          : [],
+      },
+    ),
     listNotificationsForUser(profile.id, 6).catch(() => []),
     listMatchesForFarmer(profile.id, 6).catch(() => []),
     listListings({
       farmerUserId: profile.id,
       statuses: ["ACTIVE", "MATCHED"],
     }).catch(() => []),
+    listFposForDistrict({
+      district: profile.district,
+      cropSlug: targetCropSlug,
+    }).catch(() => []),
   ]);
-  const fpos = await listFposForDistrict({
-    district: profile.district,
-    cropSlug: baseData.defaultCropSlug,
-  }).catch(() => []);
+
+  let notifications = fetchedNotifications;
+  let matches = fetchedMatches;
+  let listings = fetchedListings;
 
   // If in demo mode and database has no records for demo user, provide populated sample data
   if (isDemo) {
@@ -389,8 +378,15 @@ export async function buildFarmerDashboardData(clerkUserId?: string | null): Pro
   };
 }
 
-export async function buildFpoDashboardData(clerkUserId?: string | null): Promise<FpoDashboardData> {
-  const authenticated = clerkUserId ? await findUserByClerkId(clerkUserId) : null;
+export async function buildFpoDashboardData(
+  userOrClerkId?: string | AppUser | null,
+): Promise<FpoDashboardData> {
+  const authenticated: AppUser | null =
+    userOrClerkId && typeof userOrClerkId === "object"
+      ? userOrClerkId
+      : typeof userOrClerkId === "string"
+        ? await findUserByClerkId(userOrClerkId)
+        : null;
 
   // Fall back to demo FPO if no real profile is found
   const isDemo = !authenticated || authenticated.role !== "FPO";
@@ -418,21 +414,16 @@ export async function buildFpoDashboardData(clerkUserId?: string | null): Promis
     state: registeredOwner.state ?? null,
   };
 
-  const baseData = await buildSharedDashboardData(
-    owner.cropsHandled,
-    {
-      nearbyDistricts: owner.districtsServed.length > 0
-        ? owner.districtsServed.flatMap((d) =>
-            getDistrictsWithinKm(d, owner.serviceRadiusKm ?? 200)
-          ).filter((v, i, a) => a.indexOf(v) === i)
-        : [],
-    },
-  );
+  const nearbyDistricts =
+    owner.districtsServed.length > 0
+      ? owner.districtsServed
+          .flatMap((d) => getDistrictsWithinKm(d, owner.serviceRadiusKm ?? 200))
+          .filter((v, i, a) => a.indexOf(v) === i)
+      : [];
 
-
-
-  const [inventory, directoryListings, notifications, matches] =
+  const [baseData, inventory, directoryListings, notifications, matches] =
     await Promise.all([
+      buildSharedDashboardData(owner.cropsHandled, { nearbyDistricts }),
       listInventory(owner.id),
       listListings({
         statuses: ["ACTIVE", "MATCHED"],
