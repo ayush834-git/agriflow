@@ -9,6 +9,16 @@ import { normalizeMandiPriceToPerKg } from "@/lib/financial/units";
 
 export const dynamic = "force-dynamic";
 
+/** District alias mapping for historical/bifurcated districts to ensure Agmarknet price correlation */
+const DISTRICT_PRICE_ALIASES: Record<string, string[]> = {
+  nandyal: ["kurnool", "nandyal"],
+  kurnool: ["kurnool", "nandyal"],
+  "jogulamba gadwal": ["mahabubnagar", "jogulamba gadwal"],
+  annamayya: ["chittoor", "annamayya"],
+  "ysr kadapa": ["kadapa", "cuddapah", "ysr kadapa"],
+  chittoor: ["chittoor", "annamayya"],
+};
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -33,21 +43,30 @@ export async function GET(request: NextRequest) {
       radiusKm,
     });
 
-    // 2. Load stored price snapshot for the requested crop (using non-blocking in-memory cache)
+    // 2. Load stored price snapshot for the requested crop
     const storedPrices = await loadStoredPricesForCrop(targetCrop.slug).catch(() => []);
 
     // 3. Map prices onto mandis using name/district correlation
     const mandisWithPrices: MandiMarketWithPrice[] = baseMandis.map((mandi) => {
-      // Find matching price record for this mandi or district
+      const mandiDistLower = mandi.district.toLowerCase();
+      const allowedDistricts = DISTRICT_PRICE_ALIASES[mandiDistLower] ?? [mandiDistLower];
+
+      // Match strategy:
+      // Priority 1: Exact or substring match on mandi name in compatible district
+      // Priority 2: Direct district match
+      // Priority 3: Compatible parent/bifurcated district match
       const matchingRecord =
         storedPrices.find(
           (p) =>
-            p.district.toLowerCase() === mandi.district.toLowerCase() &&
+            allowedDistricts.includes(p.district.toLowerCase()) &&
             (p.mandiName.toLowerCase().includes(mandi.name.toLowerCase()) ||
               mandi.name.toLowerCase().includes(p.mandiName.toLowerCase())),
         ) ??
         storedPrices.find(
-          (p) => p.district.toLowerCase() === mandi.district.toLowerCase(),
+          (p) => p.district.toLowerCase() === mandiDistLower,
+        ) ??
+        storedPrices.find(
+          (p) => allowedDistricts.includes(p.district.toLowerCase()),
         );
 
       if (!matchingRecord) {
