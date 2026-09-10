@@ -23,6 +23,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/demo/(.*)",
   "/api/prices/(.*)",
   "/api/gaps/(.*)",
+  "/api/mandis(.*)",
   "/manifest.webmanifest",
 ]);
 

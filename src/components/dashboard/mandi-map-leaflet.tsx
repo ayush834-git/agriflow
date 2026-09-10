@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Icon } from "leaflet";
+import type { MandiMarketWithPrice } from "@/lib/mandis/types";
 
 // Fix leaflet default icon issue in Next.js
 let DefaultIcon: Icon | undefined;
 let BestMandiIcon: Icon | undefined;
+let LocalMandiIcon: Icon | undefined;
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   DefaultIcon = L.icon({
     iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
     iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -21,39 +23,31 @@ if (typeof window !== 'undefined') {
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
-    tooltipAnchor: [16, -28],
-    shadowSize: [41, 41]
+    shadowSize: [41, 41],
   });
   L.Marker.prototype.options.icon = DefaultIcon;
 
-  // Smart Feature: Best Mandi Icon (Gold)
+  // Best Price Mandi Icon (Gold)
   BestMandiIcon = L.icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
-    tooltipAnchor: [16, -28],
-    shadowSize: [41, 41]
+    shadowSize: [41, 41],
+  });
+
+  // Local Mandi Icon (Green)
+  LocalMandiIcon = L.icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
   });
 }
 
-export type MandiData = {
-  id: string;
-  state: string;
-  district: string;
-  market: string;
-  commodity: string;
-  variety: string;
-  arrival_date: string;
-  min_price: number;
-  max_price: number;
-  modal_price: number;
-  lat: number;
-  lng: number;
-};
-
-// Helper component to recenter map
 function RecenterAutomatically({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
@@ -62,259 +56,263 @@ function RecenterAutomatically({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
-// -----------------------------------------------------------------------------------
-// API & GEOCODING ARCHITECTURE
-// -----------------------------------------------------------------------------------
-const geocodeCache = new Map<string, {lat: number, lng: number}>();
+const AVAILABLE_STATES = [
+  "All States",
+  "Andhra Pradesh",
+  "Telangana",
+  "Karnataka",
+  "Maharashtra",
+];
 
-export async function geocodeMandi(market: string, district: string, state: string): Promise<{lat: number, lng: number} | null> {
-  const query = `${market}, ${district}, ${state}, India`;
-  if (geocodeCache.has(query)) return geocodeCache.get(query) || null;
-  
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-    const res = await fetch(url, { headers: { "User-Agent": "AgriFlow-App" } });
-    const data = await res.json();
-    if (data && data.length > 0) {
-      const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-      geocodeCache.set(query, coords);
-      return coords;
-    }
-  } catch (error) {
-    console.error("Geocoding failed for", query, error);
-  }
-  return null;
-}
-
-async function fetchAgmarknetData(apiKey: string, state?: string, commodity?: string): Promise<MandiData[]> {
-  try {
-    // Example endpoint from data.gov.in for Agmarknet
-    // You would replace the resource ID with the actual one for the dataset you need
-    // const RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070"; 
-    
-    // Build query parameters
-    const params = new URLSearchParams({
-      "api-key": apiKey,
-      format: "json",
-      limit: "100"
-    });
-    
-    if (state) params.append("filters[state]", state);
-    if (commodity) params.append("filters[commodity]", commodity);
-    
-    // Uncomment when ready to use real API:
-    // const response = await fetch(`https://api.data.gov.in/resource/${RESOURCE_ID}?${params.toString()}`);
-    // if (!response.ok) throw new Error("Failed to fetch data");
-    // const data = await response.json();
-    // 
-    // // Map and geocode records
-    // const mappedData = [];
-    // for (const record of data.records) {
-    //   const coords = await geocodeMandi(record.market, record.district, record.state);
-    //   if (coords) {
-    //     mappedData.push({
-    //       id: record.id, state: record.state, district: record.district,
-    //       market: record.market, commodity: record.commodity, variety: record.variety,
-    //       arrival_date: record.arrival_date, min_price: record.min_price,
-    //       max_price: record.max_price, modal_price: record.modal_price,
-    //       lat: coords.lat, lng: coords.lng
-    //     });
-    //   }
-    //   // Note: Nominatim rate limits 1 req/sec. For production, use a batch geocoder or your backend.
-    //   await new Promise(resolve => setTimeout(resolve, 1000)); 
-    // }
-    // return mappedData;
-    
-    // DEMO DATA for architecture readiness
-    console.log("Fetching demo data with filters:", { state, commodity });
-    return getDemoData(state, commodity);
-  } catch (error) {
-    console.error("Error fetching Agmarknet data:", error);
-    return [];
-  }
-}
-
-// Demo fallback data
-function getDemoData(stateFilter?: string, commodityFilter?: string): MandiData[] {
-  let demoData: MandiData[] = [
-    { id: "1", state: "Maharashtra", district: "Pune", market: "Pune APMC", commodity: "Tomato", variety: "Deshi", arrival_date: "2024-04-28", min_price: 1500, max_price: 2200, modal_price: 1800, lat: 18.5204, lng: 73.8567 },
-    { id: "2", state: "Maharashtra", district: "Nashik", market: "Nashik APMC", commodity: "Onion", variety: "Red", arrival_date: "2024-04-28", min_price: 1200, max_price: 1600, modal_price: 1400, lat: 20.0110, lng: 73.7903 },
-    { id: "3", state: "Karnataka", district: "Bangalore", market: "Yeshwanthpur", commodity: "Tomato", variety: "Hybrid", arrival_date: "2024-04-28", min_price: 1800, max_price: 2500, modal_price: 2100, lat: 13.0285, lng: 77.5409 },
-    { id: "4", state: "Andhra Pradesh", district: "Kurnool", market: "Kurnool APMC", commodity: "Onion", variety: "Local", arrival_date: "2024-04-28", min_price: 1000, max_price: 1400, modal_price: 1200, lat: 15.8281, lng: 78.0373 },
-    { id: "5", state: "Telangana", district: "Hyderabad", market: "Bowenpally", commodity: "Tomato", variety: "Deshi", arrival_date: "2024-04-28", min_price: 1600, max_price: 2300, modal_price: 1900, lat: 17.4725, lng: 78.4727 },
-  ];
-
-  if (stateFilter) {
-    demoData = demoData.filter(d => d.state.toLowerCase() === stateFilter.toLowerCase());
-  }
-  if (commodityFilter) {
-    demoData = demoData.filter(d => d.commodity.toLowerCase() === commodityFilter.toLowerCase());
-  }
-  
-  return demoData;
-}
+const AVAILABLE_COMMODITIES = [
+  { slug: "tomato", name: "Tomato" },
+  { slug: "onion", name: "Onion" },
+  { slug: "potato", name: "Potato" },
+  { slug: "green-chilli", name: "Green Chilli" },
+  { slug: "maize", name: "Maize" },
+  { slug: "paddy", name: "Paddy" },
+  { slug: "groundnut", name: "Groundnut" },
+  { slug: "cotton", name: "Cotton" },
+  { slug: "red-chilli", name: "Red Chilli" },
+];
 
 export default function MandiMapLeaflet() {
-  const [data, setData] = useState<MandiData[]>([]);
+  const [mandis, setMandis] = useState<MandiMarketWithPrice[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Filter States
-  const [selectedState, setSelectedState] = useState<string>("");
-  const [selectedCommodity, setSelectedCommodity] = useState<string>("");
-  
-  // Map State
-  const [center, setCenter] = useState<{lat: number, lng: number}>({ lat: 20.5937, lng: 78.9629 }); // India center
-  const [zoom, setZoom] = useState(5);
+  const [selectedState, setSelectedState] = useState<string>("All States");
+  const [selectedCrop, setSelectedCrop] = useState<string>("tomato");
 
-  const availableStates = ["Maharashtra", "Karnataka", "Andhra Pradesh", "Telangana"];
-  const availableCommodities = ["Tomato", "Onion"];
+  // Center on Kurnool / South Central India
+  const [center, setCenter] = useState<{ lat: number; lng: number }>({
+    lat: 15.8281,
+    lng: 78.0373,
+  });
+  const [zoom, setZoom] = useState(7);
 
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      // NEXT_PUBLIC_AGMARKNET_API_KEY could be used here
-      const apiKey = process.env.NEXT_PUBLIC_AGMARKNET_API_KEY || "demo_key";
-      
-      const results = await fetchAgmarknetData(apiKey, selectedState, selectedCommodity);
-      setData(results);
-      
-      if (results.length > 0) {
-        // Adjust map center to the first result if filtering
-        if (selectedState || selectedCommodity) {
-          setCenter({ lat: results[0].lat, lng: results[0].lng });
-          setZoom(7);
-        }
+  const fetchMandis = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedState && selectedState !== "All States") {
+        params.append("state", selectedState);
       }
+      if (selectedCrop) {
+        params.append("crop", selectedCrop);
+      }
+      params.append("nearDistrict", "Kurnool");
+
+      const res = await fetch(`/api/mandis?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to load mandis");
+      const data = await res.json();
+      setMandis(data.mandis || []);
+
+      // If a specific state is chosen, center on the first market of that state
+      if (selectedState && selectedState !== "All States" && data.mandis?.length > 0) {
+        setCenter({ lat: data.mandis[0].lat, lng: data.mandis[0].lng });
+        setZoom(7);
+      }
+    } catch (err) {
+      console.error("Error loading mandis:", err);
+    } finally {
       setLoading(false);
     }
-    
-    loadData();
-  }, [selectedState, selectedCommodity]);
+  }, [selectedState, selectedCrop]);
 
-  // Smart Feature: Best Mandi
-  const bestMandi = useMemo(() => {
-    if (data.length === 0) return null;
-    return data.reduce((best, current) => (current.modal_price > best.modal_price ? current : best), data[0]);
-  }, [data]);
+  useEffect(() => {
+    fetchMandis();
+  }, [fetchMandis]);
+
+  // Find the best price mandi for the selected crop
+  const bestMandiId = useMemo(() => {
+    const withPrices = mandis.filter((m) => m.price && m.price.modalPrice > 0);
+    if (withPrices.length === 0) return null;
+    return withPrices.reduce((best, cur) =>
+      (cur.price?.modalPrice ?? 0) > (best.price?.modalPrice ?? 0) ? cur : best,
+    ).id;
+  }, [mandis]);
 
   return (
-    <div className="relative w-full h-full min-h-[500px] flex flex-col rounded-xl overflow-hidden border border-outline-variant/20 shadow-sm bg-white">
-      {/* Top Filter Bar */}
-      <div className="flex flex-wrap items-center gap-4 p-4 bg-surface-container-lowest border-b border-outline-variant/10 z-10 relative">
-        <div className="flex items-center gap-2 text-primary font-bold">
-          <Search className="w-5 h-5" />
-          <span>Mandi Prices Live</span>
+    <div className="relative w-full h-full min-h-[520px] flex flex-col rounded-2xl overflow-hidden border border-outline-variant/30 shadow-sm bg-surface-container-lowest">
+      {/* Top Filter & Discovery Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-surface-container-low border-b border-outline-variant/20 z-10 relative">
+        <div className="flex items-center gap-2">
+          <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+            <Search className="size-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-on-surface">Mandi Network Live Map</h3>
+            <p className="text-[11px] text-on-surface-variant font-medium flex items-center gap-1">
+              <Navigation className="size-3 text-primary" />
+              Centered on Kurnool, AP · {mandis.length} markets discovered
+            </p>
+          </div>
         </div>
-        
-        <div className="h-6 w-px bg-outline-variant/20 mx-2 hidden md:block" />
-        
-        <div className="flex items-center gap-3 flex-1">
-          <div className="flex flex-col gap-1 w-40">
-            <select 
-              value={selectedState} 
-              onChange={(e) => setSelectedState(e.target.value)}
-              className="bg-white border border-outline-variant/30 rounded-md px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            >
-              <option value="">All States</option>
-              {availableStates.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          
-          <div className="flex flex-col gap-1 w-40">
-            <select 
-              value={selectedCommodity} 
-              onChange={(e) => setSelectedCommodity(e.target.value)}
-              className="bg-white border border-outline-variant/30 rounded-md px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            >
-              <option value="">All Commodities</option>
-              {availableCommodities.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => { setSelectedState(""); setSelectedCommodity(""); setCenter({ lat: 20.5937, lng: 78.9629 }); setZoom(5); }}
-            title="Reset Filters"
+
+        {/* Dynamic Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* State Filter */}
+          <select
+            value={selectedState}
+            onChange={(e) => setSelectedState(e.target.value)}
+            className="bg-surface-container-lowest border border-outline-variant/30 text-on-surface rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-primary shadow-2xs"
           >
-            <RefreshCw className="w-4 h-4" />
+            {AVAILABLE_STATES.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
+
+          {/* Commodity Filter */}
+          <select
+            value={selectedCrop}
+            onChange={(e) => setSelectedCrop(e.target.value)}
+            className="bg-surface-container-lowest border border-outline-variant/30 text-on-surface rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-primary shadow-2xs"
+          >
+            {AVAILABLE_COMMODITIES.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Reset View Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedState("All States");
+              setSelectedCrop("tomato");
+              setCenter({ lat: 15.8281, lng: 78.0373 });
+              setZoom(7);
+            }}
+            title="Reset Map View"
+            className="h-8 px-2 text-xs font-medium"
+          >
+            <RefreshCw className="size-3.5 mr-1" />
+            Reset
           </Button>
         </div>
       </div>
 
-      {/* Map Container */}
-      <div className="flex-1 relative z-0">
+      {/* Map Canvas */}
+      <div className="flex-1 relative z-0 min-h-[420px]">
         {loading && (
-          <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-[400] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+          <div className="absolute inset-0 bg-surface/60 backdrop-blur-xs z-[400] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-3 border-primary border-t-transparent" />
+              <span className="text-xs font-medium text-on-surface-variant">
+                Loading Mandi Network...
+              </span>
+            </div>
           </div>
         )}
-        
-        <MapContainer 
-          center={[center.lat, center.lng]} 
-          zoom={zoom} 
-          style={{ height: '100%', width: '100%' }}
+
+        <MapContainer
+          center={[center.lat, center.lng]}
+          zoom={zoom}
+          style={{ height: "100%", width: "100%" }}
         >
           <RecenterAutomatically lat={center.lat} lng={center.lng} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
-          {data
+
+          {mandis
             .filter((mandi) => Number.isFinite(mandi.lat) && Number.isFinite(mandi.lng))
             .map((mandi) => {
-              const isBest = bestMandi?.id === mandi.id;
-              const iconToUse = isBest ? (BestMandiIcon || DefaultIcon) : DefaultIcon;
-            
-            return (
-              <Marker 
-                key={mandi.id} 
-                position={[mandi.lat, mandi.lng]}
-                icon={iconToUse}
-                zIndexOffset={isBest ? 1000 : 0}
-              >
-                <Popup className="mandi-popup">
-                  <div className="p-1 min-w-[200px]">
-                    {isBest && (
-                      <div className="mb-2 bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-sm text-center shadow-sm">
-                        ⭐ Best Price Recommendation
+              const isBest = bestMandiId === mandi.id;
+              const isLocal = mandi.district.toLowerCase() === "kurnool";
+              const iconToUse = isBest
+                ? BestMandiIcon || DefaultIcon
+                : isLocal
+                  ? LocalMandiIcon || DefaultIcon
+                  : DefaultIcon;
+
+              return (
+                <Marker
+                  key={mandi.id}
+                  position={[mandi.lat, mandi.lng]}
+                  icon={iconToUse}
+                  zIndexOffset={isBest ? 1000 : isLocal ? 500 : 0}
+                >
+                  <Popup className="mandi-popup">
+                    <div className="p-1 min-w-[220px]">
+                      {isBest && (
+                        <div className="mb-2 bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-sm text-center shadow-xs">
+                          ⭐ Best Selling Opportunity
+                        </div>
+                      )}
+
+                      {isLocal && !isBest && (
+                        <div className="mb-2 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm text-center">
+                          📍 Local Mandi ({mandi.district})
+                        </div>
+                      )}
+
+                      <div className="flex items-start justify-between gap-2 border-b pb-2 mb-2">
+                        <div>
+                          <h4 className="font-bold text-sm text-on-surface leading-tight">
+                            {mandi.name}
+                          </h4>
+                          <p className="text-[11px] text-on-surface-variant">
+                            {mandi.district}, {mandi.state}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] shrink-0 font-semibold">
+                          {mandi.distanceKm === 0 ? "Local" : `${mandi.distanceKm} km`}
+                        </Badge>
                       </div>
-                    )}
-                    <div className="flex items-center justify-between border-b pb-2 mb-2">
-                      <h3 className="font-bold text-lg text-emerald-900">{mandi.market}</h3>
-                      <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800">
-                        {mandi.district}
-                      </Badge>
+
+                      {mandi.price ? (
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-on-surface-variant font-medium">Commodity:</span>
+                            <span className="font-bold text-on-surface">{mandi.price.commodity}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-on-surface-variant font-medium">Modal Price:</span>
+                            <div className="text-right">
+                              <span
+                                className={`font-black text-sm ${
+                                  isBest ? "text-amber-600" : "text-primary"
+                                }`}
+                              >
+                                ₹{mandi.price.modalPricePerKg.toFixed(2)}/kg
+                              </span>
+                              <span className="text-[10px] text-on-surface-variant block">
+                                (₹{mandi.price.modalPrice}/qtl)
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center text-[10px] text-on-surface-variant border-t pt-1">
+                            <span>Range: ₹{mandi.price.minPrice ?? 0} - ₹{mandi.price.maxPrice ?? 0}</span>
+                            {mandi.price.arrivalsTonnes != null && mandi.price.arrivalsTonnes > 0 && (
+                              <span>Arrivals: {mandi.price.arrivalsTonnes} T</span>
+                            )}
+                          </div>
+
+                          <div className="pt-1.5 border-t text-[10px] flex items-center justify-between text-on-surface-variant/80">
+                            <span className="capitalize">Status: {mandi.dataFreshness}</span>
+                            <span>{mandi.price.marketDate}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="py-2 text-center text-xs text-on-surface-variant">
+                          <p className="font-medium">No recent price for {selectedCrop}</p>
+                          <p className="text-[10px] mt-0.5 text-outline">
+                            Market active for other commodities
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Commodity</span>
-                        <span className="font-semibold">{mandi.commodity} ({mandi.variety})</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Modal Price</span>
-                        <span className={`font-bold text-lg ${isBest ? 'text-amber-600' : 'text-primary'}`}>
-                          ₹{mandi.modal_price}/qtl
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">Min: ₹{mandi.min_price}</span>
-                        <span className="text-gray-500">Max: ₹{mandi.max_price}</span>
-                      </div>
-                      
-                      <div className="pt-2 border-t mt-2 text-[10px] text-gray-400 text-right">
-                        Updated: {mandi.arrival_date}
-                      </div>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
+                  </Popup>
+                </Marker>
+              );
+            })}
         </MapContainer>
       </div>
     </div>

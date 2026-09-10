@@ -339,6 +339,11 @@ const en = {
     agriflowRevenue: "AgriFlow Revenue",
     extraEarned: "Extra Earned",
     completedThisSeason: "Based on {count} completed trade(s) this season.",
+    belowLocalMandi: "Below local mandi benchmark",
+    differenceOverLocal: "vs local mandi benchmark",
+    benchmarkUnavailable: "Local mandi benchmark unavailable",
+    benchmarkParity: "Matches local mandi price",
+    netLossLabel: "Difference vs Mandi:",
     projectedDisclaimer:
       "These are projected savings based on the current price gap. Complete transactions via WhatsApp or the listing flow to see real earnings.",
   },

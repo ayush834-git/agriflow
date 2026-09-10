@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck"
+    "test": "npx tsx tests/run-all.ts",
+    "check": "npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.0.11",
